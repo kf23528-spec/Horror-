@@ -44,6 +44,27 @@
       touch-action: none;
     }
 
+    #loading {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      color: rgba(255,255,255,0.95);
+      font-size: clamp(18px, 2.2vw, 28px);
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-align: center;
+      text-shadow: 0 0 12px rgba(255,255,255,0.18);
+      pointer-events: none;
+      opacity: 1;
+      transition: opacity 0.45s ease;
+      z-index: 10;
+    }
+
+    #loading.hide {
+      opacity: 0;
+    }
+
     #candleText {
       position: absolute;
       top: max(12px, env(safe-area-inset-top));
@@ -92,27 +113,6 @@
       text-align: right;
       line-height: 1.4;
     }
-
-    #loading {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      color: rgba(255,255,255,0.95);
-      font-size: clamp(18px, 2.2vw, 28px);
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      text-align: center;
-      text-shadow: 0 0 12px rgba(255,255,255,0.18);
-      pointer-events: none;
-      opacity: 1;
-      transition: opacity 0.45s ease;
-      z-index: 10;
-    }
-
-    #loading.hide {
-      opacity: 0;
-    }
   </style>
 </head>
 <body>
@@ -131,22 +131,27 @@
     import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.159.0/build/three.module.js';
     import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.159.0/examples/jsm/loaders/GLTFLoader.js';
 
+    const MODEL_PATH = './ie.glb';
+
     const container = document.getElementById('game');
     const candleText = document.getElementById('candleText');
     const joystickBase = document.getElementById('joystickBase');
     const joystickThumb = document.getElementById('joystickThumb');
     const loading = document.getElementById('loading');
 
+    window.addEventListener('error', (event) => {
+      console.error('Window error:', event.message, event.filename, event.lineno, event.colno, event.error);
+    });
+
+    window.addEventListener('unhandledrejection', (event) => {
+      console.error('Unhandled promise rejection:', event.reason);
+    });
+
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x000000);
     scene.fog = new THREE.Fog(0x000000, 4, 30);
 
-    const camera = new THREE.PerspectiveCamera(
-      70,
-      window.innerWidth / window.innerHeight,
-      0.1,
-      220
-    );
+    const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 220);
     camera.position.set(0, 1.65, 12);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
@@ -198,7 +203,7 @@
     roadTex.repeat.set(16, 16);
 
     const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(220, 220, 1, 1),
+      new THREE.PlaneGeometry(220, 220),
       new THREE.MeshStandardMaterial({
         color: 0x141414,
         map: groundTex,
@@ -324,6 +329,7 @@
 
     function normalizeHouseTemplate(source) {
       const model = source.clone(true);
+
       model.traverse((obj) => {
         if (obj.isMesh) {
           obj.castShadow = true;
@@ -487,25 +493,65 @@
       }, 500);
     }
 
-    // ここが重要: GitHub Pages では "./ie.glb" を使う
-    loader.load(
-      './ie.glb',
-      (gltf) => {
-        const template = normalizeHouseTemplate(gltf.scene);
-        finalizeVillage(template);
-      },
-      undefined,
-      (error) => {
-        console.error('GLTFLoader load error:', error);
-        console.error('Failed to load model from path: ./ie.glb');
+    async function loadModel() {
+      console.log('Trying to load model:', MODEL_PATH);
+
+      try {
+        const response = await fetch(MODEL_PATH, { cache: 'no-store' });
+        console.log('Fetch response for ie.glb:', response.status, response.statusText);
+
+        if (!response.ok) {
+          console.error('ie.glb fetch failed:', {
+            url: MODEL_PATH,
+            status: response.status,
+            statusText: response.statusText
+          });
+          loading.textContent = 'モデル読込失敗';
+          finalizeVillage(normalizeHouseTemplate(buildFallbackHouseTemplate()));
+          return;
+        }
+
+        const blob = await response.blob();
+        console.log('ie.glb blob size:', blob.size);
+
+        const objectUrl = URL.createObjectURL(blob);
+        const loader = new GLTFLoader();
+
+        loader.load(
+          objectUrl,
+          (gltf) => {
+            console.log('GLB loaded successfully:', gltf);
+            URL.revokeObjectURL(objectUrl);
+            const template = normalizeHouseTemplate(gltf.scene);
+            finalizeVillage(template);
+          },
+          (progress) => {
+            if (progress && progress.total) {
+              const pct = Math.round((progress.loaded / progress.total) * 100);
+              loading.textContent = `ロード中... ${pct}%`;
+            } else {
+              loading.textContent = 'ロード中...';
+            }
+          },
+          (error) => {
+            console.error('GLTFLoader onError:', error);
+            console.error('Failed model URL was:', MODEL_PATH);
+            URL.revokeObjectURL(objectUrl);
+            loading.textContent = 'モデル読込失敗';
+            finalizeVillage(normalizeHouseTemplate(buildFallbackHouseTemplate()));
+          }
+        );
+      } catch (error) {
+        console.error('Model load failed before GLTFLoader:', error);
+        console.error('Failed model path:', MODEL_PATH);
         loading.textContent = 'モデル読込失敗';
-        loading.classList.remove('hide');
         finalizeVillage(normalizeHouseTemplate(buildFallbackHouseTemplate()));
       }
-    );
+    }
+
+    loadModel();
 
     const keys = { forward: 0, right: 0 };
-
     let yaw = 0;
     let pitch = 0;
     const pitchMin = THREE.MathUtils.degToRad(-70);
