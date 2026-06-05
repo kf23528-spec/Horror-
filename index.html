@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-  <title>iPad FPS Horror Village</title>
+  <title>Three.js FPS Horror Village</title>
   <style>
     html, body {
       width: 100%;
@@ -95,18 +95,19 @@
 
     #loading {
       position: absolute;
-      inset: 0;
-      display: grid;
-      place-items: center;
-      color: #ffffff;
-      font-size: clamp(18px, 3vw, 28px);
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      color: rgba(255,255,255,0.95);
+      font-size: clamp(18px, 2.2vw, 28px);
       font-weight: 700;
       letter-spacing: 0.06em;
-      background: rgba(0, 0, 0, 0.15);
-      text-shadow: 0 0 12px rgba(255,255,255,0.25);
+      text-align: center;
+      text-shadow: 0 0 12px rgba(255,255,255,0.18);
       pointer-events: none;
       opacity: 1;
-      transition: opacity 0.35s ease;
+      transition: opacity 0.45s ease;
+      z-index: 10;
     }
 
     #loading.hide {
@@ -116,11 +117,14 @@
 </head>
 <body>
   <div id="game"></div>
+
   <div id="ui">
-    <div id="candleText">蝋燭の残り火：100%</div>
-    <div id="joystickBase"><div id="joystickThumb"></div></div>
-    <div id="help">左：移動<br>右：視点回転</div>
     <div id="loading">ロード中...</div>
+    <div id="candleText">蝋燭の残り火：100%</div>
+    <div id="joystickBase">
+      <div id="joystickThumb"></div>
+    </div>
+    <div id="help">左：移動<br>右：視点回転</div>
   </div>
 
   <script type="module">
@@ -137,7 +141,12 @@
     scene.background = new THREE.Color(0x000000);
     scene.fog = new THREE.Fog(0x000000, 4, 30);
 
-    const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 220);
+    const camera = new THREE.PerspectiveCamera(
+      70,
+      window.innerWidth / window.innerHeight,
+      0.1,
+      220
+    );
     camera.position.set(0, 1.65, 12);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
@@ -161,13 +170,12 @@
       const image = ctx.createImageData(size, size);
       for (let i = 0; i < image.data.length; i += 4) {
         const base = 78 + Math.floor(Math.random() * 26);
-        image.data[i] = base;
+        image.data[i + 0] = base;
         image.data[i + 1] = base;
         image.data[i + 2] = base;
         image.data[i + 3] = 255;
       }
       ctx.putImageData(image, 0, 0);
-
       ctx.globalAlpha = 0.14;
       ctx.fillStyle = '#ffffff';
       for (let i = 0; i < 18; i++) {
@@ -190,7 +198,7 @@
     roadTex.repeat.set(16, 16);
 
     const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(220, 220),
+      new THREE.PlaneGeometry(220, 220, 1, 1),
       new THREE.MeshStandardMaterial({
         color: 0x141414,
         map: groundTex,
@@ -202,8 +210,11 @@
     ground.receiveShadow = true;
     scene.add(ground);
 
-    scene.add(new THREE.AmbientLight(0x1a1a1a, 0.22));
-    scene.add(new THREE.HemisphereLight(0x222233, 0x050505, 0.18));
+    const ambient = new THREE.AmbientLight(0x1a1a1a, 0.22);
+    scene.add(ambient);
+
+    const hemi = new THREE.HemisphereLight(0x222233, 0x050505, 0.18);
+    scene.add(hemi);
 
     const candleLight = new THREE.SpotLight(0xfff0cc, 18, 40, Math.PI / 6, 0.42, 1.15);
     candleLight.castShadow = true;
@@ -240,18 +251,25 @@
       metalness: 0
     });
 
+    const roads = new THREE.Group();
+    scene.add(roads);
+
     function addRoadStrip(length, width, x, z, rotY) {
       const mesh = new THREE.Mesh(new THREE.PlaneGeometry(length, width), roadMaterial);
       mesh.rotation.x = -Math.PI / 2;
       mesh.rotation.z = rotY || 0;
       mesh.position.set(x, 0.018, z);
       mesh.receiveShadow = true;
-      scene.add(mesh);
+      roads.add(mesh);
       return mesh;
     }
 
-    for (const x of GRID_LINES) addRoadStrip(220, ROAD_WIDTH, x, 0, Math.PI / 2);
-    for (const z of GRID_LINES) addRoadStrip(220, ROAD_WIDTH, 0, z, 0);
+    for (const x of GRID_LINES) {
+      addRoadStrip(220, ROAD_WIDTH, x, 0, Math.PI / 2);
+    }
+    for (const z of GRID_LINES) {
+      addRoadStrip(220, ROAD_WIDTH, 0, z, 0);
+    }
 
     const centerJunction = new THREE.Mesh(
       new THREE.PlaneGeometry(ROAD_WIDTH * 2.2, ROAD_WIDTH * 2.2),
@@ -264,7 +282,7 @@
     );
     centerJunction.rotation.x = -Math.PI / 2;
     centerJunction.position.y = 0.019;
-    scene.add(centerJunction);
+    roads.add(centerJunction);
 
     const loader = new GLTFLoader();
     const houseInstances = [];
@@ -272,6 +290,7 @@
 
     function buildFallbackHouseTemplate() {
       const g = new THREE.Group();
+
       const body = new THREE.Mesh(
         new THREE.BoxGeometry(2.5, 1.8, 2.6),
         new THREE.MeshStandardMaterial({ color: 0x6f5a46, roughness: 1, metalness: 0 })
@@ -291,6 +310,15 @@
       roof.receiveShadow = true;
       g.add(roof);
 
+      const porch = new THREE.Mesh(
+        new THREE.BoxGeometry(1.2, 0.25, 0.8),
+        new THREE.MeshStandardMaterial({ color: 0x3b2f27, roughness: 1, metalness: 0 })
+      );
+      porch.position.set(0, 0.18, 1.35);
+      porch.castShadow = true;
+      porch.receiveShadow = true;
+      g.add(porch);
+
       return g;
     }
 
@@ -300,14 +328,17 @@
         if (obj.isMesh) {
           obj.castShadow = true;
           obj.receiveShadow = true;
-          if (obj.material && obj.material.map) obj.material.map.colorSpace = THREE.SRGBColorSpace;
+          if (obj.material && obj.material.map) {
+            obj.material.map.colorSpace = THREE.SRGBColorSpace;
+          }
         }
       });
 
       const box = new THREE.Box3().setFromObject(model);
       const size = box.getSize(new THREE.Vector3());
       const maxHorizontal = Math.max(size.x, size.z, 0.001);
-      const scale = 6.0 / maxHorizontal;
+      const targetWidth = 6.0;
+      const scale = targetWidth / maxHorizontal;
       model.scale.setScalar(scale);
 
       const scaledBox = new THREE.Box3().setFromObject(model);
@@ -318,29 +349,37 @@
       model.position.z -= center.z;
       model.position.y -= scaledBox.min.y;
 
+      const radius = Math.max(scaledSize.x, scaledSize.z) * 0.46;
+
       return {
         model,
-        radius: Math.max(scaledSize.x, scaledSize.z) * 0.46,
+        radius,
         width: scaledSize.x,
-        depth: scaledSize.z
+        depth: scaledSize.z,
+        height: scaledSize.y
       };
     }
 
     function addHouseAt(position, rotationY, scaleJitter = 1) {
-      const template = houseTemplate || normalizeHouseTemplate(buildFallbackHouseTemplate());
       const group = new THREE.Group();
+      const template = houseTemplate || normalizeHouseTemplate(buildFallbackHouseTemplate());
       const model = template.model.clone(true);
       model.scale.multiplyScalar(scaleJitter);
+
       group.add(model);
       group.position.copy(position);
       group.rotation.y = rotationY;
+
       scene.add(group);
 
+      const worldRadius = template.radius * scaleJitter;
       houseInstances.push({
         group,
-        radius: template.radius * scaleJitter,
+        radius: worldRadius,
         position: group.position
       });
+
+      return group;
     }
 
     function isNearSpawn(x, z, safeRadius = 18) {
@@ -352,8 +391,8 @@
       const cellMax = MAP_HALF - ROAD_WIDTH * 0.65;
       const cellStep = 38;
       const innerPad = 4.5;
-      const cells = [];
 
+      const cells = [];
       for (let x0 = cellMin; x0 < cellMax; x0 += cellStep) {
         for (let z0 = cellMin; z0 < cellMax; z0 += cellStep) {
           const x1 = Math.min(x0 + cellStep - ROAD_WIDTH * 0.4, cellMax);
@@ -372,12 +411,16 @@
         const cx = (cell.x0 + cell.x1) * 0.5;
         const cz = (cell.z0 + cell.z1) * 0.5;
 
-        if (Math.hypot(cx, cz - 12) < 18 && Math.abs(cx) < 20 && Math.abs(cz) < 20) continue;
+        if (Math.hypot(cx, cz - 12) < 18 && Math.abs(cx) < 20 && Math.abs(cz) < 20) {
+          continue;
+        }
 
         const side = pick(['n', 's', 'e', 'w']);
-        let x = cx, z = cz;
         const jitterX = rand(-3.2, 3.2);
         const jitterZ = rand(-3.2, 3.2);
+
+        let x = cx;
+        let z = cz;
 
         if (side === 'n') {
           x = clamp(rand(cell.x0 + innerPad, cell.x1 - innerPad), cell.x0 + innerPad, cell.x1 - innerPad);
@@ -395,14 +438,23 @@
 
         if (isNearSpawn(x, z, 15)) continue;
 
-        const sideFacingRotation = { n: Math.PI, s: 0, e: -Math.PI / 2, w: Math.PI / 2 };
-        const rot = sideFacingRotation[side] + rand(-0.28, 0.28);
-        addHouseAt(new THREE.Vector3(x, 0, z), rot, rand(0.82, 1.22));
+        const sideFacingRotation = {
+          n: Math.PI,
+          s: 0,
+          e: -Math.PI / 2,
+          w: Math.PI / 2
+        };
+
+        const rot = sideFacingRotation[side] + rand(-0.28, 0.28) + (Math.random() > 0.7 ? rand(-0.5, 0.5) : 0);
+        const scaleJitter = rand(0.82, 1.22);
+
+        addHouseAt(new THREE.Vector3(x, 0, z), rot, scaleJitter);
         placed++;
 
         if (placed < desiredCount && Math.random() > 0.62 && Math.abs(cx) > 18 && Math.abs(cz) > 18) {
           const side2 = pick(['n', 's', 'e', 'w']);
           let x2 = x, z2 = z;
+
           if (side2 === 'n') {
             x2 = clamp(rand(cell.x0 + innerPad, cell.x1 - innerPad), cell.x0 + innerPad, cell.x1 - innerPad);
             z2 = cell.z1 - 10.5;
@@ -416,6 +468,7 @@
             x2 = cell.x0 + 10.5;
             z2 = clamp(rand(cell.z0 + innerPad, cell.z1 - innerPad), cell.z0 + innerPad, cell.z1 - innerPad);
           }
+
           if (!isNearSpawn(x2, z2, 15)) {
             const rot2 = sideFacingRotation[side2] + rand(-0.28, 0.28);
             addHouseAt(new THREE.Vector3(x2, 0, z2), rot2, rand(0.8, 1.16));
@@ -429,35 +482,50 @@
       houseTemplate = template || normalizeHouseTemplate(buildFallbackHouseTemplate());
       populateVillage();
       loading.classList.add('hide');
-      setTimeout(() => loading.remove(), 400);
+      setTimeout(() => {
+        if (loading && loading.parentNode) loading.remove();
+      }, 500);
     }
 
+    // ここが重要: GitHub Pages では "./ie.glb" を使う
     loader.load(
       './ie.glb',
       (gltf) => {
-        try {
-          const template = normalizeHouseTemplate(gltf.scene);
-          finalizeVillage(template);
-        } catch (err) {
-          console.error('[ie.glb] loaded, but processing failed:', err);
-          finalizeVillage(normalizeHouseTemplate(buildFallbackHouseTemplate()));
-        }
+        const template = normalizeHouseTemplate(gltf.scene);
+        finalizeVillage(template);
       },
       undefined,
       (error) => {
-        console.error('[ie.glb] GLTFLoader load error:', error);
+        console.error('GLTFLoader load error:', error);
+        console.error('Failed to load model from path: ./ie.glb');
+        loading.textContent = 'モデル読込失敗';
+        loading.classList.remove('hide');
         finalizeVillage(normalizeHouseTemplate(buildFallbackHouseTemplate()));
       }
     );
 
     const keys = { forward: 0, right: 0 };
+
     let yaw = 0;
     let pitch = 0;
     const pitchMin = THREE.MathUtils.degToRad(-70);
     const pitchMax = THREE.MathUtils.degToRad(70);
 
-    const move = { active: false, pointerId: null, startX: 0, startY: 0, dx: 0, dy: 0 };
-    const look = { active: false, pointerId: null, lastX: 0, lastY: 0 };
+    const move = {
+      active: false,
+      pointerId: null,
+      startX: 0,
+      startY: 0,
+      dx: 0,
+      dy: 0
+    };
+
+    const look = {
+      active: false,
+      pointerId: null,
+      lastX: 0,
+      lastY: 0
+    };
 
     const playerRadius = 0.38;
     const playerHeight = 1.65;
@@ -482,8 +550,10 @@
     function updateJoystickVector() {
       const maxD = joystickRadius();
       const len = Math.hypot(move.dx, move.dy);
+
       const nx = len > 0 ? move.dx / maxD : 0;
       const ny = len > 0 ? move.dy / maxD : 0;
+
       keys.right = Math.abs(nx) < 0.05 ? 0 : clamp(nx, -1, 1);
       keys.forward = Math.abs(ny) < 0.05 ? 0 : clamp(-ny, -1, 1);
       setThumb(move.dx, move.dy);
@@ -534,6 +604,7 @@
         yaw -= dx * 0.0045;
         pitch -= dy * 0.0045;
         pitch = clamp(pitch, pitchMin, pitchMax);
+
         e.preventDefault();
       }
     }, { passive: false });
@@ -581,7 +652,7 @@
     const forward = new THREE.Vector3();
 
     let candleRemaining = 100;
-    const candleDrainPerSecond = 2.35;
+    let candleDrainPerSecond = 2.35;
 
     function updateCandle(dt) {
       candleRemaining = Math.max(0, candleRemaining - candleDrainPerSecond * dt);
@@ -589,8 +660,8 @@
 
       const flicker = (Math.random() - 0.5) * 0.9 + Math.sin(performance.now() * 0.04) * 0.14;
       candleLight.intensity = 18 + flicker;
-      candleLight.distance = 40;
 
+      candleLight.distance = 40;
       if (candleRemaining > 0) {
         const t = candleRemaining / 100;
         candleLight.color.setHSL(0.12, 1.0, 0.16 + 0.65 * t);
