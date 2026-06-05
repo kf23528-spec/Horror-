@@ -1,738 +1,590 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-  <title>FPS Horror Village Base</title>
-  <style>
-    html, body {
-      width: 100%;
-      height: 100%;
-      margin: 0;
-      overflow: hidden;
-      background: #000;
-      touch-action: none;
-      overscroll-behavior: none;
-      -webkit-user-select: none;
-      user-select: none;
-      -webkit-touch-callout: none;
-    }
-
-    body {
-      position: fixed;
-      inset: 0;
-    }
-
-    canvas {
-      display: block;
-      width: 100%;
-      height: 100%;
-      touch-action: none;
-      outline: none;
-    }
-
-    #ui {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: 10;
-      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
-      color: #f3e7c8;
-      text-shadow: 0 0 10px rgba(255, 180, 60, 0.35), 0 0 2px rgba(0,0,0,0.95);
-    }
-
-    #candleText {
-      position: absolute;
-      top: calc(env(safe-area-inset-top) + 14px);
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: clamp(18px, 2.8vw, 30px);
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      white-space: nowrap;
-    }
-
-    #leftJoyBase {
-      position: fixed;
-      left: max(18px, env(safe-area-inset-left));
-      bottom: max(18px, env(safe-area-inset-bottom));
-      width: 160px;
-      height: 160px;
-      border-radius: 50%;
-      border: 2px solid rgba(255,255,255,0.14);
-      background: rgba(255,255,255,0.05);
-      box-shadow: inset 0 0 22px rgba(255,255,255,0.04), 0 0 20px rgba(0,0,0,0.25);
-      backdrop-filter: blur(2px);
-      -webkit-backdrop-filter: blur(2px);
-      z-index: 11;
-      pointer-events: none;
-    }
-
-    #leftJoyKnob {
-      position: fixed;
-      left: 98px;
-      bottom: 98px;
-      width: 72px;
-      height: 72px;
-      margin-left: -36px;
-      margin-bottom: -36px;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.18);
-      border: 1px solid rgba(255,255,255,0.18);
-      box-shadow: 0 0 16px rgba(255,255,255,0.08);
-      z-index: 12;
-      pointer-events: none;
-      opacity: 0.95;
-      transform: translate(0px, 0px);
-    }
-
-    #help {
-      position: fixed;
-      left: 50%;
-      bottom: calc(env(safe-area-inset-bottom) + 10px);
-      transform: translateX(-50%);
-      font-size: clamp(12px, 1.8vw, 16px);
-      color: rgba(255,255,255,0.45);
-      text-shadow: 0 0 6px rgba(0,0,0,0.9);
-      pointer-events: none;
-      z-index: 10;
-      white-space: nowrap;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>夜の村 - 和風ホラー</title>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #000;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  #gameCanvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+  }
+  #ui {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    pointer-events: none;
+    z-index: 10;
+  }
+  #candleUI {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Georgia', 'Noto Serif JP', serif;
+    font-size: 22px;
+    color: #f5c842;
+    text-shadow:
+      -2px -2px 0 #000,
+       2px -2px 0 #000,
+      -2px  2px 0 #000,
+       2px  2px 0 #000,
+       0 0 12px rgba(255, 180, 0, 0.6);
+    letter-spacing: 2px;
+    white-space: nowrap;
+    z-index: 20;
+    pointer-events: none;
+  }
+  #candleBar {
+    position: fixed;
+    top: 52px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 220px;
+    height: 8px;
+    background: rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,180,0,0.4);
+    border-radius: 4px;
+    z-index: 20;
+    pointer-events: none;
+    overflow: hidden;
+  }
+  #candleBarFill {
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(90deg, #ff6a00, #f5c842);
+    border-radius: 4px;
+    transition: width 0.5s ease;
+    box-shadow: 0 0 6px rgba(255, 180, 0, 0.7);
+  }
+  #errorMsg {
+    position: fixed;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: monospace;
+    font-size: 14px;
+    color: #ff4444;
+    text-shadow: 0 0 4px #000, 0 0 8px #000;
+    background: transparent;
+    padding: 4px 8px;
+    z-index: 20;
+    pointer-events: none;
+    display: none;
+    text-align: center;
+  }
+  /* Joystick */
+  #joystickContainer {
+    position: fixed;
+    bottom: 60px;
+    left: 60px;
+    width: 120px;
+    height: 120px;
+    z-index: 15;
+    pointer-events: none;
+  }
+  #joystickBase {
+    position: absolute;
+    top: 0; left: 0;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    border: 2px solid rgba(255,200,100,0.25);
+    box-shadow: 0 0 20px rgba(255,150,0,0.1);
+  }
+  #joystickStick {
+    position: absolute;
+    top: 35px; left: 35px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: rgba(245, 200, 66, 0.35);
+    border: 2px solid rgba(245, 200, 66, 0.5);
+    box-shadow: 0 0 10px rgba(255,180,0,0.3);
+    transition: transform 0.05s;
+  }
+  /* Darkness vignette */
+  #vignette {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.75) 100%);
+    pointer-events: none;
+    z-index: 5;
+  }
+  /* Darkness overlay when candle dies */
+  #darknessOverlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0);
+    pointer-events: none;
+    z-index: 8;
+    transition: background 2s ease;
+  }
+</style>
 </head>
 <body>
-  <div id="ui">
-    <div id="candleText">蝋燭の残り火：100%</div>
-  </div>
-  <div id="leftJoyBase"></div>
-  <div id="leftJoyKnob"></div>
-  <div id="help">左下で移動 / 右半分をスワイプで視点変更</div>
+<canvas id="gameCanvas"></canvas>
+<div id="vignette"></div>
+<div id="darknessOverlay"></div>
 
-  <script type="module">
-    import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
-    import { GLTFLoader } from 'https://unpkg.com/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
+<div id="candleUI">🕯 和蝋燭の残り火：<span id="candlePercent">100</span>%</div>
+<div id="candleBar"><div id="candleBarFill"></div></div>
+<div id="errorMsg" id="errorMsg"></div>
 
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x000000);
-    scene.fog = new THREE.Fog(0x000000, 10, 32);
+<div id="joystickContainer">
+  <div id="joystickBase"></div>
+  <div id="joystickStick"></div>
+</div>
 
-    const camera = new THREE.PerspectiveCamera(
-      70,
-      window.innerWidth / window.innerHeight,
-      0.1,
-      120
-    );
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ===================================================
+// THREE.JS 和風ホラーゲーム - メインコード
+// ===================================================
 
-    const renderer = new THREE.WebGLRenderer({
-      antialias: true,
-      alpha: false,
-      powerPreference: 'high-performance'
-    });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+(function() {
+  'use strict';
+
+  // ----- 基本設定 -----
+  const canvas = document.getElementById('gameCanvas');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.setClearColor(0x000000, 1);
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x000000);
+  scene.fog = new THREE.FogExp2(0x000000, 0.045);
+
+  const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 200);
+  camera.position.set(0, 1.6, 0);
+
+  // ----- リサイズ対応 -----
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    renderer.domElement.style.touchAction = 'none';
-    document.body.appendChild(renderer.domElement);
+  });
 
-    const uiCandle = document.getElementById('candleText');
-    const joyBaseEl = document.getElementById('leftJoyBase');
-    const joyKnobEl = document.getElementById('leftJoyKnob');
+  // ----- 地面 -----
+  const groundGeo = new THREE.PlaneGeometry(300, 300, 20, 20);
+  const groundMat = new THREE.MeshLambertMaterial({ color: 0x1a1a1a });
+  const ground = new THREE.Mesh(groundGeo, groundMat);
+  ground.rotation.x = -Math.PI / 2;
+  ground.receiveShadow = true;
+  scene.add(ground);
 
-    // =========================================================
-    // 便利関数
-    // =========================================================
-    function rand(min, max) {
-      return min + Math.random() * (max - min);
-    }
+  // 地面テクスチャ風のグリッド（墓場の石畳）
+  const gridHelper = new THREE.GridHelper(300, 60, 0x222222, 0x111111);
+  gridHelper.position.y = 0.01;
+  scene.add(gridHelper);
 
-    function randint(min, max) {
-      return Math.floor(rand(min, max + 1));
-    }
+  // ----- 環境光（ごく微弱）-----
+  const ambientLight = new THREE.AmbientLight(0x050510, 0.8);
+  scene.add(ambientLight);
 
-    function shuffle(array) {
-      for (let i = array.length - 1; i > 0; i--) {
-        const j = (Math.random() * (i + 1)) | 0;
-        [array[i], array[j]] = [array[j], array[i]];
-      }
-      return array;
-    }
+  // ----- 蝋燭スポットライト -----
+  const candleLight = new THREE.SpotLight(0xffa050, 6, 18, Math.PI / 5, 0.5, 1.5);
+  candleLight.castShadow = true;
+  candleLight.shadow.mapSize.width = 512;
+  candleLight.shadow.mapSize.height = 512;
+  candleLight.shadow.camera.near = 0.1;
+  candleLight.shadow.camera.far = 18;
+  scene.add(candleLight);
+  scene.add(candleLight.target);
 
-    function makeNoiseTexture(baseHex, speckHex) {
-      const size = 128;
-      const canvas = document.createElement('canvas');
-      canvas.width = size;
-      canvas.height = size;
-      const ctx = canvas.getContext('2d');
+  // ポイントライト（蝋燭の周辺光）
+  const pointLight = new THREE.PointLight(0xff8822, 1.5, 4);
+  scene.add(pointLight);
 
-      const base = new THREE.Color(baseHex);
-      const speck = new THREE.Color(speckHex);
+  // ----- 蝋燭システム -----
+  let candlePercent = 100;
+  let lastCandleTick = Date.now();
+  const CANDLE_TICK_MS = 4000; // 4秒ごとに1%消費
+  const candlePercentEl = document.getElementById('candlePercent');
+  const candleBarFill = document.getElementById('candleBarFill');
+  const darknessOverlay = document.getElementById('darknessOverlay');
 
-      ctx.fillStyle = `#${base.getHexString()}`;
-      ctx.fillRect(0, 0, size, size);
+  function updateCandleUI() {
+    candlePercentEl.textContent = Math.max(0, Math.ceil(candlePercent));
+    candleBarFill.style.width = candlePercent + '%';
+    // 残り火が少ないほど色が赤くなる
+    const r = Math.floor(200 + 55 * (1 - candlePercent / 100));
+    const g = Math.floor(200 * (candlePercent / 100));
+    candleBarFill.style.background = `linear-gradient(90deg, rgb(${r},50,0), rgb(${r},${g},50))`;
+  }
 
-      for (let i = 0; i < 2500; i++) {
-        const x = Math.random() * size;
-        const y = Math.random() * size;
-        const s = 1 + Math.random() * 2.5;
-        const t = Math.random() * 0.55;
-        const r = Math.floor(THREE.MathUtils.lerp(base.r * 255, speck.r * 255, t));
-        const g = Math.floor(THREE.MathUtils.lerp(base.g * 255, speck.g * 255, t));
-        const b = Math.floor(THREE.MathUtils.lerp(base.b * 255, speck.b * 255, t));
-        ctx.fillStyle = `rgba(${r},${g},${b},0.35)`;
-        ctx.fillRect(x, y, s, s);
-      }
+  // ----- 不気味な赤い立方体（フォールバック用・常時表示）-----
+  const cubeGeo = new THREE.BoxGeometry(1.2, 2.5, 1.2);
+  const cubeMat = new THREE.MeshLambertMaterial({ color: 0x880000 });
+  const redCube = new THREE.Mesh(cubeGeo, cubeMat);
+  redCube.position.set(0, 1.25, -8);
+  redCube.castShadow = true;
+  scene.add(redCube);
+  // 赤い発光効果
+  const cubeGlow = new THREE.PointLight(0xff0000, 0.5, 5);
+  cubeGlow.position.copy(redCube.position);
+  scene.add(cubeGlow);
 
-      const tex = new THREE.CanvasTexture(canvas);
-      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-      tex.anisotropy = 4;
-      return tex;
-    }
+  // ----- GLTFLoader 動的ロード -----
+  let houseTemplate = null;
+  const errorEl = document.getElementById('errorMsg');
 
-    function makePlane(width, depth, material, y = 0, rotX = -Math.PI / 2) {
-      const mesh = new THREE.Mesh(new THREE.PlaneGeometry(width, depth), material);
-      mesh.rotation.x = rotX;
-      mesh.position.y = y;
-      mesh.receiveShadow = true;
-      return mesh;
-    }
-
-    // =========================================================
-    // 村の地面・道路
-    // =========================================================
-    const floorTex = makeNoiseTexture(0x151515, 0x242424);
-    floorTex.repeat.set(18, 18);
-
-    const roadTex = makeNoiseTexture(0x363636, 0x515151);
-    roadTex.repeat.set(10, 10);
-
-    const floorMat = new THREE.MeshStandardMaterial({
-      color: 0x171717,
-      map: floorTex,
-      roughness: 1.0,
-      metalness: 0.0
-    });
-
-    const roadMat = new THREE.MeshStandardMaterial({
-      color: 0x3c3c3c,
-      map: roadTex,
-      roughness: 1.0,
-      metalness: 0.0
-    });
-
-    const villageLimit = 100;
-    const ground = makePlane(220, 220, floorMat, 0);
-    scene.add(ground);
-
-    // 十字・格子状の道路
-    const roadWidth = 7;
-    const roadLines = [-64, -32, 0, 32, 64];
-
-    for (const x of roadLines) {
-      const road = makePlane(roadWidth, 220, roadMat, 0.02);
-      road.position.x = x;
-      scene.add(road);
-    }
-
-    for (const z of roadLines) {
-      const road = makePlane(220, roadWidth, roadMat, 0.02);
-      road.position.z = z;
-      scene.add(road);
-    }
-
-    // =========================================================
-    // ホラー演出用テストオブジェクト
-    // =========================================================
-    const cube = new THREE.Mesh(
-      new THREE.BoxGeometry(1, 1, 1),
-      new THREE.MeshStandardMaterial({
-        color: 0xaa0000,
-        roughness: 0.55,
-        metalness: 0.05,
-        emissive: 0x220000,
-        emissiveIntensity: 0.6
-      })
-    );
-    cube.position.set(0, 0.5, 72);
-    cube.castShadow = true;
-    cube.receiveShadow = true;
-    scene.add(cube);
-
-    // =========================================================
-    // 光
-    // =========================================================
-    const ambient = new THREE.AmbientLight(0x7a5b3b, 0.08);
-    scene.add(ambient);
-
-    const candleLight = new THREE.SpotLight(0xffcc88, 2.2, 22, 0.42, 0.72, 1.8);
-    candleLight.castShadow = true;
-    candleLight.shadow.mapSize.set(1024, 1024);
-    candleLight.shadow.bias = -0.00025;
-    scene.add(candleLight);
-
-    const candleTarget = new THREE.Object3D();
-    scene.add(candleTarget);
-    candleLight.target = candleTarget;
-
-    const warmFill = new THREE.PointLight(0xff9c57, 0.28, 8, 2);
-    scene.add(warmFill);
-
-    // =========================================================
-    // プレイヤー・操作
-    // =========================================================
-    const player = {
-      position: new THREE.Vector3(0, 1.7, 88),
-      speed: 3.0,
-      radius: 0.55
+  // GLTFLoaderをCDNから動的に読み込む
+  function loadGLTFLoader(callback) {
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js';
+    script.onload = callback;
+    script.onerror = () => {
+      showError('GLTFLoaderの読み込みに失敗しました');
+      callback(false);
     };
+    document.head.appendChild(script);
+  }
 
-    // 初期スポーンでは前方を村へ向ける
-    let yaw = Math.PI;
-    let pitch = 0;
-    const pitchLimit = Math.PI / 2 - 0.06;
+  function showError(msg) {
+    errorEl.textContent = msg;
+    errorEl.style.display = 'block';
+  }
 
-    const joystick = {
-      active: false,
-      pointerId: null,
-      baseX: 0,
-      baseY: 0,
-      x: 0,
-      y: 0,
-      maxR: 58
-    };
+  function placeHouses(template) {
+    const count = 35;
+    const range = 150;
+    const minDist = 6; // プレイヤー初期位置からの最小距離
 
-    const look = {
-      active: false,
-      pointerId: null,
-      lastX: 0,
-      lastY: 0
-    };
+    for (let i = 0; i < count; i++) {
+      let x, z, attempts = 0;
+      do {
+        x = (Math.random() - 0.5) * range;
+        z = (Math.random() - 0.5) * range;
+        attempts++;
+      } while (Math.sqrt(x * x + z * z) < minDist && attempts < 50);
 
-    function updateJoystickBasePosition() {
-      const rect = joyBaseEl.getBoundingClientRect();
-      joystick.baseX = rect.left + rect.width * 0.5;
-      joystick.baseY = rect.top + rect.height * 0.5;
-      joystick.maxR = Math.min(rect.width, rect.height) * 0.36;
-    }
-
-    function syncJoystickKnob() {
-      if (!joystick.active) {
-        joyKnobEl.style.transform = 'translate(0px, 0px)';
-        joyKnobEl.style.opacity = '0.55';
-        return;
-      }
-      const dx = joystick.x * joystick.maxR;
-      const dy = joystick.y * joystick.maxR;
-      joyKnobEl.style.transform = `translate(${dx}px, ${dy}px)`;
-      joyKnobEl.style.opacity = '0.95';
-    }
-
-    function isInsideJoystick(px, py) {
-      const dx = px - joystick.baseX;
-      const dy = py - joystick.baseY;
-      return Math.hypot(dx, dy) <= joystick.maxR * 1.15;
-    }
-
-    function setJoystickVectorFromPointer(px, py) {
-      const dx = px - joystick.baseX;
-      const dy = py - joystick.baseY;
-      const len = Math.hypot(dx, dy);
-      const max = joystick.maxR;
-      const clamp = len > max ? max / len : 1;
-      const nx = dx * clamp / max;
-      const ny = dy * clamp / max;
-      joystick.x = nx;
-      joystick.y = ny;
-      syncJoystickKnob();
-    }
-
-    function resetJoystick() {
-      joystick.active = false;
-      joystick.pointerId = null;
-      joystick.x = 0;
-      joystick.y = 0;
-      syncJoystickKnob();
-    }
-
-    function resetLook() {
-      look.active = false;
-      look.pointerId = null;
-    }
-
-    function refreshLayout() {
-      updateJoystickBasePosition();
-      syncJoystickKnob();
-    }
-
-    refreshLayout();
-    window.addEventListener('resize', refreshLayout);
-
-    function onPointerDown(e) {
-      e.preventDefault();
-
-      const x = e.clientX;
-      const y = e.clientY;
-
-      if (!joystick.active && x < window.innerWidth * 0.58 && isInsideJoystick(x, y)) {
-        joystick.active = true;
-        joystick.pointerId = e.pointerId;
-        setJoystickVectorFromPointer(x, y);
-        try { renderer.domElement.setPointerCapture(e.pointerId); } catch {}
-        return;
-      }
-
-      if (!look.active && x >= window.innerWidth * 0.38) {
-        look.active = true;
-        look.pointerId = e.pointerId;
-        look.lastX = x;
-        look.lastY = y;
-        try { renderer.domElement.setPointerCapture(e.pointerId); } catch {}
-      }
-    }
-
-    function onPointerMove(e) {
-      e.preventDefault();
-
-      if (joystick.active && e.pointerId === joystick.pointerId) {
-        setJoystickVectorFromPointer(e.clientX, e.clientY);
-        return;
-      }
-
-      if (look.active && e.pointerId === look.pointerId) {
-        const dx = e.clientX - look.lastX;
-        const dy = e.clientY - look.lastY;
-        look.lastX = e.clientX;
-        look.lastY = e.clientY;
-
-        const sensitivity = 0.0055;
-        yaw -= dx * sensitivity;
-        pitch -= dy * sensitivity;
-        pitch = Math.max(-pitchLimit, Math.min(pitchLimit, pitch));
-      }
-    }
-
-    function onPointerUp(e) {
-      e.preventDefault();
-      if (e.pointerId === joystick.pointerId) resetJoystick();
-      if (e.pointerId === look.pointerId) resetLook();
-    }
-
-    function onPointerCancel(e) {
-      e.preventDefault();
-      if (e.pointerId === joystick.pointerId) resetJoystick();
-      if (e.pointerId === look.pointerId) resetLook();
-    }
-
-    renderer.domElement.addEventListener('pointerdown', onPointerDown, { passive: false });
-    renderer.domElement.addEventListener('pointermove', onPointerMove, { passive: false });
-    renderer.domElement.addEventListener('pointerup', onPointerUp, { passive: false });
-    renderer.domElement.addEventListener('pointercancel', onPointerCancel, { passive: false });
-
-    document.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
-    document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
-    document.addEventListener('gesturestart', (e) => e.preventDefault(), { passive: false });
-    document.addEventListener('contextmenu', (e) => e.preventDefault());
-
-    // =========================================================
-    // 家（ie.glb）の大量配置
-    // =========================================================
-    const loader = new GLTFLoader();
-
-    const houseData = [];
-    const houseRoot = new THREE.Group();
-    scene.add(houseRoot);
-
-    let houseTemplate = null;
-    let houseBaseRadius = 2.2;
-    let houseBaseHeight = 4.0;
-
-    function setShadows(root) {
-      root.traverse((obj) => {
-        if (obj.isMesh) {
-          obj.castShadow = true;
-          obj.receiveShadow = true;
-          if (obj.material) {
-            if (Array.isArray(obj.material)) {
-              obj.material.forEach((m) => {
-                if (m) {
-                  m.roughness = m.roughness ?? 1.0;
-                  m.metalness = m.metalness ?? 0.0;
-                }
-              });
-            } else {
-              obj.material.roughness = obj.material.roughness ?? 1.0;
-              obj.material.metalness = obj.material.metalness ?? 0.0;
-            }
-          }
-        }
-      });
-    }
-
-    function prepareHouseTemplate(gltfScene) {
-      const template = gltfScene.clone(true);
-      setShadows(template);
-
-      template.updateMatrixWorld(true);
-      const box = new THREE.Box3().setFromObject(template);
-      const size = box.getSize(new THREE.Vector3());
-      const center = box.getCenter(new THREE.Vector3());
-
-      // 原点を家の中心へ寄せ、床面をy=0に合わせる
-      template.position.x -= center.x;
-      template.position.z -= center.z;
-      template.position.y -= box.min.y;
-      template.updateMatrixWorld(true);
-
-      const nowBox = new THREE.Box3().setFromObject(template);
-      const nowSize = nowBox.getSize(new THREE.Vector3());
-
-      const targetHeight = 4.0;
-      const scale = targetHeight / Math.max(nowSize.y, 0.001);
-      template.scale.setScalar(scale);
-      template.updateMatrixWorld(true);
-
-      const scaledBox = new THREE.Box3().setFromObject(template);
-      const scaledSize = scaledBox.getSize(new THREE.Vector3());
-
-      houseTemplate = template;
-      houseBaseHeight = scaledSize.y;
-      houseBaseRadius = Math.max(scaledSize.x, scaledSize.z) * 0.50;
-    }
-
-    function createFallbackHouse() {
-      const g = new THREE.Group();
-
-      const body = new THREE.Mesh(
-        new THREE.BoxGeometry(2.8, 2.2, 3.2),
-        new THREE.MeshStandardMaterial({ color: 0x5a4a3a, roughness: 1.0, metalness: 0.0 })
-      );
-      body.position.y = 1.1;
-      body.castShadow = true;
-      body.receiveShadow = true;
-      g.add(body);
-
-      const roof = new THREE.Mesh(
-        new THREE.ConeGeometry(2.4, 1.6, 4),
-        new THREE.MeshStandardMaterial({ color: 0x24180f, roughness: 1.0, metalness: 0.0 })
-      );
-      roof.rotation.y = Math.PI / 4;
-      roof.position.y = 2.7;
-      roof.castShadow = true;
-      roof.receiveShadow = true;
-      g.add(roof);
-
-      g.position.y = 0;
-      return g;
-    }
-
-    function cloneHouseAt(x, z, rotY, scaleMul = 1) {
-      let house;
-      if (houseTemplate) {
-        house = houseTemplate.clone(true);
-        setShadows(house);
-      } else {
-        house = createFallbackHouse();
-      }
-
+      const house = template.clone();
       house.position.set(x, 0, z);
-      house.rotation.y = rotY;
-      house.scale.multiplyScalar(scaleMul);
-      house.updateMatrixWorld(true);
-      houseRoot.add(house);
+      house.rotation.y = Math.random() * Math.PI * 2;
 
-      const radius = (houseBaseRadius || 2.2) * scaleMul * 0.95;
-      houseData.push({
-        mesh: house,
-        x,
-        z,
-        radius
-      });
-    }
+      // スケール少しランダムに
+      const s = 0.8 + Math.random() * 0.5;
+      house.scale.set(s, s, s);
 
-    function spawnVillage() {
-      houseData.length = 0;
-      houseRoot.clear();
-
-      const candidates = [];
-      const centers = [-82, -48, -16, 16, 48, 82];
-
-      for (const x of centers) {
-        for (const z of centers) {
-          // スポーン付近は空ける
-          const dSpawn = Math.hypot(x - player.position.x, z - player.position.z);
-          if (dSpawn < 22) continue;
-
-          // 道の真上すぎる場所は避ける
-          const nearRoadX = roadLines.some((r) => Math.abs(x - r) < 10);
-          const nearRoadZ = roadLines.some((r) => Math.abs(z - r) < 10);
-          if (nearRoadX || nearRoadZ) continue;
-
-          candidates.push({ x, z });
-        }
-      }
-
-      shuffle(candidates);
-
-      const targetCount = randint(34, 46);
-      let placed = 0;
-
-      for (const cell of candidates) {
-        if (placed >= targetCount) break;
-
-        const housesInCell = Math.random() < 0.55 ? 1 : 2;
-        for (let i = 0; i < housesInCell && placed < targetCount; i++) {
-          const px = cell.x + rand(-8.5, 8.5);
-          const pz = cell.z + rand(-8.5, 8.5);
-
-          const dSpawn = Math.hypot(px - player.position.x, pz - player.position.z);
-          if (dSpawn < 22) continue;
-
-          // 少しだけランダムな縮尺でバラつかせる
-          const scaleMul = rand(0.85, 1.18);
-          const rotY = rand(0, Math.PI * 2);
-
-          cloneHouseAt(px, pz, rotY, scaleMul);
-          placed++;
-        }
-      }
-    }
-
-    loader.load(
-      'ie.glb',
-      (gltf) => {
-        prepareHouseTemplate(gltf.scene);
-        spawnVillage();
-      },
-      undefined,
-      () => {
-        houseTemplate = null;
-        spawnVillage();
-      }
-    );
-
-    // =========================================================
-    // 衝突判定
-    // =========================================================
-    function resolveHouseCollisions(pos) {
-      const result = pos.clone();
-      const pr = player.radius;
-
-      for (let iter = 0; iter < 2; iter++) {
-        for (const h of houseData) {
-          const dx = result.x - h.x;
-          const dz = result.z - h.z;
-          const dist = Math.hypot(dx, dz);
-          const minDist = h.radius + pr;
-
-          if (dist > 0 && dist < minDist) {
-            const push = (minDist - dist);
-            result.x += (dx / dist) * push;
-            result.z += (dz / dist) * push;
-          } else if (dist === 0) {
-            result.x += minDist;
+      // シャドウ設定
+      house.traverse(child => {
+        if (child.isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+          // 暗めのマテリアルにする
+          if (child.material) {
+            const mat = child.material.clone();
+            mat.color && mat.color.multiplyScalar(0.6);
+            child.material = mat;
           }
         }
+      });
 
-        // 世界の外へ出ないように制限
-        result.x = THREE.MathUtils.clamp(result.x, -96, 96);
-        result.z = THREE.MathUtils.clamp(result.z, -96, 96);
+      scene.add(house);
+    }
+    // 家が読み込めた場合は赤い立方体を非表示
+    redCube.visible = false;
+    cubeGlow.visible = false;
+  }
+
+  loadGLTFLoader(function(ok) {
+    if (ok === false) return;
+    if (typeof THREE.GLTFLoader === 'undefined') {
+      showError('GLTFLoaderが利用できません');
+      return;
+    }
+    const loader = new THREE.GLTFLoader();
+    loader.load(
+      './ie.glb',
+      function(gltf) {
+        houseTemplate = gltf.scene;
+        placeHouses(houseTemplate);
+      },
+      function(progress) {
+        // ロード進行
+      },
+      function(error) {
+        showError('ie.glbの読み込みに失敗しました');
+        console.warn('ie.glb load error:', error);
+      }
+    );
+  });
+
+  // ----- 追加オブジェクト（雰囲気）-----
+  // 鳥居
+  function addTorii(x, z) {
+    const mat = new THREE.MeshLambertMaterial({ color: 0x8B1A1A });
+    // 左柱
+    const pillarGeo = new THREE.CylinderGeometry(0.15, 0.15, 5, 8);
+    const p1 = new THREE.Mesh(pillarGeo, mat);
+    p1.position.set(x - 1.5, 2.5, z);
+    p1.castShadow = true;
+    scene.add(p1);
+    // 右柱
+    const p2 = p1.clone();
+    p2.position.set(x + 1.5, 2.5, z);
+    scene.add(p2);
+    // 上の横木
+    const beamGeo = new THREE.BoxGeometry(4, 0.3, 0.3);
+    const b1 = new THREE.Mesh(beamGeo, mat);
+    b1.position.set(x, 5, z);
+    scene.add(b1);
+    // 二段目
+    const b2 = b1.clone();
+    b2.position.set(x, 4.3, z);
+    b2.scale.x = 0.85;
+    scene.add(b2);
+  }
+  addTorii(0, -15);
+  addTorii(20, 30);
+  addTorii(-25, 15);
+
+  // 提灯（ちょうちん）
+  function addLantern(x, z) {
+    const lanternGeo = new THREE.SphereGeometry(0.25, 8, 8);
+    const lanternMat = new THREE.MeshBasicMaterial({ color: 0xffaa22 });
+    const lantern = new THREE.Mesh(lanternGeo, lanternMat);
+    lantern.position.set(x, 2.2, z);
+    scene.add(lantern);
+    const lanternLight = new THREE.PointLight(0xff8811, 0.8, 5);
+    lanternLight.position.copy(lantern.position);
+    scene.add(lanternLight);
+    // 支柱
+    const poleGeo = new THREE.CylinderGeometry(0.04, 0.04, 2.5, 6);
+    const poleMat = new THREE.MeshLambertMaterial({ color: 0x3a2000 });
+    const pole = new THREE.Mesh(poleGeo, poleMat);
+    pole.position.set(x, 1, z);
+    scene.add(pole);
+  }
+  const lanternPositions = [
+    [5,-12],[-5,-12],[12,-12],[-12,-12],[0,10],[15,5],[-15,5],[8,20],[-8,20]
+  ];
+  lanternPositions.forEach(p => addLantern(p[0], p[1]));
+
+  // 墓石
+  function addGravestone(x, z) {
+    const stoneGeo = new THREE.BoxGeometry(0.5, 1.2, 0.15);
+    const stoneMat = new THREE.MeshLambertMaterial({ color: 0x2a2a2a });
+    const stone = new THREE.Mesh(stoneGeo, stoneMat);
+    stone.position.set(x, 0.6, z);
+    stone.rotation.y = Math.random() * 0.4 - 0.2;
+    stone.castShadow = true;
+    scene.add(stone);
+  }
+  for (let i = 0; i < 20; i++) {
+    let gx, gz;
+    do {
+      gx = (Math.random() - 0.5) * 80;
+      gz = (Math.random() - 0.5) * 80;
+    } while (Math.sqrt(gx*gx + gz*gz) < 5);
+    addGravestone(gx, gz);
+  }
+
+  // ===================================================
+  // タッチ操作システム
+  // ===================================================
+  const joystickContainer = document.getElementById('joystickContainer');
+  const joystickStick = document.getElementById('joystickStick');
+  const JOY_RADIUS = 60;
+  const JOY_BASE_X = 60 + 60; // left + half width
+  const JOY_BASE_Y = () => window.innerHeight - 60 - 60;
+
+  let joystickActive = false;
+  let joystickTouchId = null;
+  let joystickDelta = { x: 0, y: 0 };
+  let joystickStartX = 0, joystickStartY = 0;
+
+  let lookTouchId = null;
+  let lookLastX = 0, lookLastY = 0;
+
+  // カメラ回転状態
+  let yaw = 0;   // 水平回転
+  let pitch = 0; // 垂直回転
+
+  canvas.addEventListener('touchstart', onTouchStart, { passive: false });
+  canvas.addEventListener('touchmove', onTouchMove, { passive: false });
+  canvas.addEventListener('touchend', onTouchEnd, { passive: false });
+  canvas.addEventListener('touchcancel', onTouchEnd, { passive: false });
+
+  function isLeftSide(x) {
+    return x < window.innerWidth / 2;
+  }
+
+  function onTouchStart(e) {
+    e.preventDefault();
+    for (const touch of e.changedTouches) {
+      if (isLeftSide(touch.clientX) && joystickTouchId === null) {
+        joystickTouchId = touch.identifier;
+        joystickStartX = touch.clientX;
+        joystickStartY = touch.clientY;
+        joystickActive = true;
+      } else if (!isLeftSide(touch.clientX) && lookTouchId === null) {
+        lookTouchId = touch.identifier;
+        lookLastX = touch.clientX;
+        lookLastY = touch.clientY;
+      }
+    }
+  }
+
+  function onTouchMove(e) {
+    e.preventDefault();
+    for (const touch of e.changedTouches) {
+      if (touch.identifier === joystickTouchId) {
+        const dx = touch.clientX - joystickStartX;
+        const dy = touch.clientY - joystickStartY;
+        const dist = Math.min(Math.sqrt(dx*dx + dy*dy), JOY_RADIUS);
+        const angle = Math.atan2(dy, dx);
+        joystickDelta.x = Math.cos(angle) * dist / JOY_RADIUS;
+        joystickDelta.y = Math.sin(angle) * dist / JOY_RADIUS;
+
+        // スティックUI更新
+        const stickX = Math.cos(angle) * Math.min(dist, JOY_RADIUS);
+        const stickY = Math.sin(angle) * Math.min(dist, JOY_RADIUS);
+        joystickStick.style.transform = `translate(${stickX}px, ${stickY}px)`;
       }
 
-      return result;
-    }
-
-    // =========================================================
-    // ゲームループ
-    // =========================================================
-    const clock = new THREE.Clock();
-    const forward = new THREE.Vector3();
-    const right = new THREE.Vector3();
-    const moveDir = new THREE.Vector3();
-    const targetDir = new THREE.Vector3();
-    const candleTargetPos = new THREE.Vector3();
-
-    let elapsed = 0;
-    let candleRemaining = 100;
-    const candleLifetimeSec = 240;
-
-    function animate() {
-      const dt = Math.min(clock.getDelta(), 0.033);
-      elapsed += dt;
-
-      // カメラ向き
-      camera.rotation.order = 'YXZ';
-      camera.rotation.y = yaw;
-      camera.rotation.x = pitch;
-
-      // 移動入力
-      const inputX = joystick.x;
-      const inputY = -joystick.y;
-      const deadZone = 0.02;
-
-      let desiredPos = player.position.clone();
-
-      if (Math.abs(inputX) > deadZone || Math.abs(inputY) > deadZone) {
-        forward.set(Math.sin(yaw), 0, Math.cos(yaw));
-        right.set(Math.cos(yaw), 0, -Math.sin(yaw));
-
-        moveDir.set(0, 0, 0);
-        moveDir.addScaledVector(forward, inputY);
-        moveDir.addScaledVector(right, inputX);
-
-        const len = moveDir.length();
-        if (len > 1) moveDir.multiplyScalar(1 / len);
-
-        desiredPos.addScaledVector(moveDir, player.speed * dt);
+      if (touch.identifier === lookTouchId) {
+        const dx = touch.clientX - lookLastX;
+        const dy = touch.clientY - lookLastY;
+        yaw -= dx * 0.003;
+        pitch -= dy * 0.003;
+        pitch = Math.max(-Math.PI / 2.5, Math.min(Math.PI / 2.5, pitch));
+        lookLastX = touch.clientX;
+        lookLastY = touch.clientY;
       }
+    }
+  }
 
-      // 衝突判定
-      desiredPos = resolveHouseCollisions(desiredPos);
+  function onTouchEnd(e) {
+    e.preventDefault();
+    for (const touch of e.changedTouches) {
+      if (touch.identifier === joystickTouchId) {
+        joystickTouchId = null;
+        joystickActive = false;
+        joystickDelta.x = 0;
+        joystickDelta.y = 0;
+        joystickStick.style.transform = 'translate(0px, 0px)';
+      }
+      if (touch.identifier === lookTouchId) {
+        lookTouchId = null;
+      }
+    }
+  }
 
-      // 高さ固定
-      desiredPos.y = 1.7;
-      player.position.copy(desiredPos);
-      camera.position.copy(player.position);
+  // ===================================================
+  // プレイヤー移動
+  // ===================================================
+  const MOVE_SPEED = 0.05;
+  const playerPos = new THREE.Vector3(0, 1.6, 0);
 
-      // 視線方向
-      camera.getWorldDirection(targetDir);
+  function updateMovement() {
+    if (!joystickActive) return;
+    const forward = new THREE.Vector3(
+      -Math.sin(yaw),
+      0,
+      -Math.cos(yaw)
+    );
+    const right = new THREE.Vector3(
+      Math.cos(yaw),
+      0,
+      -Math.sin(yaw)
+    );
+    playerPos.addScaledVector(forward, -joystickDelta.y * MOVE_SPEED);
+    playerPos.addScaledVector(right, joystickDelta.x * MOVE_SPEED);
 
-      // スポットライト追従
-      candleLight.position.copy(camera.position);
-      warmFill.position.copy(camera.position);
-      candleTargetPos.copy(camera.position).addScaledVector(targetDir, 8);
-      candleTarget.position.copy(candleTargetPos);
+    // マップ境界
+    playerPos.x = Math.max(-80, Math.min(80, playerPos.x));
+    playerPos.z = Math.max(-80, Math.min(80, playerPos.z));
+  }
 
-      // 蝋燭の残り火
-      const progress = Math.max(0, 1 - elapsed / candleLifetimeSec);
-      candleRemaining = Math.round(progress * 100);
-      uiCandle.textContent = `蝋燭の残り火：${candleRemaining}%`;
+  // ===================================================
+  // メインループ
+  // ===================================================
+  let frameCount = 0;
 
-      // ゆらぎ
-      const baseIntensity = 0.55 + progress * 1.8;
-      const flicker = (Math.random() - 0.5) * (0.16 + (1 - progress) * 0.18);
-      candleLight.intensity = Math.max(0.08, baseIntensity + flicker);
-      warmFill.intensity = Math.max(0.03, 0.30 * progress + (Math.random() - 0.5) * 0.03);
+  function animate() {
+    requestAnimationFrame(animate);
+    frameCount++;
 
-      // テスト用の赤い立方体
-      cube.rotation.y += dt * 0.25;
-      cube.rotation.x += dt * 0.12;
+    // 移動
+    updateMovement();
 
-      renderer.render(scene, camera);
-      requestAnimationFrame(animate);
+    // カメラ更新
+    camera.position.copy(playerPos);
+    camera.rotation.order = 'YXZ';
+    camera.rotation.y = yaw;
+    camera.rotation.x = pitch;
+
+    // 蝋燭ライト更新
+    const lookDir = new THREE.Vector3(0, 0, -1);
+    lookDir.applyEuler(camera.rotation);
+
+    candleLight.position.copy(camera.position);
+    const targetPos = camera.position.clone().add(lookDir.multiplyScalar(5));
+    candleLight.target.position.copy(targetPos);
+    candleLight.target.updateMatrixWorld();
+    pointLight.position.copy(camera.position);
+
+    // 蝋燭のゆらぎ
+    const flicker = 0.9 + Math.sin(frameCount * 0.3) * 0.05 + (Math.random() - 0.5) * 0.1;
+    if (candlePercent > 0) {
+      const baseIntensity = 6 * (candlePercent / 100);
+      candleLight.intensity = baseIntensity * flicker;
+      candleLight.distance = 10 + 8 * (candlePercent / 100) + Math.random() * 0.5;
+      pointLight.intensity = 1.5 * (candlePercent / 100) * flicker;
+    } else {
+      candleLight.intensity = 0;
+      pointLight.intensity = 0;
     }
 
-    animate();
+    // 蝋燭時間管理
+    const now = Date.now();
+    if (now - lastCandleTick > CANDLE_TICK_MS && candlePercent > 0) {
+      candlePercent -= 1;
+      lastCandleTick = now;
+      updateCandleUI();
+      if (candlePercent <= 0) {
+        candlePercent = 0;
+        darknessOverlay.style.background = 'rgba(0,0,0,0.92)';
+      } else if (candlePercent <= 20) {
+        darknessOverlay.style.background = `rgba(0,0,0,${0.3 * (1 - candlePercent / 20)})`;
+      }
+    }
 
-    // =========================================================
-    // リサイズ対応
-    // =========================================================
-    window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      refreshLayout();
-    });
-  </script>
+    // 赤い立方体の回転（雰囲気）
+    if (redCube.visible) {
+      redCube.rotation.y += 0.01;
+    }
+
+    renderer.render(scene, camera);
+  }
+
+  animate();
+  updateCandleUI();
+
+})();
+</script>
 </body>
 </html>
