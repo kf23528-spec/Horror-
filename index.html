@@ -1,15 +1,14 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-  <title>Three.js FPS Horror Village</title>
+  <title>FPS Horror Village Base</title>
   <style>
     html, body {
       width: 100%;
       height: 100%;
       margin: 0;
-      padding: 0;
       overflow: hidden;
       background: #000;
       touch-action: none;
@@ -17,17 +16,11 @@
       -webkit-user-select: none;
       user-select: none;
       -webkit-touch-callout: none;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Noto Sans JP", sans-serif;
     }
 
-    #game {
+    body {
       position: fixed;
       inset: 0;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      background: #000;
-      touch-action: none;
     }
 
     canvas {
@@ -35,535 +28,278 @@
       width: 100%;
       height: 100%;
       touch-action: none;
+      outline: none;
     }
 
     #ui {
       position: fixed;
       inset: 0;
       pointer-events: none;
-      touch-action: none;
-    }
-
-    #loading {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      color: rgba(255,255,255,0.95);
-      font-size: clamp(18px, 2.2vw, 28px);
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      text-align: center;
-      text-shadow: 0 0 12px rgba(255,255,255,0.18);
-      pointer-events: none;
-      opacity: 1;
-      transition: opacity 0.45s ease;
       z-index: 10;
-    }
-
-    #loading.hide {
-      opacity: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
+      color: #f3e7c8;
+      text-shadow: 0 0 10px rgba(255, 180, 60, 0.35), 0 0 2px rgba(0,0,0,0.95);
     }
 
     #candleText {
       position: absolute;
-      top: max(12px, env(safe-area-inset-top));
+      top: calc(env(safe-area-inset-top) + 14px);
       left: 50%;
       transform: translateX(-50%);
-      color: rgba(255, 245, 220, 0.96);
-      font-size: clamp(18px, 2.2vw, 28px);
+      font-size: clamp(18px, 2.8vw, 30px);
       font-weight: 700;
       letter-spacing: 0.04em;
-      text-shadow: 0 0 10px rgba(255, 214, 120, 0.55), 0 0 24px rgba(255, 214, 120, 0.2);
       white-space: nowrap;
     }
 
-    #joystickBase {
-      position: absolute;
-      left: 18px;
+    #leftJoyBase {
+      position: fixed;
+      left: max(18px, env(safe-area-inset-left));
       bottom: max(18px, env(safe-area-inset-bottom));
-      width: min(24vw, 170px);
-      height: min(24vw, 170px);
+      width: 160px;
+      height: 160px;
       border-radius: 50%;
-      background: rgba(180, 180, 180, 0.10);
-      border: 2px solid rgba(255, 255, 255, 0.12);
-      box-shadow: inset 0 0 18px rgba(255, 255, 255, 0.06);
+      border: 2px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.05);
+      box-shadow: inset 0 0 22px rgba(255,255,255,0.04), 0 0 20px rgba(0,0,0,0.25);
       backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
+      z-index: 11;
+      pointer-events: none;
     }
 
-    #joystickThumb {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      width: 42%;
-      height: 42%;
-      transform: translate(-50%, -50%);
+    #leftJoyKnob {
+      position: fixed;
+      left: 98px;
+      bottom: 98px;
+      width: 72px;
+      height: 72px;
+      margin-left: -36px;
+      margin-bottom: -36px;
       border-radius: 50%;
-      background: rgba(220, 220, 220, 0.16);
-      border: 2px solid rgba(255, 255, 255, 0.22);
-      box-shadow: 0 0 16px rgba(255, 255, 255, 0.08);
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.18);
+      box-shadow: 0 0 16px rgba(255,255,255,0.08);
+      z-index: 12;
+      pointer-events: none;
+      opacity: 0.95;
+      transform: translate(0px, 0px);
     }
 
     #help {
-      position: absolute;
-      right: 12px;
-      bottom: max(12px, env(safe-area-inset-bottom));
-      color: rgba(255,255,255,0.25);
-      font-size: 12px;
-      text-align: right;
-      line-height: 1.4;
+      position: fixed;
+      left: 50%;
+      bottom: calc(env(safe-area-inset-bottom) + 10px);
+      transform: translateX(-50%);
+      font-size: clamp(12px, 1.8vw, 16px);
+      color: rgba(255,255,255,0.45);
+      text-shadow: 0 0 6px rgba(0,0,0,0.9);
+      pointer-events: none;
+      z-index: 10;
+      white-space: nowrap;
     }
   </style>
 </head>
 <body>
-  <div id="game"></div>
-
   <div id="ui">
-    <div id="loading">ロード中...</div>
     <div id="candleText">蝋燭の残り火：100%</div>
-    <div id="joystickBase">
-      <div id="joystickThumb"></div>
-    </div>
-    <div id="help">左：移動<br>右：視点回転</div>
   </div>
+  <div id="leftJoyBase"></div>
+  <div id="leftJoyKnob"></div>
+  <div id="help">左下で移動 / 右半分をスワイプで視点変更</div>
 
   <script type="module">
-    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.159.0/build/three.module.js';
-    import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.159.0/examples/jsm/loaders/GLTFLoader.js';
-
-    const MODEL_PATH = './ie.glb';
-
-    const container = document.getElementById('game');
-    const candleText = document.getElementById('candleText');
-    const joystickBase = document.getElementById('joystickBase');
-    const joystickThumb = document.getElementById('joystickThumb');
-    const loading = document.getElementById('loading');
-
-    window.addEventListener('error', (event) => {
-      console.error('Window error:', event.message, event.filename, event.lineno, event.colno, event.error);
-    });
-
-    window.addEventListener('unhandledrejection', (event) => {
-      console.error('Unhandled promise rejection:', event.reason);
-    });
+    import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
+    import { GLTFLoader } from 'https://unpkg.com/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x000000);
-    scene.fog = new THREE.Fog(0x000000, 4, 30);
+    scene.fog = new THREE.Fog(0x000000, 10, 32);
 
-    const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 220);
-    camera.position.set(0, 1.65, 12);
+    const camera = new THREE.PerspectiveCamera(
+      70,
+      window.innerWidth / window.innerHeight,
+      0.1,
+      120
+    );
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    const renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      alpha: false,
+      powerPreference: 'high-performance'
+    });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.domElement.style.touchAction = 'none';
-    container.appendChild(renderer.domElement);
+    document.body.appendChild(renderer.domElement);
 
-    const clamp = THREE.MathUtils.clamp;
-    const rand = (min, max) => min + Math.random() * (max - min);
-    const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+    const uiCandle = document.getElementById('candleText');
+    const joyBaseEl = document.getElementById('leftJoyBase');
+    const joyKnobEl = document.getElementById('leftJoyKnob');
 
-    function makeNoiseTexture(size = 128) {
+    // =========================================================
+    // 便利関数
+    // =========================================================
+    function rand(min, max) {
+      return min + Math.random() * (max - min);
+    }
+
+    function randint(min, max) {
+      return Math.floor(rand(min, max + 1));
+    }
+
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = (Math.random() * (i + 1)) | 0;
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    function makeNoiseTexture(baseHex, speckHex) {
+      const size = 128;
       const canvas = document.createElement('canvas');
       canvas.width = size;
       canvas.height = size;
       const ctx = canvas.getContext('2d');
-      const image = ctx.createImageData(size, size);
-      for (let i = 0; i < image.data.length; i += 4) {
-        const base = 78 + Math.floor(Math.random() * 26);
-        image.data[i + 0] = base;
-        image.data[i + 1] = base;
-        image.data[i + 2] = base;
-        image.data[i + 3] = 255;
-      }
-      ctx.putImageData(image, 0, 0);
-      ctx.globalAlpha = 0.14;
-      ctx.fillStyle = '#ffffff';
-      for (let i = 0; i < 18; i++) {
+
+      const base = new THREE.Color(baseHex);
+      const speck = new THREE.Color(speckHex);
+
+      ctx.fillStyle = `#${base.getHexString()}`;
+      ctx.fillRect(0, 0, size, size);
+
+      for (let i = 0; i < 2500; i++) {
+        const x = Math.random() * size;
         const y = Math.random() * size;
-        ctx.fillRect(0, y, size, Math.random() * 2 + 0.5);
+        const s = 1 + Math.random() * 2.5;
+        const t = Math.random() * 0.55;
+        const r = Math.floor(THREE.MathUtils.lerp(base.r * 255, speck.r * 255, t));
+        const g = Math.floor(THREE.MathUtils.lerp(base.g * 255, speck.g * 255, t));
+        const b = Math.floor(THREE.MathUtils.lerp(base.b * 255, speck.b * 255, t));
+        ctx.fillStyle = `rgba(${r},${g},${b},0.35)`;
+        ctx.fillRect(x, y, s, s);
       }
-      ctx.globalAlpha = 1;
 
       const tex = new THREE.CanvasTexture(canvas);
       tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-      tex.colorSpace = THREE.SRGBColorSpace;
-      tex.needsUpdate = true;
+      tex.anisotropy = 4;
       return tex;
     }
 
-    const groundTex = makeNoiseTexture(128);
-    groundTex.repeat.set(28, 28);
+    function makePlane(width, depth, material, y = 0, rotX = -Math.PI / 2) {
+      const mesh = new THREE.Mesh(new THREE.PlaneGeometry(width, depth), material);
+      mesh.rotation.x = rotX;
+      mesh.position.y = y;
+      mesh.receiveShadow = true;
+      return mesh;
+    }
 
-    const roadTex = makeNoiseTexture(128);
-    roadTex.repeat.set(16, 16);
+    // =========================================================
+    // 村の地面・道路
+    // =========================================================
+    const floorTex = makeNoiseTexture(0x151515, 0x242424);
+    floorTex.repeat.set(18, 18);
 
-    const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(220, 220),
-      new THREE.MeshStandardMaterial({
-        color: 0x141414,
-        map: groundTex,
-        roughness: 1,
-        metalness: 0
-      })
-    );
-    ground.rotation.x = -Math.PI / 2;
-    ground.receiveShadow = true;
+    const roadTex = makeNoiseTexture(0x363636, 0x515151);
+    roadTex.repeat.set(10, 10);
+
+    const floorMat = new THREE.MeshStandardMaterial({
+      color: 0x171717,
+      map: floorTex,
+      roughness: 1.0,
+      metalness: 0.0
+    });
+
+    const roadMat = new THREE.MeshStandardMaterial({
+      color: 0x3c3c3c,
+      map: roadTex,
+      roughness: 1.0,
+      metalness: 0.0
+    });
+
+    const villageLimit = 100;
+    const ground = makePlane(220, 220, floorMat, 0);
     scene.add(ground);
 
-    const ambient = new THREE.AmbientLight(0x1a1a1a, 0.22);
-    scene.add(ambient);
+    // 十字・格子状の道路
+    const roadWidth = 7;
+    const roadLines = [-64, -32, 0, 32, 64];
 
-    const hemi = new THREE.HemisphereLight(0x222233, 0x050505, 0.18);
-    scene.add(hemi);
+    for (const x of roadLines) {
+      const road = makePlane(roadWidth, 220, roadMat, 0.02);
+      road.position.x = x;
+      scene.add(road);
+    }
 
-    const candleLight = new THREE.SpotLight(0xfff0cc, 18, 40, Math.PI / 6, 0.42, 1.15);
-    candleLight.castShadow = true;
-    candleLight.shadow.mapSize.set(1024, 1024);
-    candleLight.shadow.camera.near = 0.5;
-    candleLight.shadow.camera.far = 60;
-    camera.add(candleLight);
-    camera.add(candleLight.target);
-    scene.add(camera);
+    for (const z of roadLines) {
+      const road = makePlane(220, roadWidth, roadMat, 0.02);
+      road.position.z = z;
+      scene.add(road);
+    }
 
+    // =========================================================
+    // ホラー演出用テストオブジェクト
+    // =========================================================
     const cube = new THREE.Mesh(
       new THREE.BoxGeometry(1, 1, 1),
       new THREE.MeshStandardMaterial({
         color: 0xaa0000,
-        roughness: 0.82,
-        metalness: 0.04,
-        emissive: 0x330000,
-        emissiveIntensity: 0.42
+        roughness: 0.55,
+        metalness: 0.05,
+        emissive: 0x220000,
+        emissiveIntensity: 0.6
       })
     );
-    cube.position.set(0, 0.5, -6);
+    cube.position.set(0, 0.5, 72);
     cube.castShadow = true;
     cube.receiveShadow = true;
     scene.add(cube);
 
-    const MAP_HALF = 95;
-    const ROAD_WIDTH = 4.2;
-    const GRID_LINES = [-MAP_HALF, -57, -19, 19, 57, MAP_HALF];
+    // =========================================================
+    // 光
+    // =========================================================
+    const ambient = new THREE.AmbientLight(0x7a5b3b, 0.08);
+    scene.add(ambient);
 
-    const roadMaterial = new THREE.MeshStandardMaterial({
-      color: 0x4a4a4a,
-      map: roadTex,
-      roughness: 1,
-      metalness: 0
-    });
+    const candleLight = new THREE.SpotLight(0xffcc88, 2.2, 22, 0.42, 0.72, 1.8);
+    candleLight.castShadow = true;
+    candleLight.shadow.mapSize.set(1024, 1024);
+    candleLight.shadow.bias = -0.00025;
+    scene.add(candleLight);
 
-    const roads = new THREE.Group();
-    scene.add(roads);
+    const candleTarget = new THREE.Object3D();
+    scene.add(candleTarget);
+    candleLight.target = candleTarget;
 
-    function addRoadStrip(length, width, x, z, rotY) {
-      const mesh = new THREE.Mesh(new THREE.PlaneGeometry(length, width), roadMaterial);
-      mesh.rotation.x = -Math.PI / 2;
-      mesh.rotation.z = rotY || 0;
-      mesh.position.set(x, 0.018, z);
-      mesh.receiveShadow = true;
-      roads.add(mesh);
-      return mesh;
-    }
+    const warmFill = new THREE.PointLight(0xff9c57, 0.28, 8, 2);
+    scene.add(warmFill);
 
-    for (const x of GRID_LINES) {
-      addRoadStrip(220, ROAD_WIDTH, x, 0, Math.PI / 2);
-    }
-    for (const z of GRID_LINES) {
-      addRoadStrip(220, ROAD_WIDTH, 0, z, 0);
-    }
+    // =========================================================
+    // プレイヤー・操作
+    // =========================================================
+    const player = {
+      position: new THREE.Vector3(0, 1.7, 88),
+      speed: 3.0,
+      radius: 0.55
+    };
 
-    const centerJunction = new THREE.Mesh(
-      new THREE.PlaneGeometry(ROAD_WIDTH * 2.2, ROAD_WIDTH * 2.2),
-      new THREE.MeshStandardMaterial({
-        color: 0x5b5b5b,
-        map: roadTex,
-        roughness: 1,
-        metalness: 0
-      })
-    );
-    centerJunction.rotation.x = -Math.PI / 2;
-    centerJunction.position.y = 0.019;
-    roads.add(centerJunction);
-
-    const loader = new GLTFLoader();
-    const houseInstances = [];
-    let houseTemplate = null;
-
-    function buildFallbackHouseTemplate() {
-      const g = new THREE.Group();
-
-      const body = new THREE.Mesh(
-        new THREE.BoxGeometry(2.5, 1.8, 2.6),
-        new THREE.MeshStandardMaterial({ color: 0x6f5a46, roughness: 1, metalness: 0 })
-      );
-      body.position.y = 0.9;
-      body.castShadow = true;
-      body.receiveShadow = true;
-      g.add(body);
-
-      const roof = new THREE.Mesh(
-        new THREE.ConeGeometry(2.0, 1.2, 4),
-        new THREE.MeshStandardMaterial({ color: 0x2a221c, roughness: 1, metalness: 0 })
-      );
-      roof.rotation.y = Math.PI / 4;
-      roof.position.y = 2.05;
-      roof.castShadow = true;
-      roof.receiveShadow = true;
-      g.add(roof);
-
-      const porch = new THREE.Mesh(
-        new THREE.BoxGeometry(1.2, 0.25, 0.8),
-        new THREE.MeshStandardMaterial({ color: 0x3b2f27, roughness: 1, metalness: 0 })
-      );
-      porch.position.set(0, 0.18, 1.35);
-      porch.castShadow = true;
-      porch.receiveShadow = true;
-      g.add(porch);
-
-      return g;
-    }
-
-    function normalizeHouseTemplate(source) {
-      const model = source.clone(true);
-
-      model.traverse((obj) => {
-        if (obj.isMesh) {
-          obj.castShadow = true;
-          obj.receiveShadow = true;
-          if (obj.material && obj.material.map) {
-            obj.material.map.colorSpace = THREE.SRGBColorSpace;
-          }
-        }
-      });
-
-      const box = new THREE.Box3().setFromObject(model);
-      const size = box.getSize(new THREE.Vector3());
-      const maxHorizontal = Math.max(size.x, size.z, 0.001);
-      const targetWidth = 6.0;
-      const scale = targetWidth / maxHorizontal;
-      model.scale.setScalar(scale);
-
-      const scaledBox = new THREE.Box3().setFromObject(model);
-      const center = scaledBox.getCenter(new THREE.Vector3());
-      const scaledSize = scaledBox.getSize(new THREE.Vector3());
-
-      model.position.x -= center.x;
-      model.position.z -= center.z;
-      model.position.y -= scaledBox.min.y;
-
-      const radius = Math.max(scaledSize.x, scaledSize.z) * 0.46;
-
-      return {
-        model,
-        radius,
-        width: scaledSize.x,
-        depth: scaledSize.z,
-        height: scaledSize.y
-      };
-    }
-
-    function addHouseAt(position, rotationY, scaleJitter = 1) {
-      const group = new THREE.Group();
-      const template = houseTemplate || normalizeHouseTemplate(buildFallbackHouseTemplate());
-      const model = template.model.clone(true);
-      model.scale.multiplyScalar(scaleJitter);
-
-      group.add(model);
-      group.position.copy(position);
-      group.rotation.y = rotationY;
-
-      scene.add(group);
-
-      const worldRadius = template.radius * scaleJitter;
-      houseInstances.push({
-        group,
-        radius: worldRadius,
-        position: group.position
-      });
-
-      return group;
-    }
-
-    function isNearSpawn(x, z, safeRadius = 18) {
-      return Math.hypot(x - 0, z - 12) < safeRadius;
-    }
-
-    function populateVillage() {
-      const cellMin = -MAP_HALF + ROAD_WIDTH * 0.65;
-      const cellMax = MAP_HALF - ROAD_WIDTH * 0.65;
-      const cellStep = 38;
-      const innerPad = 4.5;
-
-      const cells = [];
-      for (let x0 = cellMin; x0 < cellMax; x0 += cellStep) {
-        for (let z0 = cellMin; z0 < cellMax; z0 += cellStep) {
-          const x1 = Math.min(x0 + cellStep - ROAD_WIDTH * 0.4, cellMax);
-          const z1 = Math.min(z0 + cellStep - ROAD_WIDTH * 0.4, cellMax);
-          cells.push({ x0, x1, z0, z1 });
-        }
-      }
-
-      const desiredCount = 42;
-      let placed = 0;
-      let attempts = 0;
-
-      while (placed < desiredCount && attempts < 300) {
-        attempts++;
-        const cell = pick(cells);
-        const cx = (cell.x0 + cell.x1) * 0.5;
-        const cz = (cell.z0 + cell.z1) * 0.5;
-
-        if (Math.hypot(cx, cz - 12) < 18 && Math.abs(cx) < 20 && Math.abs(cz) < 20) {
-          continue;
-        }
-
-        const side = pick(['n', 's', 'e', 'w']);
-        const jitterX = rand(-3.2, 3.2);
-        const jitterZ = rand(-3.2, 3.2);
-
-        let x = cx;
-        let z = cz;
-
-        if (side === 'n') {
-          x = clamp(rand(cell.x0 + innerPad, cell.x1 - innerPad), cell.x0 + innerPad, cell.x1 - innerPad);
-          z = cell.z1 - 6.0 + jitterZ * 0.18;
-        } else if (side === 's') {
-          x = clamp(rand(cell.x0 + innerPad, cell.x1 - innerPad), cell.x0 + innerPad, cell.x1 - innerPad);
-          z = cell.z0 + 6.0 + jitterZ * 0.18;
-        } else if (side === 'e') {
-          x = cell.x1 - 6.0 + jitterX * 0.18;
-          z = clamp(rand(cell.z0 + innerPad, cell.z1 - innerPad), cell.z0 + innerPad, cell.z1 - innerPad);
-        } else {
-          x = cell.x0 + 6.0 + jitterX * 0.18;
-          z = clamp(rand(cell.z0 + innerPad, cell.z1 - innerPad), cell.z0 + innerPad, cell.z1 - innerPad);
-        }
-
-        if (isNearSpawn(x, z, 15)) continue;
-
-        const sideFacingRotation = {
-          n: Math.PI,
-          s: 0,
-          e: -Math.PI / 2,
-          w: Math.PI / 2
-        };
-
-        const rot = sideFacingRotation[side] + rand(-0.28, 0.28) + (Math.random() > 0.7 ? rand(-0.5, 0.5) : 0);
-        const scaleJitter = rand(0.82, 1.22);
-
-        addHouseAt(new THREE.Vector3(x, 0, z), rot, scaleJitter);
-        placed++;
-
-        if (placed < desiredCount && Math.random() > 0.62 && Math.abs(cx) > 18 && Math.abs(cz) > 18) {
-          const side2 = pick(['n', 's', 'e', 'w']);
-          let x2 = x, z2 = z;
-
-          if (side2 === 'n') {
-            x2 = clamp(rand(cell.x0 + innerPad, cell.x1 - innerPad), cell.x0 + innerPad, cell.x1 - innerPad);
-            z2 = cell.z1 - 10.5;
-          } else if (side2 === 's') {
-            x2 = clamp(rand(cell.x0 + innerPad, cell.x1 - innerPad), cell.x0 + innerPad, cell.x1 - innerPad);
-            z2 = cell.z0 + 10.5;
-          } else if (side2 === 'e') {
-            x2 = cell.x1 - 10.5;
-            z2 = clamp(rand(cell.z0 + innerPad, cell.z1 - innerPad), cell.z0 + innerPad, cell.z1 - innerPad);
-          } else {
-            x2 = cell.x0 + 10.5;
-            z2 = clamp(rand(cell.z0 + innerPad, cell.z1 - innerPad), cell.z0 + innerPad, cell.z1 - innerPad);
-          }
-
-          if (!isNearSpawn(x2, z2, 15)) {
-            const rot2 = sideFacingRotation[side2] + rand(-0.28, 0.28);
-            addHouseAt(new THREE.Vector3(x2, 0, z2), rot2, rand(0.8, 1.16));
-            placed++;
-          }
-        }
-      }
-    }
-
-    function finalizeVillage(template) {
-      houseTemplate = template || normalizeHouseTemplate(buildFallbackHouseTemplate());
-      populateVillage();
-      loading.classList.add('hide');
-      setTimeout(() => {
-        if (loading && loading.parentNode) loading.remove();
-      }, 500);
-    }
-
-    async function loadModel() {
-      console.log('Trying to load model:', MODEL_PATH);
-
-      try {
-        const response = await fetch(MODEL_PATH, { cache: 'no-store' });
-        console.log('Fetch response for ie.glb:', response.status, response.statusText);
-
-        if (!response.ok) {
-          console.error('ie.glb fetch failed:', {
-            url: MODEL_PATH,
-            status: response.status,
-            statusText: response.statusText
-          });
-          loading.textContent = 'モデル読込失敗';
-          finalizeVillage(normalizeHouseTemplate(buildFallbackHouseTemplate()));
-          return;
-        }
-
-        const blob = await response.blob();
-        console.log('ie.glb blob size:', blob.size);
-
-        const objectUrl = URL.createObjectURL(blob);
-        const loader = new GLTFLoader();
-
-        loader.load(
-          objectUrl,
-          (gltf) => {
-            console.log('GLB loaded successfully:', gltf);
-            URL.revokeObjectURL(objectUrl);
-            const template = normalizeHouseTemplate(gltf.scene);
-            finalizeVillage(template);
-          },
-          (progress) => {
-            if (progress && progress.total) {
-              const pct = Math.round((progress.loaded / progress.total) * 100);
-              loading.textContent = `ロード中... ${pct}%`;
-            } else {
-              loading.textContent = 'ロード中...';
-            }
-          },
-          (error) => {
-            console.error('GLTFLoader onError:', error);
-            console.error('Failed model URL was:', MODEL_PATH);
-            URL.revokeObjectURL(objectUrl);
-            loading.textContent = 'モデル読込失敗';
-            finalizeVillage(normalizeHouseTemplate(buildFallbackHouseTemplate()));
-          }
-        );
-      } catch (error) {
-        console.error('Model load failed before GLTFLoader:', error);
-        console.error('Failed model path:', MODEL_PATH);
-        loading.textContent = 'モデル読込失敗';
-        finalizeVillage(normalizeHouseTemplate(buildFallbackHouseTemplate()));
-      }
-    }
-
-    loadModel();
-
-    const keys = { forward: 0, right: 0 };
-    let yaw = 0;
+    // 初期スポーンでは前方を村へ向ける
+    let yaw = Math.PI;
     let pitch = 0;
-    const pitchMin = THREE.MathUtils.degToRad(-70);
-    const pitchMax = THREE.MathUtils.degToRad(70);
+    const pitchLimit = Math.PI / 2 - 0.06;
 
-    const move = {
+    const joystick = {
       active: false,
       pointerId: null,
-      startX: 0,
-      startY: 0,
-      dx: 0,
-      dy: 0
+      baseX: 0,
+      baseY: 0,
+      x: 0,
+      y: 0,
+      maxR: 58
     };
 
     const look = {
@@ -573,72 +309,94 @@
       lastY: 0
     };
 
-    const playerRadius = 0.38;
-    const playerHeight = 1.65;
-
-    function joystickRadius() {
-      return Math.min(window.innerWidth * 0.12, 85);
+    function updateJoystickBasePosition() {
+      const rect = joyBaseEl.getBoundingClientRect();
+      joystick.baseX = rect.left + rect.width * 0.5;
+      joystick.baseY = rect.top + rect.height * 0.5;
+      joystick.maxR = Math.min(rect.width, rect.height) * 0.36;
     }
 
-    function setThumb(dx, dy) {
-      const maxD = joystickRadius();
+    function syncJoystickKnob() {
+      if (!joystick.active) {
+        joyKnobEl.style.transform = 'translate(0px, 0px)';
+        joyKnobEl.style.opacity = '0.55';
+        return;
+      }
+      const dx = joystick.x * joystick.maxR;
+      const dy = joystick.y * joystick.maxR;
+      joyKnobEl.style.transform = `translate(${dx}px, ${dy}px)`;
+      joyKnobEl.style.opacity = '0.95';
+    }
+
+    function isInsideJoystick(px, py) {
+      const dx = px - joystick.baseX;
+      const dy = py - joystick.baseY;
+      return Math.hypot(dx, dy) <= joystick.maxR * 1.15;
+    }
+
+    function setJoystickVectorFromPointer(px, py) {
+      const dx = px - joystick.baseX;
+      const dy = py - joystick.baseY;
       const len = Math.hypot(dx, dy);
-      const clamped = len > maxD ? maxD / len : 1;
-      const x = dx * clamped;
-      const y = dy * clamped;
-      joystickThumb.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
+      const max = joystick.maxR;
+      const clamp = len > max ? max / len : 1;
+      const nx = dx * clamp / max;
+      const ny = dy * clamp / max;
+      joystick.x = nx;
+      joystick.y = ny;
+      syncJoystickKnob();
     }
 
-    function resetThumb() {
-      joystickThumb.style.transform = 'translate(-50%, -50%)';
+    function resetJoystick() {
+      joystick.active = false;
+      joystick.pointerId = null;
+      joystick.x = 0;
+      joystick.y = 0;
+      syncJoystickKnob();
     }
 
-    function updateJoystickVector() {
-      const maxD = joystickRadius();
-      const len = Math.hypot(move.dx, move.dy);
-
-      const nx = len > 0 ? move.dx / maxD : 0;
-      const ny = len > 0 ? move.dy / maxD : 0;
-
-      keys.right = Math.abs(nx) < 0.05 ? 0 : clamp(nx, -1, 1);
-      keys.forward = Math.abs(ny) < 0.05 ? 0 : clamp(-ny, -1, 1);
-      setThumb(move.dx, move.dy);
+    function resetLook() {
+      look.active = false;
+      look.pointerId = null;
     }
 
-    function isInsideJoystick(x, y) {
-      const rect = joystickBase.getBoundingClientRect();
-      const pad = 28;
-      return x >= rect.left - pad && x <= rect.right + pad && y >= rect.top - pad && y <= rect.bottom + pad;
+    function refreshLayout() {
+      updateJoystickBasePosition();
+      syncJoystickKnob();
     }
 
-    document.addEventListener('pointerdown', (e) => {
-      if (e.clientX < window.innerWidth / 2 && isInsideJoystick(e.clientX, e.clientY) && move.pointerId === null) {
-        move.active = true;
-        move.pointerId = e.pointerId;
-        move.startX = e.clientX;
-        move.startY = e.clientY;
-        move.dx = 0;
-        move.dy = 0;
-        updateJoystickVector();
-        e.preventDefault();
+    refreshLayout();
+    window.addEventListener('resize', refreshLayout);
+
+    function onPointerDown(e) {
+      e.preventDefault();
+
+      const x = e.clientX;
+      const y = e.clientY;
+
+      if (!joystick.active && x < window.innerWidth * 0.58 && isInsideJoystick(x, y)) {
+        joystick.active = true;
+        joystick.pointerId = e.pointerId;
+        setJoystickVectorFromPointer(x, y);
+        try { renderer.domElement.setPointerCapture(e.pointerId); } catch {}
         return;
       }
 
-      if (e.clientX >= window.innerWidth / 2 && look.pointerId === null) {
+      if (!look.active && x >= window.innerWidth * 0.38) {
         look.active = true;
         look.pointerId = e.pointerId;
-        look.lastX = e.clientX;
-        look.lastY = e.clientY;
-        e.preventDefault();
+        look.lastX = x;
+        look.lastY = y;
+        try { renderer.domElement.setPointerCapture(e.pointerId); } catch {}
       }
-    }, { passive: false });
+    }
 
-    document.addEventListener('pointermove', (e) => {
-      if (move.active && e.pointerId === move.pointerId) {
-        move.dx = e.clientX - move.startX;
-        move.dy = e.clientY - move.startY;
-        updateJoystickVector();
-        e.preventDefault();
+    function onPointerMove(e) {
+      e.preventDefault();
+
+      if (joystick.active && e.pointerId === joystick.pointerId) {
+        setJoystickVectorFromPointer(e.clientX, e.clientY);
+        return;
       }
 
       if (look.active && e.pointerId === look.pointerId) {
@@ -647,128 +405,334 @@
         look.lastX = e.clientX;
         look.lastY = e.clientY;
 
-        yaw -= dx * 0.0045;
-        pitch -= dy * 0.0045;
-        pitch = clamp(pitch, pitchMin, pitchMax);
-
-        e.preventDefault();
-      }
-    }, { passive: false });
-
-    function endPointer(e) {
-      if (move.active && e.pointerId === move.pointerId) {
-        move.active = false;
-        move.pointerId = null;
-        move.dx = 0;
-        move.dy = 0;
-        keys.forward = 0;
-        keys.right = 0;
-        resetThumb();
-      }
-      if (look.active && e.pointerId === look.pointerId) {
-        look.active = false;
-        look.pointerId = null;
+        const sensitivity = 0.0055;
+        yaw -= dx * sensitivity;
+        pitch -= dy * sensitivity;
+        pitch = Math.max(-pitchLimit, Math.min(pitchLimit, pitch));
       }
     }
 
-    document.addEventListener('pointerup', endPointer, { passive: false });
-    document.addEventListener('pointercancel', endPointer, { passive: false });
+    function onPointerUp(e) {
+      e.preventDefault();
+      if (e.pointerId === joystick.pointerId) resetJoystick();
+      if (e.pointerId === look.pointerId) resetLook();
+    }
+
+    function onPointerCancel(e) {
+      e.preventDefault();
+      if (e.pointerId === joystick.pointerId) resetJoystick();
+      if (e.pointerId === look.pointerId) resetLook();
+    }
+
+    renderer.domElement.addEventListener('pointerdown', onPointerDown, { passive: false });
+    renderer.domElement.addEventListener('pointermove', onPointerMove, { passive: false });
+    renderer.domElement.addEventListener('pointerup', onPointerUp, { passive: false });
+    renderer.domElement.addEventListener('pointercancel', onPointerCancel, { passive: false });
+
+    document.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
+    document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+    document.addEventListener('gesturestart', (e) => e.preventDefault(), { passive: false });
     document.addEventListener('contextmenu', (e) => e.preventDefault());
 
-    function resolveHouseCollisions(pos) {
-      for (const h of houseInstances) {
-        const dx = pos.x - h.position.x;
-        const dz = pos.z - h.position.z;
-        const dist = Math.hypot(dx, dz);
-        const minDist = h.radius + playerRadius;
+    // =========================================================
+    // 家（ie.glb）の大量配置
+    // =========================================================
+    const loader = new GLTFLoader();
 
-        if (dist > 0.0001 && dist < minDist) {
-          const push = minDist - dist;
-          pos.x += (dx / dist) * push;
-          pos.z += (dz / dist) * push;
-        } else if (dist <= 0.0001) {
-          pos.x += minDist;
+    const houseData = [];
+    const houseRoot = new THREE.Group();
+    scene.add(houseRoot);
+
+    let houseTemplate = null;
+    let houseBaseRadius = 2.2;
+    let houseBaseHeight = 4.0;
+
+    function setShadows(root) {
+      root.traverse((obj) => {
+        if (obj.isMesh) {
+          obj.castShadow = true;
+          obj.receiveShadow = true;
+          if (obj.material) {
+            if (Array.isArray(obj.material)) {
+              obj.material.forEach((m) => {
+                if (m) {
+                  m.roughness = m.roughness ?? 1.0;
+                  m.metalness = m.metalness ?? 0.0;
+                }
+              });
+            } else {
+              obj.material.roughness = obj.material.roughness ?? 1.0;
+              obj.material.metalness = obj.material.metalness ?? 0.0;
+            }
+          }
+        }
+      });
+    }
+
+    function prepareHouseTemplate(gltfScene) {
+      const template = gltfScene.clone(true);
+      setShadows(template);
+
+      template.updateMatrixWorld(true);
+      const box = new THREE.Box3().setFromObject(template);
+      const size = box.getSize(new THREE.Vector3());
+      const center = box.getCenter(new THREE.Vector3());
+
+      // 原点を家の中心へ寄せ、床面をy=0に合わせる
+      template.position.x -= center.x;
+      template.position.z -= center.z;
+      template.position.y -= box.min.y;
+      template.updateMatrixWorld(true);
+
+      const nowBox = new THREE.Box3().setFromObject(template);
+      const nowSize = nowBox.getSize(new THREE.Vector3());
+
+      const targetHeight = 4.0;
+      const scale = targetHeight / Math.max(nowSize.y, 0.001);
+      template.scale.setScalar(scale);
+      template.updateMatrixWorld(true);
+
+      const scaledBox = new THREE.Box3().setFromObject(template);
+      const scaledSize = scaledBox.getSize(new THREE.Vector3());
+
+      houseTemplate = template;
+      houseBaseHeight = scaledSize.y;
+      houseBaseRadius = Math.max(scaledSize.x, scaledSize.z) * 0.50;
+    }
+
+    function createFallbackHouse() {
+      const g = new THREE.Group();
+
+      const body = new THREE.Mesh(
+        new THREE.BoxGeometry(2.8, 2.2, 3.2),
+        new THREE.MeshStandardMaterial({ color: 0x5a4a3a, roughness: 1.0, metalness: 0.0 })
+      );
+      body.position.y = 1.1;
+      body.castShadow = true;
+      body.receiveShadow = true;
+      g.add(body);
+
+      const roof = new THREE.Mesh(
+        new THREE.ConeGeometry(2.4, 1.6, 4),
+        new THREE.MeshStandardMaterial({ color: 0x24180f, roughness: 1.0, metalness: 0.0 })
+      );
+      roof.rotation.y = Math.PI / 4;
+      roof.position.y = 2.7;
+      roof.castShadow = true;
+      roof.receiveShadow = true;
+      g.add(roof);
+
+      g.position.y = 0;
+      return g;
+    }
+
+    function cloneHouseAt(x, z, rotY, scaleMul = 1) {
+      let house;
+      if (houseTemplate) {
+        house = houseTemplate.clone(true);
+        setShadows(house);
+      } else {
+        house = createFallbackHouse();
+      }
+
+      house.position.set(x, 0, z);
+      house.rotation.y = rotY;
+      house.scale.multiplyScalar(scaleMul);
+      house.updateMatrixWorld(true);
+      houseRoot.add(house);
+
+      const radius = (houseBaseRadius || 2.2) * scaleMul * 0.95;
+      houseData.push({
+        mesh: house,
+        x,
+        z,
+        radius
+      });
+    }
+
+    function spawnVillage() {
+      houseData.length = 0;
+      houseRoot.clear();
+
+      const candidates = [];
+      const centers = [-82, -48, -16, 16, 48, 82];
+
+      for (const x of centers) {
+        for (const z of centers) {
+          // スポーン付近は空ける
+          const dSpawn = Math.hypot(x - player.position.x, z - player.position.z);
+          if (dSpawn < 22) continue;
+
+          // 道の真上すぎる場所は避ける
+          const nearRoadX = roadLines.some((r) => Math.abs(x - r) < 10);
+          const nearRoadZ = roadLines.some((r) => Math.abs(z - r) < 10);
+          if (nearRoadX || nearRoadZ) continue;
+
+          candidates.push({ x, z });
+        }
+      }
+
+      shuffle(candidates);
+
+      const targetCount = randint(34, 46);
+      let placed = 0;
+
+      for (const cell of candidates) {
+        if (placed >= targetCount) break;
+
+        const housesInCell = Math.random() < 0.55 ? 1 : 2;
+        for (let i = 0; i < housesInCell && placed < targetCount; i++) {
+          const px = cell.x + rand(-8.5, 8.5);
+          const pz = cell.z + rand(-8.5, 8.5);
+
+          const dSpawn = Math.hypot(px - player.position.x, pz - player.position.z);
+          if (dSpawn < 22) continue;
+
+          // 少しだけランダムな縮尺でバラつかせる
+          const scaleMul = rand(0.85, 1.18);
+          const rotY = rand(0, Math.PI * 2);
+
+          cloneHouseAt(px, pz, rotY, scaleMul);
+          placed++;
         }
       }
     }
 
-    const clock = new THREE.Clock();
-    const velocity = new THREE.Vector3();
-    const direction = new THREE.Vector3();
-    const forward = new THREE.Vector3();
-
-    let candleRemaining = 100;
-    let candleDrainPerSecond = 2.35;
-
-    function updateCandle(dt) {
-      candleRemaining = Math.max(0, candleRemaining - candleDrainPerSecond * dt);
-      candleText.textContent = `蝋燭の残り火：${Math.round(candleRemaining)}%`;
-
-      const flicker = (Math.random() - 0.5) * 0.9 + Math.sin(performance.now() * 0.04) * 0.14;
-      candleLight.intensity = 18 + flicker;
-
-      candleLight.distance = 40;
-      if (candleRemaining > 0) {
-        const t = candleRemaining / 100;
-        candleLight.color.setHSL(0.12, 1.0, 0.16 + 0.65 * t);
-      } else {
-        candleLight.intensity = 0.35;
+    loader.load(
+      'ie.glb',
+      (gltf) => {
+        prepareHouseTemplate(gltf.scene);
+        spawnVillage();
+      },
+      undefined,
+      () => {
+        houseTemplate = null;
+        spawnVillage();
       }
+    );
+
+    // =========================================================
+    // 衝突判定
+    // =========================================================
+    function resolveHouseCollisions(pos) {
+      const result = pos.clone();
+      const pr = player.radius;
+
+      for (let iter = 0; iter < 2; iter++) {
+        for (const h of houseData) {
+          const dx = result.x - h.x;
+          const dz = result.z - h.z;
+          const dist = Math.hypot(dx, dz);
+          const minDist = h.radius + pr;
+
+          if (dist > 0 && dist < minDist) {
+            const push = (minDist - dist);
+            result.x += (dx / dist) * push;
+            result.z += (dz / dist) * push;
+          } else if (dist === 0) {
+            result.x += minDist;
+          }
+        }
+
+        // 世界の外へ出ないように制限
+        result.x = THREE.MathUtils.clamp(result.x, -96, 96);
+        result.z = THREE.MathUtils.clamp(result.z, -96, 96);
+      }
+
+      return result;
     }
 
+    // =========================================================
+    // ゲームループ
+    // =========================================================
+    const clock = new THREE.Clock();
+    const forward = new THREE.Vector3();
+    const right = new THREE.Vector3();
+    const moveDir = new THREE.Vector3();
+    const targetDir = new THREE.Vector3();
+    const candleTargetPos = new THREE.Vector3();
+
+    let elapsed = 0;
+    let candleRemaining = 100;
+    const candleLifetimeSec = 240;
+
     function animate() {
-      requestAnimationFrame(animate);
       const dt = Math.min(clock.getDelta(), 0.033);
+      elapsed += dt;
 
-      const speed = 2.8;
-      direction.set(keys.right, 0, keys.forward);
-      if (direction.lengthSq() > 1) direction.normalize();
-
-      const sin = Math.sin(yaw);
-      const cos = Math.cos(yaw);
-
-      velocity.x = (direction.x * cos - direction.z * sin) * speed;
-      velocity.z = (direction.z * cos + direction.x * sin) * speed;
-
-      const nextPos = camera.position.clone();
-      nextPos.x += velocity.x * dt;
-      nextPos.z += velocity.z * dt;
-
-      nextPos.x = clamp(nextPos.x, -MAP_HALF + 2.2, MAP_HALF - 2.2);
-      nextPos.z = clamp(nextPos.z, -MAP_HALF + 2.2, MAP_HALF - 2.2);
-
-      resolveHouseCollisions(nextPos);
-
-      camera.position.copy(nextPos);
-      camera.position.y = playerHeight;
-
+      // カメラ向き
       camera.rotation.order = 'YXZ';
       camera.rotation.y = yaw;
       camera.rotation.x = pitch;
 
-      forward.set(0, 0, -1).applyQuaternion(camera.quaternion);
+      // 移動入力
+      const inputX = joystick.x;
+      const inputY = -joystick.y;
+      const deadZone = 0.02;
+
+      let desiredPos = player.position.clone();
+
+      if (Math.abs(inputX) > deadZone || Math.abs(inputY) > deadZone) {
+        forward.set(Math.sin(yaw), 0, Math.cos(yaw));
+        right.set(Math.cos(yaw), 0, -Math.sin(yaw));
+
+        moveDir.set(0, 0, 0);
+        moveDir.addScaledVector(forward, inputY);
+        moveDir.addScaledVector(right, inputX);
+
+        const len = moveDir.length();
+        if (len > 1) moveDir.multiplyScalar(1 / len);
+
+        desiredPos.addScaledVector(moveDir, player.speed * dt);
+      }
+
+      // 衝突判定
+      desiredPos = resolveHouseCollisions(desiredPos);
+
+      // 高さ固定
+      desiredPos.y = 1.7;
+      player.position.copy(desiredPos);
+      camera.position.copy(player.position);
+
+      // 視線方向
+      camera.getWorldDirection(targetDir);
+
+      // スポットライト追従
       candleLight.position.copy(camera.position);
-      candleLight.target.position.copy(camera.position).add(forward.multiplyScalar(10));
+      warmFill.position.copy(camera.position);
+      candleTargetPos.copy(camera.position).addScaledVector(targetDir, 8);
+      candleTarget.position.copy(candleTargetPos);
 
-      updateCandle(dt);
+      // 蝋燭の残り火
+      const progress = Math.max(0, 1 - elapsed / candleLifetimeSec);
+      candleRemaining = Math.round(progress * 100);
+      uiCandle.textContent = `蝋燭の残り火：${candleRemaining}%`;
 
-      cube.rotation.y += dt * 0.6;
-      cube.rotation.x += dt * 0.25;
+      // ゆらぎ
+      const baseIntensity = 0.55 + progress * 1.8;
+      const flicker = (Math.random() - 0.5) * (0.16 + (1 - progress) * 0.18);
+      candleLight.intensity = Math.max(0.08, baseIntensity + flicker);
+      warmFill.intensity = Math.max(0.03, 0.30 * progress + (Math.random() - 0.5) * 0.03);
+
+      // テスト用の赤い立方体
+      cube.rotation.y += dt * 0.25;
+      cube.rotation.x += dt * 0.12;
 
       renderer.render(scene, camera);
+      requestAnimationFrame(animate);
     }
 
-    function onResize() {
+    animate();
+
+    // =========================================================
+    // リサイズ対応
+    // =========================================================
+    window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-    }
-
-    window.addEventListener('resize', onResize);
-    window.addEventListener('orientationchange', onResize);
-
-    animate();
+      refreshLayout();
+    });
   </script>
 </body>
 </html>
