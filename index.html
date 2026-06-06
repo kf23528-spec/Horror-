@@ -5,200 +5,184 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>夜の村 - 和風ホラー</title>
 
-<!-- Three.js r128 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<!-- fflate（FBXLoaderの依存ライブラリ） -->
 <script src="https://cdn.jsdelivr.net/npm/fflate@0.7.4/umd/index.js"></script>
-<!-- FBXLoader for Three.js r128 -->
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FBXLoader.js"></script>
 
 <style>
-  * { margin:0; padding:0; box-sizing:border-box; }
-  html, body {
-    width:100%; height:100%;
-    overflow:hidden; background:#050507;
-    touch-action:none; user-select:none; -webkit-user-select:none;
-  }
-  #gameCanvas { display:block; width:100%; height:100%; touch-action:none; }
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body {
+  width:100%; height:100%;
+  overflow:hidden; background:#050507;
+  touch-action:none; user-select:none; -webkit-user-select:none;
+}
+#gameCanvas { display:block; width:100%; height:100%; touch-action:none; }
 
-  /* ── 蝋燭UI ── */
-  #candleUI {
-    position:fixed; top:20px; left:50%; transform:translateX(-50%);
-    font-family:'Georgia','Hiragino Mincho ProN',serif;
-    font-size:20px; color:#ffe18b; letter-spacing:2px; white-space:nowrap;
-    text-shadow:-2px -2px 0 #000,2px -2px 0 #000,-2px 2px 0 #000,2px 2px 0 #000,0 0 14px rgba(255,180,0,0.8);
-    z-index:20; pointer-events:none;
-  }
-  #candleBar {
-    position:fixed; top:48px; left:50%; transform:translateX(-50%);
-    width:200px; height:7px; background:rgba(0,0,0,0.42);
-    border:1px solid rgba(255,190,110,0.45); border-radius:4px;
-    z-index:20; pointer-events:none; overflow:hidden;
-  }
-  #candleBarFill {
-    height:100%; width:100%;
-    background:linear-gradient(90deg,#ff6a00,#ffd65a);
-    border-radius:4px; transition:width 0.5s ease;
-    box-shadow:0 0 6px rgba(255,180,0,0.7);
-  }
+/* ── 蝋燭UI ── */
+#candleUI {
+  position:fixed; top:20px; left:50%; transform:translateX(-50%);
+  font-family:'Georgia','Hiragino Mincho ProN',serif;
+  font-size:20px; color:#ffe18b; letter-spacing:2px; white-space:nowrap;
+  text-shadow:-2px -2px 0 #000,2px -2px 0 #000,-2px 2px 0 #000,2px 2px 0 #000,0 0 14px rgba(255,180,0,0.8);
+  z-index:20; pointer-events:none;
+}
+#candleBar {
+  position:fixed; top:48px; left:50%; transform:translateX(-50%);
+  width:200px; height:7px; background:rgba(0,0,0,0.42);
+  border:1px solid rgba(255,190,110,0.45); border-radius:4px;
+  z-index:20; pointer-events:none; overflow:hidden;
+}
+#candleBarFill {
+  height:100%; width:100%;
+  background:linear-gradient(90deg,#ff6a00,#ffd65a);
+  border-radius:4px; transition:width 0.5s ease;
+  box-shadow:0 0 6px rgba(255,180,0,0.7);
+}
 
-  /* ── スタミナUI ── */
-  #staminaUI {
-    position:fixed; top:64px; left:50%; transform:translateX(-50%);
-    font-family:'Georgia','Hiragino Mincho ProN',serif;
-    font-size:16px; color:#a0e8ff; letter-spacing:2px; white-space:nowrap;
-    text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000,0 0 10px rgba(80,200,255,0.7);
-    z-index:20; pointer-events:none;
-  }
-  #staminaBar {
-    position:fixed; top:86px; left:50%; transform:translateX(-50%);
-    width:200px; height:6px; background:rgba(0,0,0,0.42);
-    border:1px solid rgba(80,200,255,0.35); border-radius:4px;
-    z-index:20; pointer-events:none; overflow:hidden;
-  }
-  #staminaBarFill {
-    height:100%; width:100%;
-    background:linear-gradient(90deg,#0077cc,#00e5ff);
-    border-radius:4px; transition:width 0.1s ease;
-    box-shadow:0 0 5px rgba(0,200,255,0.6);
-  }
+/* ── スタミナUI ── */
+#staminaUI {
+  position:fixed; top:64px; left:50%; transform:translateX(-50%);
+  font-family:'Georgia','Hiragino Mincho ProN',serif;
+  font-size:16px; color:#a0e8ff; letter-spacing:2px; white-space:nowrap;
+  text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000,0 0 10px rgba(80,200,255,0.7);
+  z-index:20; pointer-events:none;
+}
+#staminaBar {
+  position:fixed; top:86px; left:50%; transform:translateX(-50%);
+  width:200px; height:6px; background:rgba(0,0,0,0.42);
+  border:1px solid rgba(80,200,255,0.35); border-radius:4px;
+  z-index:20; pointer-events:none; overflow:hidden;
+}
+#staminaBarFill {
+  height:100%; width:100%;
+  background:linear-gradient(90deg,#0077cc,#00e5ff);
+  border-radius:4px; transition:width 0.1s ease;
+  box-shadow:0 0 5px rgba(0,200,255,0.6);
+}
 
-  /* ── 走るボタン ── */
-  #dashBtn {
-    position:fixed; bottom:60px; right:60px;
-    width:80px; height:80px; border-radius:50%;
-    background:rgba(0,160,255,0.22);
-    border:2px solid rgba(80,200,255,0.55);
-    box-shadow:0 0 14px rgba(0,180,255,0.3);
-    z-index:15; pointer-events:auto;
-    display:flex; align-items:center; justify-content:center;
-    transition:background 0.1s, opacity 0.3s;
-    touch-action:none;
-  }
-  #dashBtn .dashLabel {
-    font-family:'Hiragino Mincho ProN',serif;
-    font-size:15px; color:#aaeeff;
-    text-shadow:0 0 6px #000,0 0 10px #000;
-    letter-spacing:1px; pointer-events:none;
-    line-height:1.25; text-align:center;
-  }
-  #dashBtn.pressing {
-    background:rgba(0,200,255,0.42);
-    box-shadow:0 0 22px rgba(0,220,255,0.65);
-  }
-  #dashBtn.exhausted {
-    background:rgba(60,60,80,0.3);
-    border-color:rgba(120,120,160,0.3);
-    opacity:0.55;
-  }
+/* ── 走るボタン ── */
+#dashBtn {
+  position:fixed; bottom:60px; right:60px;
+  width:80px; height:80px; border-radius:50%;
+  background:rgba(0,160,255,0.22);
+  border:2px solid rgba(80,200,255,0.55);
+  box-shadow:0 0 14px rgba(0,180,255,0.3);
+  z-index:15; pointer-events:auto;
+  display:flex; align-items:center; justify-content:center;
+  transition:background 0.1s, opacity 0.3s;
+  touch-action:none;
+}
+#dashBtn .dashLabel {
+  font-family:'Hiragino Mincho ProN',serif;
+  font-size:15px; color:#aaeeff;
+  text-shadow:0 0 6px #000,0 0 10px #000;
+  letter-spacing:1px; pointer-events:none;
+  line-height:1.25; text-align:center;
+}
+#dashBtn.pressing { background:rgba(0,200,255,0.42); box-shadow:0 0 22px rgba(0,220,255,0.65); }
+#dashBtn.exhausted { background:rgba(60,60,80,0.3); border-color:rgba(120,120,160,0.3); opacity:0.55; }
 
-  /* ── 八尺様警告インジケーター ── */
-  #alertIndicator {
-    position:fixed; top:110px; left:50%; transform:translateX(-50%);
-    font-family:'Hiragino Mincho ProN',serif;
-    font-size:14px; color:#ff4444; letter-spacing:3px;
-    text-shadow:0 0 10px #ff0000, 0 0 4px #000;
-    z-index:20; pointer-events:none;
-    display:none; white-space:nowrap;
-    animation:alertPulse 0.6s ease-in-out infinite;
-  }
-  @keyframes alertPulse { 0%,100%{opacity:0.6;} 50%{opacity:1.0;} }
+/* ── 八尺様警告インジケーター ── */
+#alertIndicator {
+  position:fixed; top:110px; left:50%; transform:translateX(-50%);
+  font-family:'Hiragino Mincho ProN',serif;
+  font-size:14px; color:#ff4444; letter-spacing:3px;
+  text-shadow:0 0 10px #ff0000, 0 0 4px #000;
+  z-index:20; pointer-events:none; display:none; white-space:nowrap;
+  animation:alertPulse 0.6s ease-in-out infinite;
+}
+@keyframes alertPulse { 0%,100%{opacity:0.6;} 50%{opacity:1.0;} }
 
-  /* ── その他UI ── */
-  #statusMsg {
-    position:fixed; top:130px; left:50%; transform:translateX(-50%);
-    font-family:monospace; font-size:12px; color:#c8ffd0;
-    text-shadow:0 0 6px #000,0 0 10px #000;
-    z-index:20; pointer-events:none; text-align:center; white-space:pre-wrap;
-  }
-  #promptMsg {
-    position:fixed; bottom:160px; left:50%; transform:translateX(-50%);
-    font-family:'Hiragino Mincho ProN',serif;
-    font-size:18px; color:#ffffff;
-    padding:8px 14px; border-radius:999px;
-    background:rgba(0,0,0,0.38);
-    border:1px solid rgba(255,255,255,0.25);
-    text-shadow:0 0 8px #000;
-    z-index:21; pointer-events:none; display:none;
-  }
-  #errorMsg {
-    position:fixed; top:148px; left:50%; transform:translateX(-50%);
-    font-family:monospace; font-size:12px; color:#ff6666;
-    text-shadow:0 0 6px #000;
-    z-index:20; pointer-events:none; display:none;
-    text-align:center; white-space:pre-wrap;
-  }
+/* ── その他UI ── */
+#statusMsg {
+  position:fixed; top:130px; left:50%; transform:translateX(-50%);
+  font-family:monospace; font-size:12px; color:#c8ffd0;
+  text-shadow:0 0 6px #000,0 0 10px #000;
+  z-index:20; pointer-events:none; text-align:center; white-space:pre-wrap;
+}
+#promptMsg {
+  position:fixed; bottom:160px; left:50%; transform:translateX(-50%);
+  font-family:'Hiragino Mincho ProN',serif;
+  font-size:18px; color:#ffffff;
+  padding:8px 14px; border-radius:999px;
+  background:rgba(0,0,0,0.38);
+  border:1px solid rgba(255,255,255,0.25);
+  text-shadow:0 0 8px #000;
+  z-index:21; pointer-events:none; display:none;
+}
+#errorMsg {
+  position:fixed; top:148px; left:50%; transform:translateX(-50%);
+  font-family:monospace; font-size:11px; color:#ff6666;
+  text-shadow:0 0 6px #000;
+  z-index:20; pointer-events:none; display:none;
+  text-align:center; white-space:pre-wrap;
+}
 
-  /* ── ゲームオーバー ── */
-  #gameOverScreen {
-    position:fixed; inset:0; display:none;
-    z-index:100; align-items:center; justify-content:center;
-    text-align:center; background:rgba(255,0,0,0);
-    pointer-events:none;
-  }
-  #gameOverScreen.active {
-    display:flex;
-    animation:gameOverFlash 0.5s forwards;
-  }
-  @keyframes gameOverFlash {
-    0%   { background:rgba(255,0,0,0); }
-    15%  { background:rgba(255,0,0,0.92); }
-    35%  { background:rgba(255,0,0,0.85); }
-    60%  { background:rgba(160,0,0,0.78); }
-    100% { background:rgba(100,0,0,0.88); }
-  }
-  #gameOverInner {
-    display:flex; flex-direction:column; align-items:center; gap:18px;
-    animation:gameOverTextIn 0.6s 0.25s both;
-  }
-  @keyframes gameOverTextIn {
-    0%   { opacity:0; transform:scale(1.4); }
-    100% { opacity:1; transform:scale(1.0); }
-  }
-  #gameOverTitle {
-    font-family:'Hiragino Mincho ProN','Georgia',serif;
-    font-size:clamp(36px,10vw,68px); color:#fff0f0;
-    font-weight:900; letter-spacing:4px; line-height:1.3;
-    text-shadow:0 0 10px #ff0000,0 0 25px #ff0000,0 0 50px rgba(255,0,0,0.7),3px 3px 0 #330000,-3px -3px 0 #220000;
-  }
-  #gameOverSub {
-    font-family:'Hiragino Mincho ProN','Georgia',serif;
-    font-size:clamp(18px,4vw,28px); color:#ffaaaa; letter-spacing:6px;
-    text-shadow:0 0 12px rgba(255,0,0,0.8),0 0 4px #000;
-    animation:pulse 1.2s ease-in-out infinite;
-  }
-  @keyframes pulse { 0%,100%{opacity:0.7;} 50%{opacity:1.0;} }
+/* ── ゲームオーバー ── */
+#gameOverScreen {
+  position:fixed; inset:0; display:none;
+  z-index:100; align-items:center; justify-content:center;
+  text-align:center; background:rgba(255,0,0,0); pointer-events:none;
+}
+#gameOverScreen.active {
+  display:flex; animation:gameOverFlash 0.5s forwards;
+}
+@keyframes gameOverFlash {
+  0%   { background:rgba(255,0,0,0); }
+  15%  { background:rgba(255,0,0,0.92); }
+  35%  { background:rgba(255,0,0,0.85); }
+  60%  { background:rgba(160,0,0,0.78); }
+  100% { background:rgba(100,0,0,0.88); }
+}
+#gameOverInner {
+  display:flex; flex-direction:column; align-items:center; gap:18px;
+  animation:gameOverTextIn 0.6s 0.25s both;
+}
+@keyframes gameOverTextIn { 0%{opacity:0;transform:scale(1.4);} 100%{opacity:1;transform:scale(1.0);} }
+#gameOverTitle {
+  font-family:'Hiragino Mincho ProN','Georgia',serif;
+  font-size:clamp(36px,10vw,68px); color:#fff0f0;
+  font-weight:900; letter-spacing:4px; line-height:1.3;
+  text-shadow:0 0 10px #ff0000,0 0 25px #ff0000,0 0 50px rgba(255,0,0,0.7),3px 3px 0 #330000,-3px -3px 0 #220000;
+}
+#gameOverSub {
+  font-family:'Hiragino Mincho ProN','Georgia',serif;
+  font-size:clamp(18px,4vw,28px); color:#ffaaaa; letter-spacing:6px;
+  text-shadow:0 0 12px rgba(255,0,0,0.8),0 0 4px #000;
+  animation:pulse 1.2s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{opacity:0.7;} 50%{opacity:1.0;} }
 
-  /* ── ジョイスティック ── */
-  #joystickBase {
-    position:fixed; bottom:60px; left:60px;
-    width:120px; height:120px; border-radius:50%;
-    background:rgba(255,255,255,0.08);
-    border:2px solid rgba(255,210,140,0.28);
-    z-index:15; pointer-events:none; transition:opacity 0.3s;
-  }
-  #joystickStick {
-    position:fixed; bottom:95px; left:95px;
-    width:50px; height:50px; border-radius:50%;
-    background:rgba(245,200,66,0.45);
-    border:2px solid rgba(245,200,66,0.7);
-    box-shadow:0 0 10px rgba(255,180,0,0.42);
-    z-index:16; pointer-events:none;
-    transition:transform 0.03s, opacity 0.3s;
-  }
-  #vignette {
-    position:fixed; inset:0;
-    background:radial-gradient(ellipse at center,transparent 24%,rgba(0,0,0,0.62) 100%);
-    pointer-events:none; z-index:5;
-  }
-  #darknessOverlay {
-    position:fixed; inset:0; background:rgba(0,0,0,0);
-    pointer-events:none; z-index:8; transition:background 3s ease;
-  }
-  #dangerVeil {
-    position:fixed; inset:0; background:rgba(180,0,0,0);
-    pointer-events:none; z-index:9; transition:background 0.4s ease;
-  }
+/* ── ジョイスティック ── */
+#joystickBase {
+  position:fixed; bottom:60px; left:60px;
+  width:120px; height:120px; border-radius:50%;
+  background:rgba(255,255,255,0.08);
+  border:2px solid rgba(255,210,140,0.28);
+  z-index:15; pointer-events:none; transition:opacity 0.3s;
+}
+#joystickStick {
+  position:fixed; bottom:95px; left:95px;
+  width:50px; height:50px; border-radius:50%;
+  background:rgba(245,200,66,0.45);
+  border:2px solid rgba(245,200,66,0.7);
+  box-shadow:0 0 10px rgba(255,180,0,0.42);
+  z-index:16; pointer-events:none;
+  transition:transform 0.03s, opacity 0.3s;
+}
+#vignette {
+  position:fixed; inset:0;
+  background:radial-gradient(ellipse at center,transparent 24%,rgba(0,0,0,0.62) 100%);
+  pointer-events:none; z-index:5;
+}
+#darknessOverlay {
+  position:fixed; inset:0; background:rgba(0,0,0,0);
+  pointer-events:none; z-index:8; transition:background 3s ease;
+}
+#dangerVeil {
+  position:fixed; inset:0; background:rgba(180,0,0,0);
+  pointer-events:none; z-index:9; transition:background 0.4s ease;
+}
 </style>
 </head>
 <body>
@@ -209,10 +193,8 @@
 
 <div id="candleUI">🕯 和蝋燭の残り火：<span id="candlePercent">100</span>%</div>
 <div id="candleBar"><div id="candleBarFill"></div></div>
-
 <div id="staminaUI">🏃 スタミナ：<span id="staminaPct">100</span>%</div>
 <div id="staminaBar"><div id="staminaBarFill"></div></div>
-
 <div id="alertIndicator">⚠ 八尺様に発見された…</div>
 <div id="statusMsg"></div>
 <div id="promptMsg">【画面をタップ】して地蔵に火を灯す</div>
@@ -234,28 +216,28 @@
 'use strict';
 
 // ===================================================================
-// 基本セットアップ
+// レンダラー基本セットアップ
 // ===================================================================
 const canvas = document.getElementById('gameCanvas');
-const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+const renderer = new THREE.WebGLRenderer({canvas, antialias:false, powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputEncoding = THREE.sRGBEncoding;
-renderer.setClearColor(0x0b0b10,1);
+renderer.setClearColor(0x0b0b10, 1);
+
+// フラスタムカリング強化
+renderer.sortObjects = true;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0c0d12);
-scene.fog = new THREE.FogExp2(0x111218, 0.019);
+scene.fog = new THREE.FogExp2(0x111218, 0.022);
 
-const camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 220);
-camera.position.set(0, 1.65, 0);
+const camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 180);
+camera.position.set(0, 2.5, 0);
 
-// ★ AnimationMixer用Clock（グローバル）
 const clock = new THREE.Clock();
-
-// ★ AnimationMixer（グローバル）— FBX読み込み後にセット
 let mixer = null;
 
 window.addEventListener('resize', ()=>{
@@ -270,85 +252,113 @@ window.addEventListener('resize', ()=>{
 function dist2D(ax,az,bx,bz){ const d=ax-bx,e=az-bz; return Math.sqrt(d*d+e*e); }
 function randRange(a,b){ return a+Math.random()*(b-a); }
 function randomPointInRange(r){ return {x:(Math.random()-0.5)*r, z:(Math.random()-0.5)*r}; }
+function smoothStep(t){ return t*t*(3-2*t); }
 
 // ===================================================================
-// 地形（段差・階段）
+// 高低差地形システム
 // ===================================================================
-function addTerrainBlock(x, y, z, w, h, d, color=0x3b342c){
-  const m = new THREE.Mesh(
-    new THREE.BoxGeometry(w, h, d),
-    new THREE.MeshLambertMaterial({ color })
-  );
-  m.position.set(x, y + h/2, z);
-  m.castShadow = true;
-  m.receiveShadow = true;
-  scene.add(m);
-  return m;
-}
-
-function addStaircase(cx, cz, stepCount, stepW, stepD, stepRise, axis='z', color=0x4a4338){
-  for(let i=0;i<stepCount;i++){
-    if(axis === 'z'){
-      addTerrainBlock(cx, i*stepRise, cz + i*stepD, stepW, stepRise, stepD, color);
-    } else {
-      addTerrainBlock(cx + i*stepD, i*stepRise, cz, stepD, stepRise, stepW, color);
-    }
-  }
-}
-
-// 参道の階段
-addStaircase(0, -54, 6, 8, 2.0, 0.18, 'z', 0x4b4338);
-// 東側の小高い区画
-addTerrainBlock(34, 0.45, 0, 24, 0.9, 24, 0x433a2f);
-addTerrainBlock(39, 1.10, 0, 12, 0.8, 12, 0x4a4135);
-addTerrainBlock(42, 1.62, 0, 6, 0.6, 6, 0x52483b);
-
-function getTerrainHeight(x, z){
+// パーリンノイズ風の高さ関数（sinを重ねた擬似ノイズ）
+function terrainNoise(x, z){
+  // 複数の周波数を重ねてなだらかな丘地形を作る
   let h = 0;
-  if (Math.abs(x) < 5.5 && z > -58 && z < -46) {
-    h = Math.max(h, Math.min(1.08, (z + 58) * 0.18));
-  }
-  if (x > 28 && x < 48 && Math.abs(z) < 14) {
-    h = Math.max(h, 0.45);
-  }
-  if (x > 35 && x < 46 && Math.abs(z) < 9) {
-    h = Math.max(h, 1.10);
-  }
-  if (x > 40 && x < 45 && Math.abs(z) < 5.5) {
-    h = Math.max(h, 1.62);
-  }
+  h += Math.sin(x * 0.038 + 1.2) * Math.cos(z * 0.042 - 0.7) * 2.8;
+  h += Math.sin(x * 0.072 - 0.5) * Math.cos(z * 0.065 + 1.4) * 1.4;
+  h += Math.sin(x * 0.14  + 2.1) * Math.cos(z * 0.13  - 0.3) * 0.6;
   return h;
 }
 
+// 村の中心（0,0）付近は平坦にするための補正
+function baseTerrain(x, z){
+  const dist = Math.sqrt(x*x + z*z);
+  // 中心半径12以内は平坦（神社境内）
+  const flatBlend = smoothStep(Math.min(1, Math.max(0, (dist - 12) / 20)));
+  const raw = terrainNoise(x, z);
+  // 中心から遠ざかるほど地形の起伏が大きくなる
+  return raw * flatBlend;
+}
+
+// 特定のランドマーク的高台（崖エリア）を追加
+const HIGHLANDS = [
+  {cx: 40,  cz: 10,  r: 18, h: 4.5,  blend: 12},  // 東の崖上エリア
+  {cx: -38, cz: -20, r: 15, h: 3.2,  blend: 10},  // 西南の丘
+  {cx: 10,  cz: -55, r: 20, h: 5.8,  blend: 8},   // 南の神社奥（高台祭壇）
+  {cx: -20, cz: 40,  r: 14, h: 2.8,  blend: 9},   // 北西の小高い丘
+];
+
+function getTerrainHeight(x, z){
+  let h = baseTerrain(x, z);
+  // 高台エリアを加算
+  for(const hl of HIGHLANDS){
+    const d = Math.sqrt((x-hl.cx)**2 + (z-hl.cz)**2);
+    if(d < hl.r + hl.blend){
+      const t = smoothStep(Math.max(0, 1 - Math.max(0, d - hl.r) / hl.blend));
+      h += hl.h * t;
+    }
+  }
+  // 最低地面を0以上に
+  return Math.max(0, h);
+}
+
 // ===================================================================
-// 地面
+// 地面メッシュ（頂点変位による高低差）
 // ===================================================================
-const groundMat = new THREE.MeshLambertMaterial({color:0x16161a});
-const ground = new THREE.Mesh(new THREE.PlaneGeometry(400,400), groundMat);
-ground.rotation.x = -Math.PI/2;
+const GROUND_SEGS = 120;
+const GROUND_SIZE = 360;
+const groundGeo = new THREE.PlaneGeometry(GROUND_SIZE, GROUND_SIZE, GROUND_SEGS, GROUND_SEGS);
+groundGeo.rotateX(-Math.PI/2);
+
+// 頂点のY座標を地形関数で変位
+const posAttr = groundGeo.attributes.position;
+for(let i = 0; i < posAttr.count; i++){
+  const vx = posAttr.getX(i);
+  const vz = posAttr.getZ(i);
+  posAttr.setY(i, getTerrainHeight(vx, vz));
+}
+groundGeo.computeVertexNormals();
+
+// 地面マテリアル（複数の色帯でテクスチャっぽく）
+const groundMat = new THREE.MeshLambertMaterial({ color: 0x1a1a1e, vertexColors: false });
+const ground = new THREE.Mesh(groundGeo, groundMat);
 ground.receiveShadow = true;
 scene.add(ground);
+
+// 地面の色を高さに応じて変化させる
+const colors = [];
+for(let i = 0; i < posAttr.count; i++){
+  const h = posAttr.getY(i);
+  const t = Math.min(1, h / 6);
+  // 低い場所は暗い土色、高い場所は少し明るい岩色
+  colors.push(0.09 + t*0.12, 0.08 + t*0.10, 0.06 + t*0.08);
+}
+groundGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+groundMat.vertexColors = true;
 
 // ===================================================================
 // ライト
 // ===================================================================
-const ambLight = new THREE.AmbientLight(0x7a7a86, 0.65);
+const ambLight = new THREE.AmbientLight(0x8080a0, 0.55);
 scene.add(ambLight);
-const hemi = new THREE.HemisphereLight(0x8d8fa7, 0x35353d, 0.45);
+const hemi = new THREE.HemisphereLight(0x8d8fa7, 0x35353d, 0.40);
 scene.add(hemi);
 
-const candleLight = new THREE.SpotLight(0xffb15a, 8.5, 20, Math.PI/6, 0.45, 1.8);
+// 月光（弱い方向光）
+const moonLight = new THREE.DirectionalLight(0x9090c0, 0.18);
+moonLight.position.set(30, 60, -40);
+scene.add(moonLight);
+
+// プレイヤー蝋燭ライト
+const candleLight = new THREE.SpotLight(0xffb15a, 8.5, 18, Math.PI/6, 0.45, 1.8);
 candleLight.castShadow = true;
-candleLight.shadow.mapSize.set(512,512);
+candleLight.shadow.mapSize.set(256, 256); // 影マップ縮小で最適化
 candleLight.shadow.camera.near = 0.1;
-candleLight.shadow.camera.far = 20;
+candleLight.shadow.camera.far = 18;
 scene.add(candleLight, candleLight.target);
 
-const footLight = new THREE.PointLight(0xff7a18, 2.2, 5.5);
+const footLight = new THREE.PointLight(0xff7a18, 2.0, 5.0);
 scene.add(footLight);
 
 // ===================================================================
-// UI要素
+// UI 要素
 // ===================================================================
 let candlePercent = 100;
 let lastTick = Date.now();
@@ -369,11 +379,11 @@ const joystickStick  = document.getElementById('joystickStick');
 const dashBtnEl      = document.getElementById('dashBtn');
 
 function updateCandleUI(){
-  const v = Math.max(0,Math.ceil(candlePercent));
+  const v = Math.max(0, Math.ceil(candlePercent));
   pctEl.textContent = v;
   barFill.style.width = v+'%';
-  const r=Math.floor(180+75*(1-v/100)), g=Math.floor(190*(v/100));
-  barFill.style.background=`linear-gradient(90deg,rgb(${r},40,0),rgb(${r},${g},30))`;
+  const r = Math.floor(180+75*(1-v/100)), g = Math.floor(190*(v/100));
+  barFill.style.background = `linear-gradient(90deg,rgb(${r},40,0),rgb(${r},${g},30))`;
 }
 
 // ===================================================================
@@ -384,15 +394,15 @@ let isDashing     = false;
 let dashExhausted = false;
 const STAMINA_DRAIN   = 0.55;
 const STAMINA_RECOVER = 0.22;
-const SPEED_WALK  = 0.055;
-const SPEED_DASH  = 0.110;
+const SPEED_WALK  = 0.058;
+const SPEED_DASH  = 0.115;
 
 function updateStaminaUI(){
-  const v = Math.max(0,Math.round(stamina));
+  const v = Math.max(0, Math.round(stamina));
   staminaPctEl.textContent = v;
   staminaFill.style.width  = v+'%';
-  const g1=Math.floor(160*(v/100));
-  staminaFill.style.background=`linear-gradient(90deg,rgb(0,${g1},200),rgb(0,220,255))`;
+  const g1 = Math.floor(160*(v/100));
+  staminaFill.style.background = `linear-gradient(90deg,rgb(0,${g1},200),rgb(0,220,255))`;
   if(dashExhausted){
     dashBtnEl.classList.add('exhausted');
     dashBtnEl.classList.remove('pressing');
@@ -427,26 +437,79 @@ function triggerGameOver(){
 }
 
 // ===================================================================
-// 障害物リスト（視線判定用）
+// ★ 最適化済み当たり判定システム
+// - obstacleMeshes: LOSレイキャスト用（視線判定のみ）
+// - collisionBoxes: プレイヤー移動制限用Box3（毎フレーム更新なし）
 // ===================================================================
-const obstacleMeshes = [];
+const obstacleMeshes  = [];  // レイキャスト用（間引き済みメッシュ）
+const collisionBoxes  = [];  // Box3ベースのプレイヤー衝突判定
+
+const PLAYER_BOX_HALF = 0.38; // プレイヤーカプセルの半径
+
+// プレイヤー用一時Box3（毎フレーム再利用）
+const playerBox = new THREE.Box3();
+const tmpBox    = new THREE.Box3();
+
+/**
+ * モデルGroupを受け取り、そのBounding Box3を生成してcollisionBoxesに登録。
+ * 実際のメッシュへの参照は持たない → 毎フレームの再計算ゼロ。
+ */
+function registerCollisionBox(object3D, margin){
+  const box = new THREE.Box3().setFromObject(object3D);
+  if(margin){
+    box.expandByScalar(margin);
+  }
+  collisionBoxes.push(box);
+}
+
+/**
+ * シンプルな箱形状を指定してBBox直接登録（geometry不要）
+ */
+function registerStaticBox(cx, cy, cz, hw, hh, hd){
+  const box = new THREE.Box3(
+    new THREE.Vector3(cx-hw, cy-hh, cz-hd),
+    new THREE.Vector3(cx+hw, cy+hh, cz+hd)
+  );
+  collisionBoxes.push(box);
+}
+
+/**
+ * プレイヤー位置に基づくBox3を生成し、壁衝突をチェック。
+ * 衝突した場合、移動をキャンセルして直前位置に戻す。
+ * @returns {boolean} 衝突があったか
+ */
+function checkPlayerCollision(newX, newZ, newY){
+  playerBox.set(
+    new THREE.Vector3(newX - PLAYER_BOX_HALF, newY - 1.0, newZ - PLAYER_BOX_HALF),
+    new THREE.Vector3(newX + PLAYER_BOX_HALF, newY + 0.5, newZ + PLAYER_BOX_HALF)
+  );
+  for(const box of collisionBoxes){
+    if(playerBox.intersectsBox(box)) return true;
+  }
+  return false;
+}
 
 // ===================================================================
 // 村マップ構築
 // ===================================================================
 
-// ── 道路 ──
-const roadMat = new THREE.MeshLambertMaterial({color:0x252526});
-function addRoad(x,z,w,d){
-  const m=new THREE.Mesh(new THREE.PlaneGeometry(w,d), roadMat);
-  m.rotation.x=-Math.PI/2; m.position.set(x,0.008,z); m.receiveShadow=true;
+// ── 道路（地形に沿わせる） ──
+const roadMat = new THREE.MeshLambertMaterial({color:0x1e1e20});
+function addRoad(x, z, w, d){
+  const geo = new THREE.PlaneGeometry(w, d, 4, 4);
+  geo.rotateX(-Math.PI/2);
+  // 中心高さに合わせる
+  const cy = getTerrainHeight(x, z) + 0.015;
+  const m = new THREE.Mesh(geo, roadMat);
+  m.position.set(x, cy, z);
+  m.receiveShadow = true;
   scene.add(m);
 }
-addRoad(0, 0, 7, 180);
-addRoad(0, 0, 180, 7);
+addRoad(0, 0, 7, 200);
+addRoad(0, 0, 200, 7);
 addRoad(0, -45, 120, 5);
 addRoad(0,  45, 120, 5);
-const RING_R = 32;
+const RING_R = 34;
 for(let i=0;i<8;i++){
   const a=i*Math.PI/4, a2=(i+1)*Math.PI/4;
   const cx=(Math.cos(a)+Math.cos(a2))/2*RING_R;
@@ -455,16 +518,23 @@ for(let i=0;i<8;i++){
   const seg=new THREE.Mesh(new THREE.PlaneGeometry(len,4.5), roadMat);
   seg.rotation.x=-Math.PI/2;
   seg.rotation.z=-a-Math.PI/8;
-  seg.position.set(cx,0.007,cz);
+  const ry=getTerrainHeight(cx,cz)+0.015;
+  seg.position.set(cx,ry,cz);
   scene.add(seg);
 }
 
-// ── 1. 木造の柵・塀（障害物登録） ──
+// ── 木造の柵（ラグ軽減：Box3で登録） ──
 const fenceMat = new THREE.MeshLambertMaterial({color:0x3a2010});
 function addFence(x,z,w,d){
+  const fy = getTerrainHeight(x,z);
   const m = new THREE.Mesh(new THREE.BoxGeometry(w,0.9,d), fenceMat);
-  m.position.set(x,0.45,z); m.castShadow=true; scene.add(m);
-  obstacleMeshes.push(m);
+  m.position.set(x, fy+0.45, z);
+  m.castShadow = true;
+  scene.add(m);
+  // 柵はBox3で軽量登録
+  registerStaticBox(x, fy+0.45, z, w/2+0.05, 0.5, d/2+0.05);
+  // LOSのみ：低密度でobstacleMeshesへ
+  if(Math.random() < 0.25) obstacleMeshes.push(m);
 }
 for(let z=-80;z<80;z+=6){
   addFence( 5.5+randRange(0,0.4), z, 0.18, 4.5+randRange(0,1));
@@ -475,138 +545,65 @@ for(let x=-80;x<80;x+=6){
   addFence(x,-5.5-randRange(0,0.4), 4.5+randRange(0,1), 0.18);
 }
 
-// ── 2. 道の灯籠 ──
-function addStreetLantern(x,z){
-  const grp=new THREE.Group();
-  const pole=new THREE.Mesh(
-    new THREE.CylinderGeometry(0.06,0.08,3.2,6),
-    new THREE.MeshLambertMaterial({color:0x1a0e00})
-  );
-  pole.position.y=1.6; pole.castShadow=true; grp.add(pole);
-  const head=new THREE.Mesh(
-    new THREE.BoxGeometry(0.52,0.42,0.52),
-    new THREE.MeshBasicMaterial({color:0xffcc66})
-  );
-  head.position.y=3.35; grp.add(head);
-  const pl=new THREE.PointLight(0xff8800,1.3,9,2);
-  pl.position.y=3.35; grp.add(pl);
-  grp.position.set(x,0,z); scene.add(grp);
-}
-[[8,-8],[8,8],[-8,-8],[-8,8],[8,-45],[8,45],[-8,-45],[-8,45],[34,0],[-34,0]]
-  .forEach(p=>addStreetLantern(p[0],p[1]));
-
-// ── 3. 井戸・荷車 ──
-const stoneMat=new THREE.MeshLambertMaterial({color:0x3c3c3c});
-const woodMat2=new THREE.MeshLambertMaterial({color:0x4a2c10});
-function addWell(x,z){
-  const grp=new THREE.Group();
-  const base=new THREE.Mesh(new THREE.CylinderGeometry(0.7,0.78,0.85,12),stoneMat);
-  base.position.y=0.425; grp.add(base);
-  const rim=new THREE.Mesh(new THREE.CylinderGeometry(0.82,0.82,0.12,12,1,true),stoneMat);
-  rim.position.y=0.91; grp.add(rim);
-  const roofL=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,1.8,5),woodMat2);
-  roofL.position.set(-0.6,1.4,0); grp.add(roofL);
-  const roofR=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,1.8,5),woodMat2);
-  roofR.position.set(0.6,1.4,0); grp.add(roofR);
-  const bar=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,1.25,5),woodMat2);
-  bar.rotation.z=Math.PI/2; bar.position.set(0,2.2,0); grp.add(bar);
-  grp.position.set(x,0,z); scene.add(grp);
-}
-function addCart(x,z,ry){
-  const grp=new THREE.Group();
-  const bed=new THREE.Mesh(new THREE.BoxGeometry(1.8,0.22,0.9),woodMat2);
-  bed.position.y=0.55; grp.add(bed);
-  const wh1=new THREE.Mesh(new THREE.CylinderGeometry(0.36,0.36,0.1,12),stoneMat);
-  wh1.rotation.x=Math.PI/2; wh1.position.set(-0.72,0.36,0.52); grp.add(wh1);
-  [[ 0.72,0.36,0.52],[-0.72,0.36,-0.52],[0.72,0.36,-0.52]].forEach(([wx,wy,wz])=>{
-    const w=wh1.clone(); w.position.set(wx,wy,wz); grp.add(w);
-  });
-  grp.position.set(x,0,z); grp.rotation.y=ry||0; scene.add(grp);
-}
-addWell(12,-12); addWell(-15,18); addWell(22,38); addWell(-20,-38); addWell(35,-10);
-addCart(10,12,0.3); addCart(-12,-16,-0.2); addCart(18,-20,1.1);
-
-// ── 4. 竹林・生け垣 ──
-const bambooMat=new THREE.MeshLambertMaterial({color:0x1a2a0d});
-const hedgeMat =new THREE.MeshLambertMaterial({color:0x182210});
-function addBambooCluster(cx,cz,count){
-  for(let i=0;i<count;i++){
-    const h=randRange(5,9);
-    const b=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.09,h,6),bambooMat);
-    b.position.set(cx+randRange(-1.4,1.4),h/2,cz+randRange(-1.4,1.4));
-    b.castShadow=true; scene.add(b);
-    obstacleMeshes.push(b);
-  }
-}
-function addHedgeWall(x,z,w,d){
-  const m=new THREE.Mesh(new THREE.BoxGeometry(w,2.8,d),hedgeMat);
-  m.position.set(x,1.4,z); m.castShadow=true; m.receiveShadow=true; scene.add(m);
-  obstacleMeshes.push(m);
-}
-const BORDER=82, STEP=7;
-for(let v=-BORDER;v<=BORDER;v+=STEP){
-  addBambooCluster( BORDER, v, 6); addBambooCluster(-BORDER, v, 6);
-  addBambooCluster(v,  BORDER, 6); addBambooCluster(v, -BORDER, 6);
-}
-for(let v=-BORDER;v<BORDER;v+=14){
-  addHedgeWall( BORDER+1, v+7, 1.2, 14); addHedgeWall(-BORDER-1, v+7, 1.2, 14);
-  addHedgeWall(v+7,  BORDER+1, 14, 1.2); addHedgeWall(v+7, -BORDER-1, 14, 1.2);
-}
-
-// ── 5. 鳥居 ──
+// ── 鳥居 ──
 function addTorii(x,z,ry){
-  const mat=new THREE.MeshLambertMaterial({color:0x7e1111});
-  const grp=new THREE.Group();
+  const mat = new THREE.MeshLambertMaterial({color:0x7e1111});
+  const grp = new THREE.Group();
+  const gy  = getTerrainHeight(x,z);
   [-1.6,1.6].forEach(ox=>{
-    const p=new THREE.Mesh(new THREE.CylinderGeometry(0.18,0.18,5.5,8),mat);
+    const p = new THREE.Mesh(new THREE.CylinderGeometry(0.18,0.18,5.5,8),mat);
     p.position.set(ox,2.75,0); p.castShadow=true; grp.add(p);
-    obstacleMeshes.push(p);
   });
-  const k1=new THREE.Mesh(new THREE.BoxGeometry(4.4,0.35,0.35),mat);
+  const k1 = new THREE.Mesh(new THREE.BoxGeometry(4.4,0.35,0.35),mat);
   k1.position.set(0,5.5,0); grp.add(k1);
-  const k2=new THREE.Mesh(new THREE.BoxGeometry(3.8,0.25,0.25),mat);
+  const k2 = new THREE.Mesh(new THREE.BoxGeometry(3.8,0.25,0.25),mat);
   k2.position.set(0,4.6,0); grp.add(k2);
-  grp.position.set(x,0,z); grp.rotation.y=ry||0; scene.add(grp);
+  grp.position.set(x, gy, z);
+  grp.rotation.y = ry||0;
+  scene.add(grp);
+  // 鳥居の柱2本をBox3登録
+  registerStaticBox(x + (Math.cos(ry||0)*-1.6 - Math.sin(ry||0)*0), gy+2.75, z + (Math.sin(ry||0)*-1.6 + Math.cos(ry||0)*0), 0.25, 2.8, 0.25);
+  registerStaticBox(x + (Math.cos(ry||0)* 1.6 - Math.sin(ry||0)*0), gy+2.75, z + (Math.sin(ry||0)* 1.6 + Math.cos(ry||0)*0), 0.25, 2.8, 0.25);
+  // LOS用にgrpの一部だけ登録
+  grp.children.slice(0,2).forEach(c=>obstacleMeshes.push(c));
 }
 addTorii(0,-14,0); addTorii(22,28,0.5); addTorii(-20,18,-0.3); addTorii(0,60,Math.PI);
 
-// ── 6. 不気味な祭壇 ──
-function buildAltar(){
-  const grp=new THREE.Group();
-  const bMat=new THREE.MeshLambertMaterial({color:0x111114,emissive:0x050005,emissiveIntensity:0.3});
-  const base=new THREE.Mesh(new THREE.BoxGeometry(6,0.5,5),bMat);
-  base.position.y=0.25; grp.add(base);
-  const top=new THREE.Mesh(new THREE.BoxGeometry(4.5,0.28,3.5),bMat);
-  top.position.y=0.64; grp.add(top);
-  for(const ox of[-1.5,0,1.5]){
-    const candle=new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08,0.4,8),
-      new THREE.MeshBasicMaterial({color:0xffcc44}));
-    candle.position.set(ox,0.98,0); grp.add(candle);
-    const pl=new THREE.PointLight(0xff6600,0.6,4,2);
-    pl.position.set(ox,1.15,0); grp.add(pl);
-  }
-  for(let i=0;i<4;i++){
-    const s=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.9,0.5),
-      new THREE.MeshLambertMaterial({color:0x2a2a2a}));
-    s.position.set((i<2?-2.4:2.4),0.45,(i%2===0?-2:2)); grp.add(s);
-  }
-  grp.position.set(0,0,-62); scene.add(grp);
-  addTorii(0,-55,0); addTorii(-8,-65,0.15); addTorii(8,-65,-0.15);
-  const altarGlow=new THREE.PointLight(0x880000,1.8,18,1.5);
-  altarGlow.position.set(0,2,-62); scene.add(altarGlow);
+// ── 井戸 ──
+const stoneMat = new THREE.MeshLambertMaterial({color:0x3c3c3c});
+const woodMat2 = new THREE.MeshLambertMaterial({color:0x4a2c10});
+function addWell(x,z){
+  const wy = getTerrainHeight(x,z);
+  const grp = new THREE.Group();
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.7,0.78,0.85,12),stoneMat);
+  base.position.y=0.425; grp.add(base);
+  const rim  = new THREE.Mesh(new THREE.CylinderGeometry(0.82,0.82,0.12,12,1,true),stoneMat);
+  rim.position.y=0.91; grp.add(rim);
+  const rL = new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,1.8,5),woodMat2);
+  rL.position.set(-0.6,1.4,0); grp.add(rL);
+  const rR = new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,1.8,5),woodMat2);
+  rR.position.set(0.6,1.4,0); grp.add(rR);
+  const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,1.25,5),woodMat2);
+  bar.rotation.z=Math.PI/2; bar.position.set(0,2.2,0); grp.add(bar);
+  grp.position.set(x,wy,z);
+  scene.add(grp);
+  registerStaticBox(x, wy+0.5, z, 0.85, 0.6, 0.85);
 }
-buildAltar();
+addWell(12,-12); addWell(-15,18); addWell(22,38); addWell(-20,-38); addWell(35,-10);
 
 // ── お墓 ──
 function addGrave(x,z){
-  const mat=new THREE.MeshLambertMaterial({color:0x252525});
-  const grp=new THREE.Group();
-  const body=new THREE.Mesh(new THREE.BoxGeometry(0.6,1.4,0.18),mat);
+  const mat = new THREE.MeshLambertMaterial({color:0x252525});
+  const gy  = getTerrainHeight(x,z);
+  const grp = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.6,1.4,0.18),mat);
   body.position.y=0.7; grp.add(body);
-  const top=new THREE.Mesh(new THREE.CylinderGeometry(0.32,0.32,0.18,8,1,false,0,Math.PI),mat);
+  const top = new THREE.Mesh(new THREE.CylinderGeometry(0.32,0.32,0.18,8,1,false,0,Math.PI),mat);
   top.rotation.x=Math.PI/2; top.position.set(0,1.5,0); grp.add(top);
-  grp.position.set(x,0,z); grp.rotation.y=Math.random()*0.5-0.25;
-  grp.castShadow=true; scene.add(grp);
+  grp.position.set(x,gy,z);
+  grp.rotation.y = Math.random()*0.5-0.25;
+  grp.castShadow = true;
+  scene.add(grp);
 }
 for(let i=0;i<30;i++){
   let gx,gz;
@@ -615,43 +612,97 @@ for(let i=0;i<30;i++){
   addGrave(gx,gz);
 }
 
+// ── 竹林（境界） ──
+const bambooMat = new THREE.MeshLambertMaterial({color:0x1a2a0d});
+function addBambooCluster(cx,cz,count){
+  for(let i=0;i<count;i++){
+    const h = randRange(5,9);
+    const bx = cx+randRange(-1.4,1.4);
+    const bz = cz+randRange(-1.4,1.4);
+    const by = getTerrainHeight(bx,bz);
+    const b = new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.09,h,6),bambooMat);
+    b.position.set(bx, by+h/2, bz);
+    b.castShadow = true;
+    scene.add(b);
+    if(Math.random()<0.15) obstacleMeshes.push(b); // LOS間引き
+  }
+}
+const BORDER=82, STEP=7;
+for(let v=-BORDER;v<=BORDER;v+=STEP){
+  addBambooCluster( BORDER, v, 5); addBambooCluster(-BORDER, v, 5);
+  addBambooCluster(v, BORDER, 5); addBambooCluster(v,-BORDER, 5);
+}
+
+// ── 不気味な祭壇（高台） ──
+function buildAltar(){
+  const grp  = new THREE.Group();
+  const bMat = new THREE.MeshLambertMaterial({color:0x111114,emissive:0x050005,emissiveIntensity:0.3});
+  const base = new THREE.Mesh(new THREE.BoxGeometry(6,0.5,5),bMat);
+  base.position.y=0.25; grp.add(base);
+  const top  = new THREE.Mesh(new THREE.BoxGeometry(4.5,0.28,3.5),bMat);
+  top.position.y=0.64; grp.add(top);
+  for(const ox of[-1.5,0,1.5]){
+    const candle = new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08,0.4,8),
+      new THREE.MeshBasicMaterial({color:0xffcc44}));
+    candle.position.set(ox,0.98,0); grp.add(candle);
+    const pl = new THREE.PointLight(0xff6600,0.6,4,2);
+    pl.position.set(ox,1.15,0); grp.add(pl);
+  }
+  for(let i=0;i<4;i++){
+    const s = new THREE.Mesh(new THREE.BoxGeometry(0.5,0.9,0.5),
+      new THREE.MeshLambertMaterial({color:0x2a2a2a}));
+    s.position.set((i<2?-2.4:2.4),0.45,(i%2===0?-2:2)); grp.add(s);
+  }
+  const altY = getTerrainHeight(0,-62);
+  grp.position.set(0, altY, -62);
+  scene.add(grp);
+  addTorii(0,-55,0); addTorii(-8,-65,0.15); addTorii(8,-65,-0.15);
+  const altarGlow = new THREE.PointLight(0x880000,1.8,18,1.5);
+  altarGlow.position.set(0,altY+2,-62);
+  scene.add(altarGlow);
+}
+buildAltar();
+
 // ===================================================================
 // 地蔵の結界
 // ===================================================================
-const jizoList=[];
-const JIZO_COUNT=3, JIZO_SAFE_RADIUS=4.0, JIZO_PROMPT_RADIUS=3.0;
+const jizoList = [];
+const JIZO_COUNT = 3, JIZO_SAFE_RADIUS = 4.0, JIZO_PROMPT_RADIUS = 3.0;
 
 function createJizo(x,z){
-  const grp=new THREE.Group();
-  const bMat=new THREE.MeshLambertMaterial({color:0xf0f0f0,emissive:0x101010,emissiveIntensity:0.18});
-  const body=new THREE.Mesh(new THREE.BoxGeometry(0.8,1.5,0.8),bMat);
-  body.position.y=0.75; body.castShadow=true; body.receiveShadow=true; grp.add(body);
-  const halo=new THREE.Mesh(new THREE.SphereGeometry(0.24,12,12),
+  const grp = new THREE.Group();
+  const bMat = new THREE.MeshLambertMaterial({color:0xf0f0f0,emissive:0x101010,emissiveIntensity:0.18});
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.8,1.5,0.8),bMat);
+  body.position.y=0.75; body.castShadow=true; grp.add(body);
+  const halo = new THREE.Mesh(new THREE.SphereGeometry(0.24,12,12),
     new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0.12}));
   halo.position.y=1.45; grp.add(halo);
-  const light=new THREE.PointLight(0xff9800,0,7,2);
+  const light = new THREE.PointLight(0xff9800,0,7,2);
   light.position.y=1.55; grp.add(light);
-  grp.position.set(x,0,z); scene.add(grp);
+  const jy = getTerrainHeight(x,z);
+  grp.position.set(x,jy,z);
+  scene.add(grp);
   const j={group:grp,light,lit:false,x,z};
-  jizoList.push(j); return j;
+  jizoList.push(j);
+  return j;
 }
 function placeJizoRandomly(){
   for(let i=0;i<JIZO_COUNT;i++){
     let p,tries=0;
-    do{ p=randomPointInRange(70); tries++; }
-    while((Math.abs(p.x)<8&&Math.abs(p.z)<8)&&tries<200);
+    do{ p=randomPointInRange(65); tries++; }
+    while((Math.abs(p.x)<10&&Math.abs(p.z)<10)&&tries<200);
     createJizo(p.x,p.z);
   }
 }
 placeJizoRandomly();
 
-const playerPos=new THREE.Vector3(0,1.65 + getTerrainHeight(0,0),0);
+const playerPos = new THREE.Vector3(0, getTerrainHeight(0,0)+1.65, 0);
 
 function getNearestJizoInPromptRange(){
-  let best=null,bestDist=Infinity;
+  let best=null, bestDist=Infinity;
   for(const j of jizoList){
     if(j.lit) continue;
-    const d=dist2D(playerPos.x,playerPos.z,j.x,j.z);
+    const d = dist2D(playerPos.x,playerPos.z,j.x,j.z);
     if(d<=JIZO_PROMPT_RADIUS&&d<bestDist){best=j;bestDist=d;}
   }
   return best;
@@ -663,12 +714,12 @@ function igniteJizo(jizo){
   if(hm&&hm.material) hm.material.opacity=0.26;
 }
 function updateJizoPrompt(){
-  const n=getNearestJizoInPromptRange();
-  if(n&&!gameOver){ promptMsg.style.display='block'; }
-  else { promptMsg.style.display='none'; }
+  const n = getNearestJizoInPromptRange();
+  if(n&&!gameOver) promptMsg.style.display='block';
+  else promptMsg.style.display='none';
 }
 function getLitJizoRepulsion(pos){
-  let px=0,pz=0;
+  let px=0, pz=0;
   for(const j of jizoList){
     if(!j.lit) continue;
     const dx=pos.x-j.x, dz=pos.z-j.z;
@@ -689,206 +740,141 @@ function isPointInsideAnySafeZone(x,z){
 }
 
 // ===================================================================
-// フォールバック確認用赤キューブ
-// ===================================================================
-const redCube=new THREE.Mesh(new THREE.BoxGeometry(1.5,3,1.5),
-  new THREE.MeshBasicMaterial({color:0xff0000}));
-redCube.position.set(0,1.5,-5); redCube.material.fog=false; scene.add(redCube);
-const redGlow=new THREE.PointLight(0xff2200,1.5,8);
-redGlow.position.copy(redCube.position); scene.add(redGlow);
-
-// ===================================================================
 // 八尺様（hachishaku）本体 ＋ ステルスAI
 // ===================================================================
 let hachishaku = null;
 let enemyTarget = null;
 
-// 速度定数（1.2倍強化済み）
 const ENEMY_SPEED        = 0.05 * 1.2;
 const ENEMY_WANDER_SPEED = 0.016 * 1.2;
 
-// ── ステルスAI変数 ──
-let enemyState = 'wander';   // 'wander' | 'chase'
-let losTimer   = 0;           // 視線遮断の累積ms
-const LOS_LOSE_TIME = 3000;  // 3秒見失ったら徘徊に戻る
+let enemyState = 'wander';
+let losTimer   = 0;
+const LOS_LOSE_TIME = 3000;
 let lastKnownPlayerPos = null;
 
-// ── Raycaster（LOS判定用） ──
 const raycaster = new THREE.Raycaster();
 
-// ── フォールバック（ジオメトリ）で敵を構築 ──
+const ENEMY_VISUAL_YAW_OFFSET = -Math.PI / 2;
+
 function buildFallbackEnemy(){
-  const grp=new THREE.Group();
-  const mat=new THREE.MeshLambertMaterial({color:0x1a1111,emissive:0x050000,emissiveIntensity:0.2});
-  const torso=new THREE.Mesh(new THREE.CapsuleGeometry(0.55,2.6,6,10),mat);
+  const grp = new THREE.Group();
+  const mat = new THREE.MeshLambertMaterial({color:0x1a1111,emissive:0x050000,emissiveIntensity:0.2});
+  const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.45,0.55,2.8,8),mat);
   torso.position.y=2.0; grp.add(torso);
-  const head=new THREE.Mesh(new THREE.SphereGeometry(0.85,14,14),mat);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.85,14,14),mat);
   head.position.y=4.0; grp.add(head);
-  const aGeo=new THREE.CapsuleGeometry(0.14,1.8,4,8);
-  const aL=new THREE.Mesh(aGeo,mat); aL.position.set(-0.95,2.6,0); aL.rotation.z=0.7; grp.add(aL);
-  const aR=new THREE.Mesh(aGeo,mat); aR.position.set( 0.95,2.6,0); aR.rotation.z=-0.7; grp.add(aR);
-  const lGeo=new THREE.CapsuleGeometry(0.18,1.6,4,8);
-  const lL=new THREE.Mesh(lGeo,mat); lL.position.set(-0.26,0.9,0); grp.add(lL);
-  const lR=new THREE.Mesh(lGeo,mat); lR.position.set( 0.26,0.9,0); grp.add(lR);
+  const aGeo = new THREE.CylinderGeometry(0.12,0.14,1.9,6);
+  const aL = new THREE.Mesh(aGeo,mat); aL.position.set(-0.95,2.6,0); aL.rotation.z=0.7; grp.add(aL);
+  const aR = new THREE.Mesh(aGeo,mat); aR.position.set( 0.95,2.6,0); aR.rotation.z=-0.7; grp.add(aR);
+  const lGeo = new THREE.CylinderGeometry(0.15,0.18,1.7,6);
+  const lL = new THREE.Mesh(lGeo,mat); lL.position.set(-0.26,0.9,0); grp.add(lL);
+  const lR = new THREE.Mesh(lGeo,mat); lR.position.set( 0.26,0.9,0); grp.add(lR);
   return grp;
 }
 
 function setEnemyTargetAvoidingSafeZone(){
-  let p,tries=0;
+  let p, tries=0;
   do{ p=randomPointInRange(130); tries++; }
   while(isPointInsideAnySafeZone(p.x,p.z)&&tries<120);
   enemyTarget=p;
 }
 
 // ===================================================================
-// ★ 視線（LOS）判定
+// 視線（LOS）判定
 // ===================================================================
 function hasLineOfSight(enemyPos, playerPos3D){
-  if(obstacleMeshes.length === 0) return true;
-
-  const eyePos = enemyPos.clone();
-  eyePos.y += 2.2;  // 八尺様の目の高さ
-
-  const targetPos = playerPos3D.clone();
-  targetPos.y += 1.0;  // プレイヤーの胸の高さ
-
+  if(obstacleMeshes.length===0) return true;
+  const eyePos = enemyPos.clone(); eyePos.y += 2.2;
+  const targetPos = playerPos3D.clone(); targetPos.y += 1.0;
   const dir = new THREE.Vector3().subVectors(targetPos, eyePos).normalize();
   const dist = eyePos.distanceTo(targetPos);
-
   raycaster.set(eyePos, dir);
   raycaster.far = dist - 0.3;
-
   const hits = raycaster.intersectObjects(obstacleMeshes, true);
   return hits.length === 0;
 }
 
-// ===================================================================
-// ★ 八尺様の向き制御ヘルパー
-//
-//  設計方針：
-//  ・hachishaku（外側Group）は進行方向を受け持つ。
-//  ・FBX本体は内側Visualの固定オフセットだけで「正面」を作る。
-//  ・Meshyの前方軸は参照しない。コード側の補正値だけで決める。
-//  ・lookAt() は使わず、毎フレームの角度を直接設定する。
-// ===================================================================
-
-const ENEMY_VISUAL_YAW_OFFSET = -Math.PI / 2; // 見た目の前方をコード側で固定
-
-/**
- * hachishaku（外側Group）を目標XZ座標に向ける。
- * @param {number} tx  目標X
- * @param {number} tz  目標Z
- */
 function faceEnemyToward(tx, tz){
   if(!hachishaku) return;
   const dx = tx - hachishaku.position.x;
   const dz = tz - hachishaku.position.z;
-  const yaw = Math.atan2(dx, dz);
-  hachishaku.rotation.set(0, yaw, 0);
+  hachishaku.rotation.set(0, Math.atan2(dx, dz), 0);
 }
 
 // ===================================================================
-// ★ 敵AIのメイン更新（視線ステルス統合版）
+// 敵AIメイン更新
 // ===================================================================
 const DETECT_RADIUS = 30;
 
 function updateEnemyAI(deltaMs){
-  if(!hachishaku || gameOver) return;
-
+  if(!hachishaku||gameOver) return;
   const ex = hachishaku.position.x;
   const ez = hachishaku.position.z;
   const enemyPos3D = new THREE.Vector3(ex, 0, ez);
-
   const distToPlayer = dist2D(ex, ez, playerPos.x, playerPos.z);
   const canSee = (distToPlayer < DETECT_RADIUS) && hasLineOfSight(enemyPos3D, playerPos);
 
-  // ── ステートマシン遷移 ──
-  if(enemyState === 'wander'){
-    if(canSee){
-      enemyState = 'chase';
-      losTimer = 0;
-      lastKnownPlayerPos = playerPos.clone();
-    }
-  } else if(enemyState === 'chase'){
-    if(canSee){
-      losTimer = 0;
-      lastKnownPlayerPos = playerPos.clone();
-    } else {
+  if(enemyState==='wander'){
+    if(canSee){ enemyState='chase'; losTimer=0; lastKnownPlayerPos=playerPos.clone(); }
+  } else if(enemyState==='chase'){
+    if(canSee){ losTimer=0; lastKnownPlayerPos=playerPos.clone(); }
+    else {
       losTimer += deltaMs;
-      if(losTimer >= LOS_LOSE_TIME){
-        enemyState = 'wander';
-        losTimer = 0;
-        lastKnownPlayerPos = null;
-        setEnemyTargetAvoidingSafeZone();
-      }
+      if(losTimer>=LOS_LOSE_TIME){ enemyState='wander'; losTimer=0; lastKnownPlayerPos=null; setEnemyTargetAvoidingSafeZone(); }
     }
   }
 
-  // ── UI更新 ──
-  if(enemyState === 'chase'){
-    alertIndicator.style.display = 'block';
-    const veilAlpha = Math.max(0, Math.min(0.22, (DETECT_RADIUS - distToPlayer) / DETECT_RADIUS * 0.3));
+  if(enemyState==='chase'){
+    alertIndicator.style.display='block';
+    const veilAlpha = Math.max(0,Math.min(0.22,(DETECT_RADIUS-distToPlayer)/DETECT_RADIUS*0.3));
     dangerVeil.style.background = `rgba(180,0,0,${veilAlpha})`;
   } else {
-    alertIndicator.style.display = 'none';
-    dangerVeil.style.background = 'rgba(0,0,0,0)';
+    alertIndicator.style.display='none';
+    dangerVeil.style.background='rgba(0,0,0,0)';
   }
 
-  // ── 移動処理 ──
   const push = getLitJizoRepulsion(hachishaku.position);
 
-  if(enemyState === 'chase'){
-    // 追跡：プレイヤー位置か最終目撃地点へ
+  if(enemyState==='chase'){
     const chaseTarget = canSee
-      ? {x: playerPos.x, z: playerPos.z}
-      : (lastKnownPlayerPos ? {x: lastKnownPlayerPos.x, z: lastKnownPlayerPos.z} : null);
-
+      ? {x:playerPos.x,z:playerPos.z}
+      : (lastKnownPlayerPos?{x:lastKnownPlayerPos.x,z:lastKnownPlayerPos.z}:null);
     if(chaseTarget){
-      // ★ 向き：目標へ正面を向ける
       faceEnemyToward(chaseTarget.x, chaseTarget.z);
-
-      const dx = chaseTarget.x - ex;
-      const dz = chaseTarget.z - ez;
-      const d  = Math.sqrt(dx*dx+dz*dz);
-      if(d > 0.01){
-        const nx = dx/d, nz = dz/d;
-        const nextX = ex + nx * ENEMY_SPEED - push.x;
-        const nextZ = ez + nz * ENEMY_SPEED - push.z;
-
-        if(!isPointInsideAnySafeZone(nextX, nextZ)){
-          hachishaku.position.x = nextX;
-          hachishaku.position.z = nextZ;
+      const dx=chaseTarget.x-ex, dz=chaseTarget.z-ez;
+      const d=Math.sqrt(dx*dx+dz*dz);
+      if(d>0.01){
+        const nx=dx/d, nz=dz/d;
+        const nextX=ex+nx*ENEMY_SPEED-push.x;
+        const nextZ=ez+nz*ENEMY_SPEED-push.z;
+        if(!isPointInsideAnySafeZone(nextX,nextZ)){
+          hachishaku.position.x=nextX;
+          hachishaku.position.z=nextZ;
         } else {
-          setEnemyTargetAvoidingSafeZone();
-          enemyState = 'wander'; losTimer = 0;
+          setEnemyTargetAvoidingSafeZone(); enemyState='wander'; losTimer=0;
         }
       }
-
-      // 最終目撃地点到達 → その場で待機（losTimerに任せる）
-      if(!canSee && lastKnownPlayerPos && dist2D(ex,ez,lastKnownPlayerPos.x,lastKnownPlayerPos.z) < 1.2){
+      if(!canSee&&lastKnownPlayerPos&&dist2D(ex,ez,lastKnownPlayerPos.x,lastKnownPlayerPos.z)<1.2){
         setEnemyTargetAvoidingSafeZone();
       }
     }
-
   } else {
-    // 徘徊：ランダム目標へ
     if(!enemyTarget) setEnemyTargetAvoidingSafeZone();
-    const dx = enemyTarget.x - ex, dz = enemyTarget.z - ez;
-    const dist = Math.sqrt(dx*dx+dz*dz);
-
-    if(push.x!==0 || push.z!==0){
+    const dx=enemyTarget.x-ex, dz=enemyTarget.z-ez;
+    const dist=Math.sqrt(dx*dx+dz*dz);
+    if(push.x!==0||push.z!==0){
       hachishaku.position.x -= push.x;
       hachishaku.position.z -= push.z;
       setEnemyTargetAvoidingSafeZone();
-    } else if(dist < 0.9){
+    } else if(dist<0.9){
       setEnemyTargetAvoidingSafeZone();
     } else {
       const nx=dx/Math.max(dist,0.0001), nz=dz/Math.max(dist,0.0001);
       const nextX=ex+nx*ENEMY_WANDER_SPEED, nextZ=ez+nz*ENEMY_WANDER_SPEED;
       if(!isPointInsideAnySafeZone(nextX,nextZ)){
-        hachishaku.position.x = nextX;
-        hachishaku.position.z = nextZ;
-        // ★ 向き：徘徊中も移動方向を向く
+        hachishaku.position.x=nextX;
+        hachishaku.position.z=nextZ;
         faceEnemyToward(enemyTarget.x, enemyTarget.z);
       } else {
         setEnemyTargetAvoidingSafeZone();
@@ -896,12 +882,12 @@ function updateEnemyAI(deltaMs){
     }
   }
 
-  // 地面揺れ（微小）
-  hachishaku.position.y = getTerrainHeight(hachishaku.position.x, hachishaku.position.z) + Math.sin(performance.now()*0.004)*0.015;
+  // 地形追従
+  hachishaku.position.y = getTerrainHeight(hachishaku.position.x, hachishaku.position.z)
+    + Math.sin(performance.now()*0.004)*0.015;
 
   // 即死判定
-  const d3 = hachishaku.position.distanceTo(camera.position);
-  if(d3 < 1.8){ triggerGameOver(); }
+  if(hachishaku.position.distanceTo(camera.position) < 1.8) triggerGameOver();
 }
 
 // ===================================================================
@@ -912,109 +898,16 @@ function ensureHachishaku(){
   hachishaku = new THREE.Group();
   const visualRoot = new THREE.Group();
   visualRoot.rotation.y = ENEMY_VISUAL_YAW_OFFSET;
-  const fb = buildFallbackEnemy();
-  visualRoot.add(fb);
+  visualRoot.add(buildFallbackEnemy());
   hachishaku.add(visualRoot);
-  hachishaku.position.set(18, getTerrainHeight(18, 18), 18);
+  hachishaku.position.set(18, getTerrainHeight(18,18), 18);
   scene.add(hachishaku);
   setEnemyTargetAvoidingSafeZone();
 }
 
 // ===================================================================
-// 家（ie.glb）配置ロジック
+// スクリプトロードヘルパー
 // ===================================================================
-statusMsg.textContent = 'モデル読み込み中...';
-
-function placeHousesAlongRoads(template){
-  const AUTOS=35, MIN_DIST=8;
-  const slots=[];
-  for(let z=-75;z<75;z+=10){
-    if(Math.abs(z)<12) continue;
-    slots.push({ x: 10+randRange(1,4), z: z+randRange(-2,2), ry: Math.PI/2*(Math.random()>0.5?1:-1) });
-    slots.push({ x:-10-randRange(1,4), z: z+randRange(-2,2), ry: Math.PI/2*(Math.random()>0.5?1:-1) });
-  }
-  for(let x=-75;x<75;x+=10){
-    if(Math.abs(x)<12) continue;
-    slots.push({ x: x+randRange(-2,2), z: 10+randRange(1,4), ry: 0 });
-    slots.push({ x: x+randRange(-2,2), z:-10-randRange(1,4), ry: Math.PI });
-  }
-  for(let i=0;i<16;i++){
-    const a=i*Math.PI/8;
-    const r=RING_R+randRange(7,13);
-    slots.push({ x:Math.cos(a)*r, z:Math.sin(a)*r, ry:a+Math.PI/2 });
-  }
-
-  let placed=0;
-  const bbox=new THREE.Box3().setFromObject(template);
-  const size=new THREE.Vector3(); bbox.getSize(size);
-  const targetH=5.0;
-  const autoScale=(size.y>0.01)?targetH/size.y:1.0;
-  const bottomY=bbox.min.y*autoScale;
-
-  for(const slot of slots){
-    if(placed>=AUTOS) break;
-    const {x,z,ry}=slot;
-    if(Math.sqrt(x*x+z*z)<MIN_DIST) continue;
-    const house=template.clone(true);
-    const sc = autoScale*(0.85+Math.random()*0.35);
-    house.scale.setScalar(sc);
-    house.rotation.y=ry+randRange(-0.2,0.2);
-    house.position.set(x,-bottomY,z);
-    house.traverse(child=>{
-      if(child.isMesh){
-        child.castShadow=true; child.receiveShadow=true;
-        if(child.material){
-          const mats=Array.isArray(child.material)?child.material:[child.material];
-          mats.forEach(m=>{ if(m.color) m.color.multiplyScalar(0.62); });
-        }
-        obstacleMeshes.push(child);  // 家を障害物登録
-      }
-    });
-    scene.add(house);
-    placed++;
-  }
-  return placed;
-}
-
-// ===================================================================
-// GLTFLoader（ie.glb）→ 完了後 FBXLoader（popopo.fbx）を呼ぶ
-// ===================================================================
-loadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js', function(err){
-  if(err || typeof THREE.GLTFLoader === 'undefined'){
-    errorMsg.textContent = 'GLTFLoaderの読み込みに失敗しました';
-    errorMsg.style.display = 'block';
-    statusMsg.textContent = '';
-    tryLoadFBX(); return;
-  }
-  const loader = new THREE.GLTFLoader();
-  loader.load('./ie.glb',
-    function(gltf){
-      const template = gltf.scene;
-      let meshCount=0;
-      template.traverse(c=>{ if(c.isMesh) meshCount++; });
-      if(meshCount === 0){
-        errorMsg.textContent = 'ie.glb: メッシュ0個';
-        errorMsg.style.display = 'block';
-        statusMsg.textContent = '';
-      } else {
-        redCube.visible = false; redGlow.visible = false;
-        const placed = placeHousesAlongRoads(template);
-        statusMsg.textContent = `✅ ie.glb 成功 / メッシュ:${meshCount} / 家:${placed}棟`;
-        setTimeout(()=>{ if(!gameOver) statusMsg.textContent=''; }, 6000);
-      }
-      tryLoadFBX();
-    },
-    function(prog){
-      if(prog.total>0) statusMsg.textContent=`ie.glb 読み込み中... ${Math.round(prog.loaded/prog.total*100)}%`;
-    },
-    function(e){
-      errorMsg.textContent = 'ie.glb失敗：'+(e&&e.message?e.message:String(e));
-      errorMsg.style.display = 'block'; statusMsg.textContent = '';
-      tryLoadFBX();
-    }
-  );
-});
-
 function loadScript(url,cb){
   const s=document.createElement('script');
   s.src=url; s.onload=()=>cb(null); s.onerror=()=>cb(new Error('failed:'+url));
@@ -1022,52 +915,354 @@ function loadScript(url,cb){
 }
 
 // ===================================================================
-// ★ FBXLoader（popopo.fbx）― 向き補正＋AnimationMixer
+// ★ モデル配置共通関数：Box3ベース当たり判定 + LOS間引き登録
+// ===================================================================
+/**
+ * glbモデルを配置し、軽量なBox3衝突判定を登録する。
+ * @param {Object3D} scene3D  - クローン済みのシーン
+ * @param {number} tx,ty,tz  - 配置座標
+ * @param {number} ry        - Y回転
+ * @param {number} scale     - スケール
+ * @param {number} darken    - 暗化係数 (0~1)
+ * @param {boolean} doLOS    - LOS用メッシュ登録するか
+ * @param {number} margin    - BBoxマージン
+ */
+function placeGLBModel(scene3D, tx, ty, tz, ry, scale, darken, doLOS, margin){
+  scene3D.scale.setScalar(scale);
+  scene3D.rotation.y = ry;
+  scene3D.position.set(tx, ty, tz);
+
+  scene3D.traverse(child=>{
+    if(child.isMesh){
+      child.castShadow = true;
+      child.receiveShadow = true;
+      if(child.material && darken !== 1){
+        const mats = Array.isArray(child.material)?child.material:[child.material];
+        mats.forEach(m=>{
+          if(m.color) m.color.multiplyScalar(darken);
+        });
+      }
+      if(doLOS && Math.random()<0.35){
+        obstacleMeshes.push(child); // 35%間引きでLOS登録
+      }
+    }
+  });
+
+  scene.add(scene3D);
+
+  // ★ Box3当たり判定（一回だけ計算して固定登録）
+  const box = new THREE.Box3().setFromObject(scene3D);
+  if(margin) box.expandByScalar(margin);
+  collisionBoxes.push(box);
+}
+
+// ===================================================================
+// ★ 家（ie.glb）配置 - Box3ベース最適化版
+// ===================================================================
+statusMsg.textContent = 'モデル読み込み中...';
+
+function placeHousesAlongRoads(template){
+  const AUTOS = 32, MIN_DIST = 8;
+  const slots = [];
+
+  for(let z=-75;z<75;z+=10){
+    if(Math.abs(z)<12) continue;
+    slots.push({x: 11+randRange(1,4), z: z+randRange(-2,2), ry: Math.PI/2*(Math.random()>0.5?1:-1)});
+    slots.push({x:-11-randRange(1,4), z: z+randRange(-2,2), ry: Math.PI/2*(Math.random()>0.5?1:-1)});
+  }
+  for(let x=-75;x<75;x+=10){
+    if(Math.abs(x)<12) continue;
+    slots.push({x: x+randRange(-2,2), z: 11+randRange(1,4), ry: 0});
+    slots.push({x: x+randRange(-2,2), z:-11-randRange(1,4), ry: Math.PI});
+  }
+  for(let i=0;i<14;i++){
+    const a=i*Math.PI/7;
+    const r=RING_R+randRange(7,12);
+    slots.push({x:Math.cos(a)*r, z:Math.sin(a)*r, ry:a+Math.PI/2});
+  }
+
+  // スケール計算（一度だけ）
+  const bbox = new THREE.Box3().setFromObject(template);
+  const size = new THREE.Vector3(); bbox.getSize(size);
+  const TARGET_H = 5.0;
+  const autoScale = (size.y>0.01) ? TARGET_H/size.y : 1.0;
+  const bottomY = bbox.min.y * autoScale;
+
+  let placed = 0;
+  for(const slot of slots){
+    if(placed>=AUTOS) break;
+    const {x,z,ry} = slot;
+    if(Math.sqrt(x*x+z*z)<MIN_DIST) continue;
+
+    const terrY = getTerrainHeight(x,z);
+    const house = template.clone(true);
+    const sc = autoScale * (0.85 + Math.random()*0.30);
+    house.scale.setScalar(sc);
+    house.rotation.y = ry + randRange(-0.2,0.2);
+    house.position.set(x, terrY - bottomY * (sc/autoScale), z);
+
+    // 暗化
+    house.traverse(child=>{
+      if(child.isMesh && child.material){
+        child.castShadow = true;
+        child.receiveShadow = true;
+        const mats = Array.isArray(child.material)?child.material:[child.material];
+        mats.forEach(m=>{ if(m.color) m.color.multiplyScalar(0.55); });
+      }
+    });
+
+    scene.add(house);
+
+    // ★ Box3当たり判定のみ登録（メッシュはobstacleMeshesに入れない）
+    const hbox = new THREE.Box3().setFromObject(house);
+    hbox.expandByScalar(-0.15); // 少し内側に絞ってギリギリ感を回避
+    collisionBoxes.push(hbox);
+
+    // LOSのみ: 各家から代表メッシュ1枚だけ取り出す（負荷最小化）
+    const firstMesh = [];
+    house.traverse(c=>{ if(c.isMesh && firstMesh.length<1) firstMesh.push(c); });
+    if(firstMesh.length>0) obstacleMeshes.push(firstMesh[0]);
+
+    placed++;
+  }
+  return placed;
+}
+
+// ===================================================================
+// ★ 街灯（gaitou.glb）配置
+// ===================================================================
+let gaitouTemplate = null;
+const LANTERN_POSITIONS = [
+  [8,-8],[8,8],[-8,-8],[-8,8],
+  [8,-45],[8,45],[-8,-45],[-8,45],
+  [34,0],[-34,0],[20,-22],[-20,22],
+  [15,40],[-15,-40]
+];
+
+function placeGaitouLights(){
+  if(!gaitouTemplate) return;
+  const box = new THREE.Box3().setFromObject(gaitouTemplate);
+  const size = new THREE.Vector3(); box.getSize(size);
+  const TARGET_H = 3.5;
+  const sc = (size.y>0.01) ? TARGET_H/size.y : 1.0;
+  const topY = box.max.y * sc; // 先端のY（ローカル）
+
+  for(const [lx,lz] of LANTERN_POSITIONS){
+    const ly = getTerrainHeight(lx,lz);
+    const clone = gaitouTemplate.clone(true);
+    clone.scale.setScalar(sc);
+    clone.position.set(lx, ly, lz);
+    clone.traverse(c=>{
+      if(c.isMesh&&c.material){
+        const mats=Array.isArray(c.material)?c.material:[c.material];
+        mats.forEach(m=>{ if(m.color) m.color.multiplyScalar(0.55); });
+      }
+    });
+    scene.add(clone);
+
+    // 街灯先端からオレンジPointLight
+    const pl = new THREE.PointLight(0xff8800, 1.4, 10, 2);
+    pl.position.set(lx, ly + topY, lz);
+    scene.add(pl);
+
+    // Box3当たり判定（ポール部分のみ）
+    registerStaticBox(lx, ly+1.5, lz, 0.15, 1.8, 0.15);
+  }
+}
+
+// ===================================================================
+// ★ 階段（kaidan.glb）配置 - 地形の段差箇所に自動配置
+// ===================================================================
+let kaidanTemplate = null;
+
+// 高台エリアへの入り口に階段を置く候補リスト
+const STAIR_PLACEMENTS = [
+  // 東の崖上（高台40,10 h=4.5）
+  {x: 32, z:  5, ry:  Math.PI,      label:'東崖'},
+  {x: 32, z: 15, ry:  Math.PI,      label:'東崖2'},
+  // 西南の丘（-38,-20 h=3.2）
+  {x:-32, z:-15, ry:  0,            label:'西南丘'},
+  // 南の神社高台（10,-55 h=5.8）
+  {x:  5, z:-48, ry:  Math.PI/2,    label:'南神社'},
+  {x: -5, z:-48, ry: -Math.PI/2,    label:'南神社2'},
+  // 北西の丘（-20,40 h=2.8）
+  {x:-15, z: 35, ry:  Math.PI*0.75, label:'北西丘'},
+];
+
+function placeStairs(){
+  if(!kaidanTemplate) return;
+  const box = new THREE.Box3().setFromObject(kaidanTemplate);
+  const size = new THREE.Vector3(); box.getSize(size);
+  // 階段の高さを地形の段差（約2.5〜3m）に合わせる
+  const TARGET_H = 2.8;
+  const sc = (size.y>0.01) ? TARGET_H/size.y : 1.0;
+
+  for(const sp of STAIR_PLACEMENTS){
+    const sy = getTerrainHeight(sp.x, sp.z);
+    const clone = kaidanTemplate.clone(true);
+    clone.scale.setScalar(sc);
+    clone.rotation.y = sp.ry;
+    clone.position.set(sp.x, sy, sp.z);
+
+    clone.traverse(c=>{
+      if(c.isMesh && c.material){
+        c.castShadow = true; c.receiveShadow = true;
+        const mats=Array.isArray(c.material)?c.material:[c.material];
+        mats.forEach(m=>{ if(m.color) m.color.multiplyScalar(0.68); });
+      }
+    });
+
+    scene.add(clone);
+
+    // 階段のBox3当たり判定（壁として機能させず、乗り越え可能にするため登録しない）
+    // プレイヤーは地形高さ関数で自然に階段を昇降する
+    // ただし横方向のブロックは必要なのでY範囲を絞った薄いBBoxを登録
+    const stairBox = new THREE.Box3().setFromObject(clone);
+    // 横方向のみ制限（Y上限を低くして乗り越えられるように）
+    stairBox.max.y = Math.min(stairBox.max.y, sy + 0.6);
+    collisionBoxes.push(stairBox);
+  }
+}
+
+// ===================================================================
+// モデルロード連鎖
+// ===================================================================
+loadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js', function(err){
+  if(err || typeof THREE.GLTFLoader === 'undefined'){
+    appendError('GLTFLoader読み込み失敗');
+    tryLoadFBX();
+    return;
+  }
+  const loader = new THREE.GLTFLoader();
+
+  // ── 1) ie.glb（家）──
+  loader.load('./ie.glb',
+    function(gltf){
+      const template = gltf.scene;
+      let meshCount=0; template.traverse(c=>{ if(c.isMesh) meshCount++; });
+      if(meshCount===0){
+        appendError('ie.glb: メッシュ0個');
+      } else {
+        const placed = placeHousesAlongRoads(template);
+        appendStatus(`✅ ie.glb 成功 / 家:${placed}棟`);
+        setTimeout(()=>{ if(!gameOver) clearStatus(); }, 6000);
+      }
+      // 2) gaitou.glb
+      loadGaitou(loader);
+    },
+    prog=>{
+      if(prog.total>0) setStatus(`ie.glb ${Math.round(prog.loaded/prog.total*100)}%`);
+    },
+    e=>{
+      appendError('ie.glb失敗:'+(e&&e.message?e.message:String(e)));
+      loadGaitou(loader);
+    }
+  );
+});
+
+function loadGaitou(loader){
+  loader.load('./gaitou.glb',
+    function(gltf){
+      gaitouTemplate = gltf.scene;
+      placeGaitouLights();
+      appendStatus('\n✅ gaitou.glb 成功');
+      setTimeout(()=>{ if(!gameOver) clearStatus(); }, 5000);
+      loadKaidan(loader);
+    },
+    null,
+    function(e){
+      appendError('gaitou.glb失敗→基本形状使用');
+      // フォールバック：基本形状の灯籠
+      placeFallbackLanterns();
+      loadKaidan(loader);
+    }
+  );
+}
+
+function placeFallbackLanterns(){
+  for(const [lx,lz] of LANTERN_POSITIONS){
+    const ly = getTerrainHeight(lx,lz);
+    const grp = new THREE.Group();
+    const pole = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.06,0.08,3.2,6),
+      new THREE.MeshLambertMaterial({color:0x1a0e00})
+    );
+    pole.position.y=1.6; pole.castShadow=true; grp.add(pole);
+    const head = new THREE.Mesh(
+      new THREE.BoxGeometry(0.52,0.42,0.52),
+      new THREE.MeshBasicMaterial({color:0xffcc66})
+    );
+    head.position.y=3.35; grp.add(head);
+    const pl = new THREE.PointLight(0xff8800,1.3,9,2);
+    pl.position.y=3.35; grp.add(pl);
+    grp.position.set(lx,ly,lz);
+    scene.add(grp);
+    registerStaticBox(lx,ly+1.6,lz,0.15,1.8,0.15);
+  }
+}
+
+function loadKaidan(loader){
+  loader.load('./kaidan.glb',
+    function(gltf){
+      kaidanTemplate = gltf.scene;
+      placeStairs();
+      appendStatus('\n✅ kaidan.glb 成功');
+      setTimeout(()=>{ if(!gameOver) clearStatus(); }, 5000);
+      tryLoadFBX();
+    },
+    null,
+    function(e){
+      appendError('kaidan.glb失敗→基本階段使用');
+      placeFallbackStairs();
+      tryLoadFBX();
+    }
+  );
+}
+
+function placeFallbackStairs(){
+  // フォールバック：段差箇所にシンプルな階段ジオメトリ
+  const mat = new THREE.MeshLambertMaterial({color:0x4a4338});
+  for(const sp of STAIR_PLACEMENTS){
+    const sy = getTerrainHeight(sp.x,sp.z);
+    const STEPS=5, RISE=0.32, RUN=0.5;
+    for(let s=0;s<STEPS;s++){
+      const sx = sp.x + Math.sin(sp.ry)*s*RUN*0.8;
+      const sz = sp.z + Math.cos(sp.ry)*s*RUN*0.8;
+      const sh = sy + s*RISE;
+      const step = new THREE.Mesh(new THREE.BoxGeometry(2.0,RISE,RUN), mat);
+      step.position.set(sx, sh+RISE/2, sz);
+      step.castShadow=true; step.receiveShadow=true;
+      scene.add(step);
+      registerStaticBox(sx, sh+RISE/2, sz, 1.05, RISE/2+0.05, RUN/2+0.05);
+    }
+  }
+}
+
+// ===================================================================
+// ★ FBXLoader（popopo.fbx）
 // ===================================================================
 function tryLoadFBX(){
   if(typeof THREE.FBXLoader === 'undefined'){
-    console.warn('FBXLoader未定義 → フォールバック');
+    console.warn('FBXLoader未定義→フォールバック');
     ensureHachishaku();
-    errorMsg.textContent = 'FBXLoader未定義→フォールバック使用';
-    errorMsg.style.display = 'block';
-    setTimeout(()=>{ if(!gameOver) errorMsg.style.display='none'; }, 5000);
+    appendError('FBXLoader未定義→フォールバック使用');
+    setTimeout(()=>{ if(!gameOver) clearError(); }, 5000);
     return;
   }
 
   const fbxLoader = new THREE.FBXLoader();
-
-  fbxLoader.load(
-    './popopo.fbx',
-
-    // ── onLoad ──
+  fbxLoader.load('./popopo.fbx',
     function(fbx){
-      // ─ ① スケール自動補正 ─────────────────────────────────────
-      // MeshyAI製モデルは単位がcmのことが多いため 0.02 を基準スケールに設定
       const BASE_SCALE = 0.02;
-      fbx.scale.set(BASE_SCALE, BASE_SCALE, BASE_SCALE);
-
-      // 目標身長 4.5m になるよう最終スケールを計算
+      fbx.scale.set(BASE_SCALE,BASE_SCALE,BASE_SCALE);
       const box1 = new THREE.Box3().setFromObject(fbx);
-      const size = new THREE.Vector3();
-      box1.getSize(size);
-
+      const size = new THREE.Vector3(); box1.getSize(size);
       const TARGET_HEIGHT = 4.5;
       let finalScale = BASE_SCALE;
-      if(size.y > 0.01){
-        finalScale = BASE_SCALE * (TARGET_HEIGHT / size.y);
-        fbx.scale.set(finalScale, finalScale, finalScale);
-      }
-
-      // ─ ② 底面補正（地面に接地） ─────────────────────────────────
+      if(size.y>0.01){ finalScale=BASE_SCALE*(TARGET_HEIGHT/size.y); fbx.scale.set(finalScale,finalScale,finalScale); }
       const box2 = new THREE.Box3().setFromObject(fbx);
-      const bottomY = box2.min.y; // スケール適用後の底面Y値
-      fbx.position.y = -bottomY;  // 底面をY=0に揃える
-
-      // ─ ③ 向き補正 ───────────────────────────────────────────────
-      // Meshyの向きは無視し、見た目の正面はコード側の固定オフセットで決める。
-      fbx.rotation.set(0, 0, 0);
-
-      // ─ ④ 暗色化 ─────────────────────────────────────────────────
+      fbx.position.y = -box2.min.y;
+      fbx.rotation.set(0,0,0);
       fbx.traverse(child=>{
         if(child.isMesh){
           child.castShadow=true; child.receiveShadow=true;
@@ -1080,79 +1275,60 @@ function tryLoadFBX(){
           }
         }
       });
-
-      // ─ ⑤ シーンへ追加 ────────────────────────────────────────────
       hachishaku = new THREE.Group();
       const visualRoot = new THREE.Group();
       visualRoot.rotation.y = ENEMY_VISUAL_YAW_OFFSET;
       visualRoot.add(fbx);
       hachishaku.add(visualRoot);
-      hachishaku.position.set(18, getTerrainHeight(18, 18), 18);
+      hachishaku.position.set(18, getTerrainHeight(18,18), 18);
       scene.add(hachishaku);
       setEnemyTargetAvoidingSafeZone();
-
-      // ─ ⑥ AnimationMixer（アニメーション自動再生） ────────────────
-      // FBX内のアニメーションクリップを取得してループ再生
-      if(fbx.animations && fbx.animations.length > 0){
+      if(fbx.animations&&fbx.animations.length>0){
         mixer = new THREE.AnimationMixer(fbx);
         const action = mixer.clipAction(fbx.animations[0]);
-        action.reset();
-        action.enabled = true;
-        action.setLoop(THREE.LoopRepeat, Infinity);
-        action.clampWhenFinished = false;
-        action.play();
-        const extra = statusMsg.textContent ? statusMsg.textContent+'\n' : '';
-        statusMsg.textContent = extra +
-          `✅ popopo.fbx 成功 / アニメ:${fbx.animations.length}クリップ再生中`;
+        action.reset(); action.enabled=true;
+        action.setLoop(THREE.LoopRepeat,Infinity);
+        action.clampWhenFinished=false; action.play();
+        appendStatus(`\n✅ popopo.fbx / アニメ:${fbx.animations.length}クリップ`);
       } else {
-        const extra = statusMsg.textContent ? statusMsg.textContent+'\n' : '';
-        statusMsg.textContent = extra + '✅ popopo.fbx 成功 / アニメなし';
+        appendStatus('\n✅ popopo.fbx / アニメなし');
       }
-      setTimeout(()=>{ if(!gameOver) statusMsg.textContent=''; }, 5000);
+      setTimeout(()=>{ if(!gameOver) clearStatus(); }, 5000);
     },
-
-    // ── onProgress ──
-    function(prog){
-      if(prog.total > 0){
-        const pct = Math.round(prog.loaded / prog.total * 100);
-        const base = statusMsg.textContent.replace(/\npopopo.fbx.*/,'');
-        statusMsg.textContent = base + `\npopopo.fbx 読み込み中... ${pct}%`;
+    prog=>{
+      if(prog.total>0){
+        const pct=Math.round(prog.loaded/prog.total*100);
+        appendStatus(`\npopopo.fbx ${pct}%`);
       }
     },
-
-    // ── onError ──
-    function(e){
+    e=>{
       console.warn('popopo.fbx load error:', e);
-      mixer = null;
-      ensureHachishaku();
-      errorMsg.textContent = 'popopo.fbx失敗→フォールバック\n'+(e&&e.message?e.message:String(e));
-      errorMsg.style.display = 'block';
-      setTimeout(()=>{ if(!gameOver) errorMsg.style.display='none'; }, 7000);
+      mixer=null; ensureHachishaku();
+      appendError('popopo.fbx失敗→フォールバック\n'+(e&&e.message?e.message:String(e)));
+      setTimeout(()=>{ if(!gameOver) clearError(); }, 7000);
     }
   );
 }
 
+function appendStatus(msg){ statusMsg.textContent=(statusMsg.textContent||'')+msg; }
+function setStatus(msg)   { statusMsg.textContent=msg; }
+function clearStatus()    { statusMsg.textContent=''; }
+function appendError(msg) { errorMsg.textContent=(errorMsg.textContent?errorMsg.textContent+'\n':'')+msg; errorMsg.style.display='block'; }
+function clearError()     { errorMsg.style.display='none'; errorMsg.textContent=''; }
+
 // ===================================================================
-// タッチ操作（左:ジョイスティック / 右:視点 / 右下:ダッシュボタン）
+// タッチ操作
 // ===================================================================
 const JOY_R=60;
 let joyId=null, joyActive=false, joyDx=0, joyDy=0, joyStartX=0, joyStartY=0;
 let lookId=null, lookPrevX=0, lookPrevY=0;
 let yaw=0, pitch=0;
-const touchStartMeta=new Map();
+const touchStartMeta = new Map();
+let dashBtnActive = false;
 
-let dashBtnActive=false;
-dashBtnEl.addEventListener('touchstart',e=>{
-  e.stopPropagation();
-  if(gameOver||dashExhausted) return;
-  dashBtnActive=true; isDashing=true;
-},{passive:true});
-dashBtnEl.addEventListener('touchend',e=>{
-  e.stopPropagation(); dashBtnActive=false; isDashing=false;
-},{passive:true});
-dashBtnEl.addEventListener('touchcancel',e=>{
-  e.stopPropagation(); dashBtnActive=false; isDashing=false;
-},{passive:true});
+dashBtnEl.addEventListener('touchstart',e=>{ e.stopPropagation(); if(gameOver||dashExhausted) return; dashBtnActive=true; isDashing=true; },{passive:true});
+dashBtnEl.addEventListener('touchend',  e=>{ e.stopPropagation(); dashBtnActive=false; isDashing=false; },{passive:true});
+dashBtnEl.addEventListener('touchcancel',e=>{ e.stopPropagation(); dashBtnActive=false; isDashing=false; },{passive:true});
 
 canvas.addEventListener('touchstart', onTS, {passive:false});
 canvas.addEventListener('touchmove',  onTM, {passive:false});
@@ -1165,12 +1341,8 @@ function onTS(e){
   for(const t of e.changedTouches){
     touchStartMeta.set(t.identifier,{x:t.clientX,y:t.clientY,time:Date.now()});
     const isLeft = t.clientX < window.innerWidth/2;
-    if(isLeft && joyId===null){
-      joyId=t.identifier; joyActive=true;
-      joyStartX=t.clientX; joyStartY=t.clientY; joyDx=0; joyDy=0;
-    } else if(!isLeft && lookId===null){
-      lookId=t.identifier; lookPrevX=t.clientX; lookPrevY=t.clientY;
-    }
+    if(isLeft&&joyId===null){ joyId=t.identifier; joyActive=true; joyStartX=t.clientX; joyStartY=t.clientY; joyDx=0; joyDy=0; }
+    else if(!isLeft&&lookId===null){ lookId=t.identifier; lookPrevX=t.clientX; lookPrevY=t.clientY; }
   }
 }
 function onTM(e){
@@ -1185,18 +1357,18 @@ function onTM(e){
     }
     if(t.identifier===lookId){
       const dx=t.clientX-lookPrevX, dy=t.clientY-lookPrevY;
-      yaw  -= dx*0.0030; pitch -= dy*0.0028;
-      pitch = Math.max(-Math.PI/2.2, Math.min(Math.PI/2.2, pitch));
+      yaw   -= dx*0.0030; pitch -= dy*0.0028;
+      pitch  = Math.max(-Math.PI/2.2, Math.min(Math.PI/2.2, pitch));
       lookPrevX=t.clientX; lookPrevY=t.clientY;
     }
   }
 }
 function tryIgniteJizoByTap(t){
   if(gameOver) return;
-  const meta=touchStartMeta.get(t.identifier);
+  const meta = touchStartMeta.get(t.identifier);
   if(!meta) return;
   if(Date.now()-meta.time>350 || Math.hypot(t.clientX-meta.x,t.clientY-meta.y)>24) return;
-  const n=getNearestJizoInPromptRange();
+  const n = getNearestJizoInPromptRange();
   if(n){ igniteJizo(n); promptMsg.style.display='none'; }
 }
 function onTE(e){
@@ -1210,12 +1382,17 @@ function onTE(e){
 }
 
 // ===================================================================
-// プレイヤー移動（スタミナ付きダッシュ）
+// ★ プレイヤー移動（地形追従 + Box3衝突判定）
 // ===================================================================
+const PLAYER_EYE_H   = 1.65;    // 目の高さ
+const TERRAIN_LERP_K = 0.22;    // 地形追従の補間係数（緩やかに）
+let targetPlayerY    = playerPos.y;
+
 function updateMove(){
   if(gameOver) return;
 
-  if(isDashing && !dashExhausted){
+  // スタミナ
+  if(isDashing&&!dashExhausted){
     stamina = Math.max(0, stamina-STAMINA_DRAIN);
     if(stamina<=0){ stamina=0; dashExhausted=true; isDashing=false; }
   } else {
@@ -1229,63 +1406,92 @@ function updateMove(){
   updateStaminaUI();
 
   if(!joyActive) return;
-  const spd = (isDashing && !dashExhausted) ? SPEED_DASH : SPEED_WALK;
+
+  const spd = (isDashing&&!dashExhausted) ? SPEED_DASH : SPEED_WALK;
   const fwd = new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw));
   const rgt = new THREE.Vector3( Math.cos(yaw),0,-Math.sin(yaw));
-  playerPos.addScaledVector(fwd,-joyDy*spd);
-  playerPos.addScaledVector(rgt, joyDx*spd);
-  playerPos.x = Math.max(-82, Math.min(82, playerPos.x));
-  playerPos.z = Math.max(-82, Math.min(82, playerPos.z));
-  playerPos.y = 1.65 + getTerrainHeight(playerPos.x, playerPos.z);
+
+  // 試行移動
+  let nx = playerPos.x - joyDy*spd*fwd.x + joyDx*spd*rgt.x;
+  let nz = playerPos.z - joyDy*spd*fwd.z + joyDx*spd*rgt.z;
+
+  // 境界クランプ
+  nx = Math.max(-81, Math.min(81, nx));
+  nz = Math.max(-81, Math.min(81, nz));
+
+  // 地形高さ
+  const th = getTerrainHeight(nx, nz);
+  const ny = th + PLAYER_EYE_H;
+
+  // ★ Box3衝突判定 – 壁として機能する箱のみチェック
+  if(!checkPlayerCollision(nx, nz, ny)){
+    playerPos.x = nx;
+    playerPos.z = nz;
+  } else {
+    // スライディング：X方向だけ試みる
+    const only_nx = playerPos.x - joyDy*spd*fwd.x + joyDx*spd*rgt.x;
+    const only_nz = playerPos.z;
+    const th2 = getTerrainHeight(only_nx, only_nz);
+    if(!checkPlayerCollision(only_nx, only_nz, th2+PLAYER_EYE_H)){
+      playerPos.x = only_nx;
+    } else {
+      // Z方向だけ試みる
+      const only_nx2 = playerPos.x;
+      const only_nz2 = playerPos.z - joyDy*spd*fwd.z + joyDx*spd*rgt.z;
+      const th3 = getTerrainHeight(only_nx2, only_nz2);
+      if(!checkPlayerCollision(only_nx2, only_nz2, th3+PLAYER_EYE_H)){
+        playerPos.z = only_nz2;
+      }
+    }
+  }
+
+  // 地形追従Y（スムーズ補間で段差を緩和）
+  const newTerrainY = getTerrainHeight(playerPos.x, playerPos.z) + PLAYER_EYE_H;
+  targetPlayerY = newTerrainY;
+  playerPos.y += (targetPlayerY - playerPos.y) * TERRAIN_LERP_K;
 }
 
 // ===================================================================
-// ★ アニメーションループ（mixerのupdate含む）
+// ★ メインアニメーションループ
 // ===================================================================
-let frame=0;
+let frame = 0;
 
 function animate(){
   if(!animationRunning) return;
   requestAnimationFrame(animate);
   frame++;
 
-  // ★ AnimationMixerの時間を進める（必須：これがないとアニメが止まる）
   const delta = clock.getDelta();
   if(mixer) mixer.update(delta);
 
-  // プレイヤー移動
   updateMove();
-
-  // 八尺様 AI（ステルス視線判定統合）
-  // delta*1000でmsに変換してステートマシンに渡す
   updateEnemyAI(delta * 1000);
-
-  // 地蔵プロンプト
   updateJizoPrompt();
 
-  // カメラ更新
+  // カメラ
   camera.position.copy(playerPos);
-  camera.rotation.order='YXZ';
-  camera.rotation.y=yaw; camera.rotation.x=pitch;
+  camera.rotation.order = 'YXZ';
+  camera.rotation.y = yaw;
+  camera.rotation.x = pitch;
 
-  // 蝋燭ライト（フリッカー付き）
-  const dir=new THREE.Vector3(0,0,-1).applyEuler(camera.rotation);
+  // 蝋燭ライト
+  const dir = new THREE.Vector3(0,0,-1).applyEuler(camera.rotation);
   candleLight.position.copy(camera.position);
   candleLight.target.position.copy(camera.position.clone().addScaledVector(dir,6));
   candleLight.target.updateMatrixWorld();
   footLight.position.copy(camera.position);
 
-  const flicker=0.9+Math.sin(frame*0.23)*0.06+Math.sin(frame*0.71)*0.04+(Math.random()-0.5)*0.08;
+  const flicker = 0.9+Math.sin(frame*0.23)*0.06+Math.sin(frame*0.71)*0.04+(Math.random()-0.5)*0.08;
   if(candlePercent>0){
     candleLight.intensity = 8.5*(candlePercent/100)*flicker;
     candleLight.distance  = 12+8*(candlePercent/100)+Math.random()*0.8;
-    footLight.intensity   = 2.2*(candlePercent/100)*flicker;
+    footLight.intensity   = 2.0*(candlePercent/100)*flicker;
   } else {
     candleLight.intensity=0; footLight.intensity=0;
   }
 
   // 蝋燭残量タイマー
-  const now=Date.now();
+  const now = Date.now();
   if(!gameOver && now-lastTick>TICK_MS && candlePercent>0){
     candlePercent--; lastTick=now; updateCandleUI();
     if(candlePercent<=0){
@@ -1295,8 +1501,7 @@ function animate(){
     }
   }
 
-  if(redCube.visible) redCube.rotation.y+=0.012;
-  renderer.render(scene,camera);
+  renderer.render(scene, camera);
 }
 
 animate();
