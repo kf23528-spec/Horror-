@@ -4,8 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>夜の村 - 和風ホラー</title>
-<script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.min.js"></script>
+
+<!-- Three.js r128 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<!-- fflate（FBXLoaderの依存） -->
+<script src="https://cdn.jsdelivr.net/npm/fflate@0.7.4/umd/index.js"></script>
+<!-- FBXLoader for Three.js r128 -->
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FBXLoader.js"></script>
+
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   html, body {
@@ -86,9 +92,21 @@
     opacity:0.55;
   }
 
+  /* ── 八尺様警告インジケーター ── */
+  #alertIndicator {
+    position:fixed; top:110px; left:50%; transform:translateX(-50%);
+    font-family:'Hiragino Mincho ProN',serif;
+    font-size:14px; color:#ff4444; letter-spacing:3px;
+    text-shadow:0 0 10px #ff0000, 0 0 4px #000;
+    z-index:20; pointer-events:none;
+    display:none; white-space:nowrap;
+    animation:alertPulse 0.6s ease-in-out infinite;
+  }
+  @keyframes alertPulse { 0%,100%{opacity:0.6;} 50%{opacity:1.0;} }
+
   /* ── その他UI ── */
   #statusMsg {
-    position:fixed; top:98px; left:50%; transform:translateX(-50%);
+    position:fixed; top:130px; left:50%; transform:translateX(-50%);
     font-family:monospace; font-size:12px; color:#c8ffd0;
     text-shadow:0 0 6px #000,0 0 10px #000;
     z-index:20; pointer-events:none; text-align:center; white-space:pre-wrap;
@@ -104,7 +122,7 @@
     z-index:21; pointer-events:none; display:none;
   }
   #errorMsg {
-    position:fixed; top:116px; left:50%; transform:translateX(-50%);
+    position:fixed; top:148px; left:50%; transform:translateX(-50%);
     font-family:monospace; font-size:12px; color:#ff6666;
     text-shadow:0 0 6px #000;
     z-index:20; pointer-events:none; display:none;
@@ -177,12 +195,18 @@
     position:fixed; inset:0; background:rgba(0,0,0,0);
     pointer-events:none; z-index:8; transition:background 3s ease;
   }
+  /* 赤いベール（追跡中警告） */
+  #dangerVeil {
+    position:fixed; inset:0; background:rgba(180,0,0,0);
+    pointer-events:none; z-index:9; transition:background 0.4s ease;
+  }
 </style>
 </head>
 <body>
 <canvas id="gameCanvas"></canvas>
 <div id="vignette"></div>
 <div id="darknessOverlay"></div>
+<div id="dangerVeil"></div>
 
 <div id="candleUI">🕯 和蝋燭の残り火：<span id="candlePercent">100</span>%</div>
 <div id="candleBar"><div id="candleBarFill"></div></div>
@@ -190,20 +214,20 @@
 <div id="staminaUI">🏃 スタミナ：<span id="staminaPct">100</span>%</div>
 <div id="staminaBar"><div id="staminaBarFill"></div></div>
 
+<div id="alertIndicator">⚠ 八尺様に発見された…</div>
 <div id="statusMsg"></div>
 <div id="promptMsg">【画面をタップ】して地蔵に火を灯す</div>
 <div id="errorMsg"></div>
 
 <div id="gameOverScreen">
   <div id="gameOverInner">
-    <div id="gameOverTitle">捕まった…</div>
+    <div id="gameOverTitle">八尺様に捕まった…</div>
     <div id="gameOverSub">GAME OVER</div>
   </div>
 </div>
 
 <div id="joystickBase"></div>
 <div id="joystickStick"></div>
-<!-- 走るボタン（右下） -->
 <div id="dashBtn"><div class="dashLabel">走る</div></div>
 
 <script>
@@ -235,10 +259,6 @@ window.addEventListener('resize', ()=>{
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// Line-of-sight blocker registry used by fences / houses
-const raycaster = new THREE.Raycaster();
-const losBlockers = [];
-
 // ===================================================================
 // ユーティリティ
 // ===================================================================
@@ -247,14 +267,13 @@ function randRange(a,b){ return a+Math.random()*(b-a); }
 function randomPointInRange(r){ return {x:(Math.random()-0.5)*r, z:(Math.random()-0.5)*r}; }
 
 // ===================================================================
-// 地面（格子線なし）
+// 地面
 // ===================================================================
 const groundMat = new THREE.MeshLambertMaterial({color:0x16161a});
 const ground = new THREE.Mesh(new THREE.PlaneGeometry(400,400), groundMat);
 ground.rotation.x = -Math.PI/2;
 ground.receiveShadow = true;
 scene.add(ground);
-// GridHelper は追加しない → 格子線なし
 
 // ===================================================================
 // ライト
@@ -280,14 +299,16 @@ scene.add(footLight);
 let candlePercent = 100;
 let lastTick = Date.now();
 const TICK_MS = 4000;
-const pctEl       = document.getElementById('candlePercent');
-const barFill     = document.getElementById('candleBarFill');
-const staminaPctEl= document.getElementById('staminaPct');
-const staminaFill = document.getElementById('staminaBarFill');
-const darkOverlay = document.getElementById('darknessOverlay');
-const statusMsg   = document.getElementById('statusMsg');
-const errorMsg    = document.getElementById('errorMsg');
-const promptMsg   = document.getElementById('promptMsg');
+const pctEl          = document.getElementById('candlePercent');
+const barFill        = document.getElementById('candleBarFill');
+const staminaPctEl   = document.getElementById('staminaPct');
+const staminaFill    = document.getElementById('staminaBarFill');
+const darkOverlay    = document.getElementById('darknessOverlay');
+const dangerVeil     = document.getElementById('dangerVeil');
+const alertIndicator = document.getElementById('alertIndicator');
+const statusMsg      = document.getElementById('statusMsg');
+const errorMsg       = document.getElementById('errorMsg');
+const promptMsg      = document.getElementById('promptMsg');
 const gameOverScreen = document.getElementById('gameOverScreen');
 const joystickBase   = document.getElementById('joystickBase');
 const joystickStick  = document.getElementById('joystickStick');
@@ -304,20 +325,20 @@ function updateCandleUI(){
 // ===================================================================
 // スタミナシステム
 // ===================================================================
-let stamina       = 100;   // 0〜100
+let stamina       = 100;
 let isDashing     = false;
-let dashExhausted = false; // 0になったら回復まで不可
-const STAMINA_DRAIN   = 0.55; // /フレーム ダッシュ中消費
-const STAMINA_RECOVER = 0.22; // /フレーム 回復速度
+let dashExhausted = false;
+const STAMINA_DRAIN   = 0.55;
+const STAMINA_RECOVER = 0.22;
 const SPEED_WALK  = 0.055;
-const SPEED_DASH  = 0.110; // 歩きの2倍
+const SPEED_DASH  = 0.110;
 
 function updateStaminaUI(){
   const v = Math.max(0,Math.round(stamina));
   staminaPctEl.textContent = v;
   staminaFill.style.width  = v+'%';
-  const r1=Math.floor(0  +0  *(1-v/100)), g1=Math.floor(160*(v/100)), b1=200;
-  staminaFill.style.background=`linear-gradient(90deg,rgb(0,${g1},${b1}),rgb(0,220,255))`;
+  const g1=Math.floor(160*(v/100));
+  staminaFill.style.background=`linear-gradient(90deg,rgb(0,${g1},200),rgb(0,220,255))`;
   if(dashExhausted){
     dashBtnEl.classList.add('exhausted');
     dashBtnEl.classList.remove('pressing');
@@ -342,36 +363,40 @@ function triggerGameOver(){
   joystickBase.style.opacity  = '0';
   joystickStick.style.opacity = '0';
   dashBtnEl.style.opacity     = '0';
+  alertIndicator.style.display = 'none';
   gameOverScreen.classList.add('active');
   joyId=null; lookId=null; joyActive=false; joyDx=0; joyDy=0;
   promptMsg.style.display='none';
   statusMsg.textContent='';
   errorMsg.textContent='';
+  dangerVeil.style.background='rgba(0,0,0,0)';
 }
 
 // ===================================================================
-// ═══════════════════════════════════════════════════════════════════
-//  村マップ構築
-// ═══════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════
+//  障害物トラッキング（視線判定用）
+// ═══════════════════════════════════════════════════
 // ===================================================================
 
-// ── 道路メッシュ（十字 + 環状の組み合わせ） ──
-const roadMat = new THREE.MeshLambertMaterial({color:0x252526});
+// 視線判定に使う「障害物メッシュ」のリスト
+// 家・柵のメッシュをここに登録する
+const obstacleMeshes = [];
 
+// ===================================================================
+// 村マップ構築
+// ===================================================================
+
+// ── 道路 ──
+const roadMat = new THREE.MeshLambertMaterial({color:0x252526});
 function addRoad(x,z,w,d){
   const m=new THREE.Mesh(new THREE.PlaneGeometry(w,d), roadMat);
   m.rotation.x=-Math.PI/2; m.position.set(x,0.008,z); m.receiveShadow=true;
   scene.add(m);
 }
-// 南北メインロード
 addRoad(0, 0, 7, 180);
-// 東西メインロード
 addRoad(0, 0, 180, 7);
-// 北側横道
 addRoad(0, -45, 120, 5);
-// 南側横道
 addRoad(0,  45, 120, 5);
-// 環状道路（8本で正八角形風に近似）
 const RING_R = 32;
 for(let i=0;i<8;i++){
   const a=i*Math.PI/4, a2=(i+1)*Math.PI/4;
@@ -385,25 +410,25 @@ for(let i=0;i<8;i++){
   scene.add(seg);
 }
 
-// ── 1. 木造の柵・塀 ──
+// ── 1. 木造の柵・塀（障害物登録あり） ──
 const fenceMat = new THREE.MeshLambertMaterial({color:0x3a2010});
 function addFence(x,z,w,d){
-  const m=new THREE.Mesh(new THREE.BoxGeometry(w,0.9,d), fenceMat);
+  const geo = new THREE.BoxGeometry(w,0.9,d);
+  const m = new THREE.Mesh(geo, fenceMat);
   m.position.set(x,0.45,z); m.castShadow=true; scene.add(m);
-  losBlockers.push(m);
+  // 障害物リストに登録（視線判定用）
+  obstacleMeshes.push(m);
 }
-// 道路脇に沿って塀を並べる（南北道左右）
 for(let z=-80;z<80;z+=6){
   addFence( 5.5+randRange(0,0.4), z, 0.18, 4.5+randRange(0,1));
   addFence(-5.5-randRange(0,0.4), z, 0.18, 4.5+randRange(0,1));
 }
-// 東西道上下
 for(let x=-80;x<80;x+=6){
   addFence(x, 5.5+randRange(0,0.4), 4.5+randRange(0,1), 0.18);
   addFence(x,-5.5-randRange(0,0.4), 4.5+randRange(0,1), 0.18);
 }
 
-// ── 2. 道の灯籠（街灯）10箇所 ──
+// ── 2. 道の灯籠（街灯） ──
 function addStreetLantern(x,z){
   const grp=new THREE.Group();
   const pole=new THREE.Mesh(
@@ -457,7 +482,7 @@ function addCart(x,z,ry){
 addWell(12,-12); addWell(-15,18); addWell(22,38); addWell(-20,-38); addWell(35,-10);
 addCart(10,12,0.3); addCart(-12,-16,-0.2); addCart(18,-20,1.1);
 
-// ── 4. 竹林・生け垣（マップ外周を囲む） ──
+// ── 4. 竹林・生け垣 ──
 const bambooMat=new THREE.MeshLambertMaterial({color:0x1a2a0d});
 const hedgeMat =new THREE.MeshLambertMaterial({color:0x182210});
 function addBambooCluster(cx,cz,count){
@@ -466,24 +491,21 @@ function addBambooCluster(cx,cz,count){
     const b=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.09,h,6),bambooMat);
     b.position.set(cx+randRange(-1.4,1.4),h/2,cz+randRange(-1.4,1.4));
     b.castShadow=true; scene.add(b);
+    obstacleMeshes.push(b); // 竹も障害物
   }
 }
 function addHedgeWall(x,z,w,d){
   const m=new THREE.Mesh(new THREE.BoxGeometry(w,2.8,d),hedgeMat);
   m.position.set(x,1.4,z); m.castShadow=true; m.receiveShadow=true; scene.add(m);
-  losBlockers.push(m);
+  obstacleMeshes.push(m);
 }
-
-// 外周竹林（マップ端をぐるりと囲む）
-const BORDER=82;
-const STEP=7;
+const BORDER=82, STEP=7;
 for(let v=-BORDER;v<=BORDER;v+=STEP){
   addBambooCluster( BORDER, v, 6);
   addBambooCluster(-BORDER, v, 6);
   addBambooCluster(v,  BORDER, 6);
   addBambooCluster(v, -BORDER, 6);
 }
-// 生け垣パネルで隙間をふさぐ
 for(let v=-BORDER;v<BORDER;v+=14){
   addHedgeWall( BORDER+1, v+7, 1.2, 14);
   addHedgeWall(-BORDER-1, v+7, 1.2, 14);
@@ -491,7 +513,7 @@ for(let v=-BORDER;v<BORDER;v+=14){
   addHedgeWall(v+7, -BORDER-1, 14, 1.2);
 }
 
-// ── 5. 不気味な祭壇（マップ最深部：北側） ──
+// ── 5. 不気味な祭壇 ──
 function buildAltar(){
   const grp=new THREE.Group();
   const bMat=new THREE.MeshLambertMaterial({color:0x111114,emissive:0x050005,emissiveIntensity:0.3});
@@ -499,7 +521,6 @@ function buildAltar(){
   base.position.y=0.25; grp.add(base);
   const top=new THREE.Mesh(new THREE.BoxGeometry(4.5,0.28,3.5),bMat);
   top.position.y=0.64; grp.add(top);
-  // 台の上の灯明
   for(let ox of[-1.5,0,1.5]){
     const candle=new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08,0.4,8),
       new THREE.MeshBasicMaterial({color:0xffcc44}));
@@ -507,19 +528,15 @@ function buildAltar(){
     const pl=new THREE.PointLight(0xff6600,0.6,4,2);
     pl.position.set(ox,1.15,0); grp.add(pl);
   }
-  // 石の礎
   for(let i=0;i<4;i++){
     const s=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.9,0.5),
       new THREE.MeshLambertMaterial({color:0x2a2a2a}));
     s.position.set((i<2?-2.4:2.4),0.45,(i%2===0?-2:2)); grp.add(s);
   }
   grp.position.set(0,0,-62); scene.add(grp);
-
-  // 鳥居（祭壇の前）
   addTorii(0,-55,0);
   addTorii(-8,-65,0.15);
   addTorii(8,-65,-0.15);
-  // 不気味な赤い光
   const altarGlow=new THREE.PointLight(0x880000,1.8,18,1.5);
   altarGlow.position.set(0,2,-62); scene.add(altarGlow);
 }
@@ -532,6 +549,7 @@ function addTorii(x,z,ry){
   [-1.6,1.6].forEach(ox=>{
     const p=new THREE.Mesh(new THREE.CylinderGeometry(0.18,0.18,5.5,8),mat);
     p.position.set(ox,2.75,0); p.castShadow=true; grp.add(p);
+    obstacleMeshes.push(p); // 鳥居の柱も障害物
   });
   const k1=new THREE.Mesh(new THREE.BoxGeometry(4.4,0.35,0.35),mat);
   k1.position.set(0,5.5,0); grp.add(k1);
@@ -645,16 +663,31 @@ const redGlow=new THREE.PointLight(0xff2200,1.5,8);
 redGlow.position.copy(redCube.position); scene.add(redGlow);
 
 // ===================================================================
-// 八尺様（hachishaku）
+// 八尺様（hachishaku） - 視線AIステルスシステム搭載
 // ===================================================================
-let hachishaku=null, hachishakuModelRoot=null, enemyTarget=null;
-let enemyState='wander';
-let losBlockedSince=null;
+let hachishaku = null;
+let enemyTarget = null;
 
-// ★ 1.2倍に強化した速度
-const ENEMY_SPEED        = 0.05 * 1.2;   // 追跡速度
-const ENEMY_WANDER_SPEED = 0.016 * 1.2;  // 徘徊速度
+// 速度定数（1.2倍強化済み）
+const ENEMY_SPEED        = 0.05 * 1.2;
+const ENEMY_WANDER_SPEED = 0.016 * 1.2;
 
+// ── ステルスAI用変数 ──
+// AIの状態: 'wander'（徘徊）, 'chase'（追跡）
+let enemyState = 'wander';
+
+// 「視線が切れてからの経過時間（ms）」
+// 追跡中に3秒間視線が切れ続けたら見失う
+let losTimer = 0;
+const LOS_LOSE_TIME = 3000; // 3秒
+
+// 最後にプレイヤーを目撃した位置（視線が切れた後はここへ向かう）
+let lastKnownPlayerPos = null;
+
+// Raycaster（視線判定用）
+const raycaster = new THREE.Raycaster();
+
+// ── フォールバック（立方体）で敵を構築 ──
 function buildFallbackEnemy(){
   const grp=new THREE.Group();
   const mat=new THREE.MeshLambertMaterial({color:0x1a1111,emissive:0x050000,emissiveIntensity:0.2});
@@ -672,113 +705,202 @@ function buildFallbackEnemy(){
   grp.add(lL,lR);
   return grp;
 }
+
 function setEnemyTargetAvoidingSafeZone(){
   let p,tries=0;
   do{ p=randomPointInRange(130); tries++; }
   while(isPointInsideAnySafeZone(p.x,p.z)&&tries<120);
   enemyTarget=p;
 }
-function getEnemyEyePosition(){
-  if(!hachishaku) return null;
-  return hachishaku.position.clone().add(new THREE.Vector3(0,2.0,0));
+
+// ===================================================================
+// ★ 視線（LOS: Line of Sight）判定コア関数
+// ===================================================================
+/**
+ * 敵の位置からプレイヤーへの視線が通っているかチェック。
+ * obstacleMeshes（家・柵・竹など）に当たれば視線遮断→false
+ * @param {THREE.Vector3} enemyPos - 敵の世界座標（目線の高さ補正済み）
+ * @param {THREE.Vector3} playerPos3D - プレイヤーの世界座標
+ * @returns {boolean} true=視線通過（発見）, false=視線遮断（隠れている）
+ */
+function hasLineOfSight(enemyPos, playerPos3D){
+  if(obstacleMeshes.length === 0) return true; // 障害物なければ常に発見
+
+  const eyePos = enemyPos.clone();
+  eyePos.y += 2.2; // 八尺様の目の高さ（約4m+視点）
+
+  const targetPos = playerPos3D.clone();
+  targetPos.y += 1.0; // プレイヤーの胸の高さ
+
+  const direction = new THREE.Vector3().subVectors(targetPos, eyePos).normalize();
+  const distance  = eyePos.distanceTo(targetPos);
+
+  raycaster.set(eyePos, direction);
+  raycaster.far = distance - 0.3; // プレイヤー自体には当たらないよう少し短く
+
+  // 障害物との交差チェック（再帰的にchildrenも調べる）
+  const intersects = raycaster.intersectObjects(obstacleMeshes, true);
+
+  return intersects.length === 0; // 何も当たらなければ視線通過
 }
-function hasLineOfSightToPlayer(){
-  if(!hachishaku || losBlockers.length===0) return true;
-  const origin=getEnemyEyePosition();
-  const target=camera.position.clone().add(new THREE.Vector3(0,0.15,0));
-  const dir=target.clone().sub(origin);
-  const dist=dir.length();
-  if(dist<0.001) return true;
-  dir.normalize();
-  raycaster.set(origin, dir);
-  raycaster.far = dist;
-  const hits = raycaster.intersectObjects(losBlockers, true);
-  if(!hits.length) return true;
-  return hits[0].distance >= dist - 0.15;
-}
-function setupHachishakuFromTemplate(fbx){
-  hachishaku = fbx;
-  hachishakuModelRoot = fbx;
-  hachishaku.scale.set(0.02, 0.02, 0.02);
-  const box = new THREE.Box3().setFromObject(hachishaku);
-  const size = new THREE.Vector3();
-  box.getSize(size);
-  hachishaku.position.y = size.y / 2;
-  const groundedBox = new THREE.Box3().setFromObject(hachishaku);
-  if (groundedBox.min.y < 0) {
-    hachishaku.position.y += -groundedBox.min.y;
-  }
-  hachishaku.position.set(18, hachishaku.position.y, 18);
-  hachishaku.rotation.y = Math.PI;
-  hachishaku.traverse(child=>{
-    if(child.isMesh){
-      child.castShadow = true;
-      child.receiveShadow = true;
-      if(child.material){
-        const mats = Array.isArray(child.material) ? child.material : [child.material];
-        mats.forEach(m=>{
-          if(m.color) m.color.multiplyScalar(0.28);
-          if('emissive' in m && m.emissive) m.emissive.multiplyScalar(0.12);
-        });
+
+// ===================================================================
+// ★ 敵AIのメイン更新（視線ステルス統合版）
+// ===================================================================
+const DETECT_RADIUS = 30; // 索敵半径 30m
+
+function updateEnemyAI(deltaMs){
+  if(!hachishaku || gameOver) return;
+
+  const ex = hachishaku.position.x;
+  const ez = hachishaku.position.z;
+  const enemyPos3D = new THREE.Vector3(ex, 0, ez);
+
+  const distToPlayer = hachishaku.position.distanceTo(camera.position);
+  const canSee = (distToPlayer < DETECT_RADIUS) && hasLineOfSight(enemyPos3D, playerPos);
+
+  // ── ステートマシン遷移 ──
+  if(enemyState === 'wander'){
+    // 徘徊中：視線が通れば追跡開始
+    if(canSee){
+      enemyState = 'chase';
+      losTimer = 0;
+      lastKnownPlayerPos = playerPos.clone();
+    }
+  } else if(enemyState === 'chase'){
+    // 追跡中：視線の有無を確認
+    if(canSee){
+      // 視線通過 → 目撃位置更新、タイマーリセット
+      losTimer = 0;
+      lastKnownPlayerPos = playerPos.clone();
+    } else {
+      // 視線遮断 → ロスタイマー加算
+      losTimer += deltaMs;
+      if(losTimer >= LOS_LOSE_TIME){
+        // 3秒間見失った → 徘徊に戻る
+        enemyState = 'wander';
+        losTimer = 0;
+        lastKnownPlayerPos = null;
+        setEnemyTargetAvoidingSafeZone();
       }
     }
-  });
-  scene.add(hachishaku);
-  enemyState = 'wander';
-  losBlockedSince = null;
-  setEnemyTargetAvoidingSafeZone();
+  }
+
+  // ── UI更新（警告インジケーター + 赤いベール） ──
+  if(enemyState === 'chase'){
+    alertIndicator.style.display = 'block';
+    // 距離に応じてベールの強度を変える
+    const veilAlpha = Math.max(0, Math.min(0.22, (DETECT_RADIUS - distToPlayer) / DETECT_RADIUS * 0.3));
+    dangerVeil.style.background = `rgba(180,0,0,${veilAlpha})`;
+  } else {
+    alertIndicator.style.display = 'none';
+    dangerVeil.style.background = 'rgba(0,0,0,0)';
+  }
+
+  // ── 移動処理 ──
+  const push = getLitJizoRepulsion(hachishaku.position);
+
+  if(enemyState === 'chase'){
+    // ■ 追跡モード：プレイヤー（または最終目撃地点）へ向かう
+    const chaseTarget = canSee ? new THREE.Vector3(playerPos.x, 0, playerPos.z)
+                                : (lastKnownPlayerPos ? new THREE.Vector3(lastKnownPlayerPos.x, 0, lastKnownPlayerPos.z) : null);
+
+    if(chaseTarget){
+      hachishaku.lookAt(new THREE.Vector3(chaseTarget.x, hachishaku.position.y, chaseTarget.z));
+      const dir = new THREE.Vector3().subVectors(chaseTarget, new THREE.Vector3(ex, 0, ez)).normalize();
+      const nextX = ex + dir.x * ENEMY_SPEED - push.x;
+      const nextZ = ez + dir.z * ENEMY_SPEED - push.z;
+
+      if(!isPointInsideAnySafeZone(nextX, nextZ)){
+        hachishaku.position.x = nextX;
+        hachishaku.position.z = nextZ;
+      } else {
+        setEnemyTargetAvoidingSafeZone();
+        enemyState = 'wander';
+        losTimer = 0;
+      }
+
+      // 最終目撃地点に到達してもまだ見失っている場合 → 徘徊へ
+      if(!canSee && lastKnownPlayerPos){
+        const dToLKP = dist2D(ex, ez, lastKnownPlayerPos.x, lastKnownPlayerPos.z);
+        if(dToLKP < 1.2){
+          setEnemyTargetAvoidingSafeZone();
+          // stateはchase継続（まだlosTimerが0になっていないので保持）
+        }
+      }
+    }
+
+  } else {
+    // ■ 徘徊モード：ランダムな目標へ移動
+    if(!enemyTarget) setEnemyTargetAvoidingSafeZone();
+    const dx = enemyTarget.x - ex, dz = enemyTarget.z - ez;
+    const dist = Math.sqrt(dx*dx+dz*dz);
+
+    if(push.x!==0||push.z!==0){
+      hachishaku.position.x -= push.x;
+      hachishaku.position.z -= push.z;
+      setEnemyTargetAvoidingSafeZone();
+    }
+    if(dist < 0.9){
+      setEnemyTargetAvoidingSafeZone();
+    } else {
+      const nx=dx/Math.max(dist,0.0001), nz=dz/Math.max(dist,0.0001);
+      const nextX=ex+nx*ENEMY_WANDER_SPEED, nextZ=ez+nz*ENEMY_WANDER_SPEED;
+      if(!isPointInsideAnySafeZone(nextX,nextZ)){
+        hachishaku.position.x = nextX; hachishaku.position.z = nextZ;
+        hachishaku.rotation.y = Math.atan2(nx,nz);
+      } else {
+        setEnemyTargetAvoidingSafeZone();
+      }
+    }
+  }
+
+  // 地面揺れ（微小）
+  hachishaku.position.y = Math.sin(performance.now()*0.004)*0.015;
+
+  // 即死判定
+  if(distToPlayer < 1.8){ triggerGameOver(); }
 }
+
+// ===================================================================
+// フォールバック：敵確実生成
+// ===================================================================
 function ensureHachishaku(){
   if(hachishaku) return;
   hachishaku = new THREE.Group();
   const fb = buildFallbackEnemy();
   hachishaku.add(fb);
   const box = new THREE.Box3().setFromObject(hachishaku);
-  const size = new THREE.Vector3();
-  box.getSize(size);
-  hachishaku.position.y = size.y / 2;
-  const groundedBox = new THREE.Box3().setFromObject(hachishaku);
-  if (groundedBox.min.y < 0) {
-    hachishaku.position.y += -groundedBox.min.y;
-  }
-  hachishaku.position.set(18, hachishaku.position.y, 18);
-  hachishaku.rotation.y = Math.PI;
+  hachishaku.position.set(18, -box.min.y, 18);
   scene.add(hachishaku);
-  enemyState = 'wander';
-  losBlockedSince = null;
   setEnemyTargetAvoidingSafeZone();
 }
 
 // ===================================================================
-// GLTFLoader + ie.glb / popopo.fbx
+// GLTFLoader（ie.glb 家）＆ FBXLoader（popopo.fbx 八尺様）
 // ===================================================================
-statusMsg.textContent='モデル読み込み中...';
+statusMsg.textContent = 'モデル読み込み中...';
 
-function loadScript(url,cb){
-  const s=document.createElement('script');
-  s.src=url; s.onload=()=>cb(null); s.onerror=()=>cb(new Error('failed: '+url));
+function loadScript(url, cb){
+  const s = document.createElement('script');
+  s.src = url; s.onload = ()=>cb(null); s.onerror = ()=>cb(new Error('failed: '+url));
   document.head.appendChild(s);
 }
 
 // 道路沿い家配置ロジック
 function placeHousesAlongRoads(template){
-  const AUTOS=35; const MIN_DIST=8;
-
-  // 道路候補位置：南北道 / 東西道 / 環状
+  const AUTOS=35, MIN_DIST=8;
   const slots=[];
-  // 南北道沿い（X=±8〜12, Z範囲）
   for(let z=-75;z<75;z+=10){
-    if(Math.abs(z)<12) continue; // 中央交差点避け
+    if(Math.abs(z)<12) continue;
     slots.push({ x: 10+randRange(1,4), z: z+randRange(-2,2), ry: Math.PI/2*(Math.random()>0.5?1:-1) });
     slots.push({ x:-10-randRange(1,4), z: z+randRange(-2,2), ry: Math.PI/2*(Math.random()>0.5?1:-1) });
   }
-  // 東西道沿い（Z=±8〜12, X範囲）
   for(let x=-75;x<75;x+=10){
     if(Math.abs(x)<12) continue;
     slots.push({ x: x+randRange(-2,2), z: 10+randRange(1,4), ry: 0 });
     slots.push({ x: x+randRange(-2,2), z:-10-randRange(1,4), ry: Math.PI });
   }
-  // 環状道路外側
   for(let i=0;i<16;i++){
     const a=i*Math.PI/8;
     const r=RING_R+randRange(7,13);
@@ -797,7 +919,8 @@ function placeHousesAlongRoads(template){
     const {x,z,ry}=slot;
     if(Math.sqrt(x*x+z*z)<MIN_DIST) continue;
     const house=template.clone(true);
-    house.scale.setScalar(autoScale*(0.85+Math.random()*0.35));
+    const sc = autoScale*(0.85+Math.random()*0.35);
+    house.scale.setScalar(sc);
     house.rotation.y=ry+randRange(-0.2,0.2);
     house.position.set(x,-bottomY,z);
     house.traverse(child=>{
@@ -807,70 +930,106 @@ function placeHousesAlongRoads(template){
           const mats=Array.isArray(child.material)?child.material:[child.material];
           mats.forEach(m=>{ if(m.color) m.color.multiplyScalar(0.62); });
         }
+        // ★ 家のメッシュを障害物リストに登録（視線判定に使用）
+        obstacleMeshes.push(child);
       }
     });
     scene.add(house);
-    losBlockers.push(house);
     placed++;
   }
   return placed;
 }
 
+// ── ie.glb（家）のロード ──
 loadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js', function(err){
-  if(err||typeof THREE.GLTFLoader==='undefined'){
-    errorMsg.textContent='GLTFLoaderの読み込みに失敗しました';
-    errorMsg.style.display='block';
-    statusMsg.textContent='';
-    ensureHachishaku(); return;
+  if(err || typeof THREE.GLTFLoader === 'undefined'){
+    errorMsg.textContent = 'GLTFLoaderの読み込みに失敗しました';
+    errorMsg.style.display = 'block';
+    statusMsg.textContent = '';
+    tryLoadFBX();
+    return;
   }
-  const loader=new THREE.GLTFLoader();
-
-  // ie.glb
+  const loader = new THREE.GLTFLoader();
   loader.load('./ie.glb',
     function(gltf){
-      const template=gltf.scene;
+      const template = gltf.scene;
       let meshCount=0;
       template.traverse(c=>{if(c.isMesh)meshCount++;});
       if(meshCount===0){
-        errorMsg.textContent='ie.glb: メッシュ0個';
-        errorMsg.style.display='block';
-        statusMsg.textContent='';
+        errorMsg.textContent = 'ie.glb: メッシュ0個';
+        errorMsg.style.display = 'block';
+        statusMsg.textContent = '';
       } else {
-        redCube.visible=false; redGlow.visible=false;
-        const placed=placeHousesAlongRoads(template);
-        statusMsg.textContent=`✅ ie.glb 読み込み成功 / メッシュ:${meshCount} / 家:${placed}棟配置`;
-        setTimeout(()=>{if(!gameOver)statusMsg.textContent='';},6000);
+        redCube.visible = false; redGlow.visible = false;
+        const placed = placeHousesAlongRoads(template);
+        statusMsg.textContent = `✅ ie.glb 読み込み成功 / メッシュ:${meshCount} / 家:${placed}棟配置`;
+        setTimeout(()=>{ if(!gameOver) statusMsg.textContent=''; }, 6000);
       }
+      tryLoadFBX();
     },
     function(prog){
       if(prog.total>0) statusMsg.textContent=`ie.glb 読み込み中... ${Math.round(prog.loaded/prog.total*100)}%`;
     },
     function(e){
-      errorMsg.textContent='ie.glb 読み込み失敗：'+(e&&e.message?e.message:String(e));
-      errorMsg.style.display='block'; statusMsg.textContent='';
+      errorMsg.textContent = 'ie.glb 読み込み失敗：'+(e&&e.message?e.message:String(e));
+      errorMsg.style.display = 'block'; statusMsg.textContent = '';
+      tryLoadFBX();
     }
   );
+});
+
+// ── popopo.fbx（八尺様）のロード ──
+function tryLoadFBX(){
+  // FBXLoaderが存在するか確認
+  if(typeof THREE.FBXLoader === 'undefined'){
+    console.warn('FBXLoader未定義 → フォールバック使用');
+    ensureHachishaku();
+    errorMsg.textContent = 'FBXLoader未定義→フォールバック使用';
+    errorMsg.style.display = 'block';
+    setTimeout(()=>{ if(!gameOver) errorMsg.style.display='none'; }, 5000);
+    return;
+  }
 
   const fbxLoader = new THREE.FBXLoader();
-  fbxLoader.load('./popopo.fbx', (fbx) => {
-      hachishaku = fbx;
-      hachishaku.scale.set(0.02, 0.02, 0.02);
-      const box = new THREE.Box3().setFromObject(hachishaku);
+
+  fbxLoader.load(
+    './popopo.fbx',
+
+    // ── onLoad ──
+    function(fbx){
+      // ★ サイズ自動補正（指示通り）
+      // MeshyAIモデルは極端に大きい場合が多いため 0.02 スケールを基準に自動調整
+      const tempScale = 0.02;
+      fbx.scale.set(tempScale, tempScale, tempScale);
+
+      // 底面がぴったり地面(Y=0)に接地するように自動補正
+      const box = new THREE.Box3().setFromObject(fbx);
       const size = new THREE.Vector3();
       box.getSize(size);
-      hachishaku.position.y = size.y / 2;
-      const groundedBox = new THREE.Box3().setFromObject(hachishaku);
-      if (groundedBox.min.y < 0) {
-        hachishaku.position.y += -groundedBox.min.y;
+
+      // 目標の身長：約 4.5m
+      const TARGET_HEIGHT = 4.5;
+      let finalScale = tempScale;
+      if(size.y > 0.01){
+        finalScale = (TARGET_HEIGHT / size.y) * tempScale;
+        fbx.scale.set(finalScale, finalScale, finalScale);
       }
-      hachishaku.position.set(18, hachishaku.position.y, 18);
-      hachishaku.rotation.y = Math.PI;
-      hachishaku.traverse(child=>{
+
+      // スケール確定後に再度バウンディングボックスを取得して底面補正
+      const box2 = new THREE.Box3().setFromObject(fbx);
+      const bottomY = box2.min.y;
+
+      // 敵グループに格納
+      hachishaku = new THREE.Group();
+      fbx.position.y = -bottomY; // 地面に接地
+      fbx.rotation.y = Math.PI;  // プレイヤー方向を正面に
+
+      // 暗色化処理
+      fbx.traverse(child=>{
         if(child.isMesh){
-          child.castShadow = true;
-          child.receiveShadow = true;
+          child.castShadow=true; child.receiveShadow=true;
           if(child.material){
-            const mats = Array.isArray(child.material) ? child.material : [child.material];
+            const mats=Array.isArray(child.material)?child.material:[child.material];
             mats.forEach(m=>{
               if(m.color) m.color.multiplyScalar(0.28);
               if('emissive' in m && m.emissive) m.emissive.multiplyScalar(0.12);
@@ -878,22 +1037,38 @@ loadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFL
           }
         }
       });
+
+      hachishaku.add(fbx);
+      hachishaku.position.set(18, 0, 18);
       scene.add(hachishaku);
-      hachishakuModelRoot = hachishaku;
-      enemyState = 'wander';
-      losBlockedSince = null;
       setEnemyTargetAvoidingSafeZone();
-      const extra=statusMsg.textContent?statusMsg.textContent+'\n':'';
-      statusMsg.textContent=extra+'popopo.fbx 読み込み成功';
-      setTimeout(()=>{if(!gameOver)statusMsg.textContent='';},5000);
-  }, function(progress){}, function(e){
+
+      const msg = (statusMsg.textContent ? statusMsg.textContent+'\n':'');
+      statusMsg.textContent = msg + '✅ popopo.fbx 八尺様 読み込み成功';
+      setTimeout(()=>{ if(!gameOver) statusMsg.textContent=''; }, 5000);
+    },
+
+    // ── onProgress ──
+    function(prog){
+      if(prog.total > 0){
+        const pct = Math.round(prog.loaded / prog.total * 100);
+        const base = statusMsg.textContent.replace(/\npopopo.fbx.*/,'');
+        statusMsg.textContent = base + `\npopopo.fbx 読み込み中... ${pct}%`;
+      }
+    },
+
+    // ── onError ──
+    function(e){
       console.warn('popopo.fbx load error:', e);
       ensureHachishaku();
-      errorMsg.textContent='popopo.fbx失敗→フォールバック使用';
-      errorMsg.style.display='block';
-      setTimeout(()=>{if(!gameOver)errorMsg.style.display='none';},5000);
-  });
-});
+      errorMsg.textContent = 'popopo.fbx失敗→フォールバック使用\n'+
+        (e&&e.message?e.message:String(e));
+      errorMsg.style.display = 'block';
+      setTimeout(()=>{ if(!gameOver) errorMsg.style.display='none'; }, 7000);
+    }
+  );
+}
+
 // ===================================================================
 // タッチ操作（左:ジョイスティック / 右:視点 + ダッシュボタン）
 // ===================================================================
@@ -903,7 +1078,6 @@ let lookId=null, lookPrevX=0, lookPrevY=0;
 let yaw=0, pitch=0;
 const touchStartMeta=new Map();
 
-// ダッシュボタンのタッチ
 let dashBtnActive=false;
 dashBtnEl.addEventListener('touchstart',e=>{
   e.stopPropagation();
@@ -975,12 +1149,11 @@ function onTE(e){
 }
 
 // ===================================================================
-// プレイヤー移動（スタミナ付きダッシュ込み）
+// プレイヤー移動（スタミナ付きダッシュ）
 // ===================================================================
 function updateMove(){
   if(gameOver) return;
 
-  // スタミナ処理
   if(isDashing && !dashExhausted){
     stamina=Math.max(0,stamina-STAMINA_DRAIN);
     if(stamina<=0){ stamina=0; dashExhausted=true; isDashing=false; }
@@ -1008,84 +1181,22 @@ function updateMove(){
 // アニメーションループ
 // ===================================================================
 let frame=0;
+let prevTimestamp=0;
 
-function animate(){
+function animate(timestamp){
   if(!animationRunning) return;
   requestAnimationFrame(animate);
   frame++;
 
-  // プレイヤー移動（スタミナ付き）
+  const deltaMs = timestamp - prevTimestamp;
+  prevTimestamp = timestamp;
+  const safeDelta = Math.min(deltaMs, 100); // スパイク防止（最大100ms）
+
+  // プレイヤー移動
   updateMove();
 
-  // ── 八尺様 AI（毎フレーム実行） ──
-  if(hachishaku && !gameOver){
-    const playerCenter = camera.position.clone();
-    const enemyCenter = hachishaku.position.clone().add(new THREE.Vector3(0, 2.0, 0));
-    const distToPlayer = enemyCenter.distanceTo(playerCenter);
-    const losClear = hasLineOfSightToPlayer();
-    const nowPerf = performance.now();
-
-    if(enemyState === 'wander'){
-      if(distToPlayer <= 30 && losClear){
-        enemyState = 'chase';
-        losBlockedSince = null;
-      } else {
-        if(!enemyTarget) setEnemyTargetAvoidingSafeZone();
-        const ex = hachishaku.position.x, ez = hachishaku.position.z;
-        const dx = enemyTarget.x - ex, dz = enemyTarget.z - ez;
-        const dist = Math.sqrt(dx*dx + dz*dz);
-        const push = getLitJizoRepulsion(hachishaku.position);
-        if(push.x !== 0 || push.z !== 0){
-          hachishaku.position.x -= push.x;
-          hachishaku.position.z -= push.z;
-          setEnemyTargetAvoidingSafeZone();
-        }
-        if(dist < 0.9){
-          setEnemyTargetAvoidingSafeZone();
-        } else {
-          const nx = dx / Math.max(dist, 0.0001), nz = dz / Math.max(dist, 0.0001);
-          const nextX = ex + nx * ENEMY_WANDER_SPEED, nextZ = ez + nz * ENEMY_WANDER_SPEED;
-          if(!isPointInsideAnySafeZone(nextX, nextZ)){
-            hachishaku.position.x = nextX;
-            hachishaku.position.z = nextZ;
-            hachishaku.lookAt(new THREE.Vector3(playerCenter.x, hachishaku.position.y, playerCenter.z));
-          } else {
-            setEnemyTargetAvoidingSafeZone();
-          }
-        }
-      }
-    } else if(enemyState === 'chase'){
-      if(losClear){
-        losBlockedSince = null;
-        const chaseDir = playerCenter.clone().sub(hachishaku.position);
-        chaseDir.y = 0;
-        const chaseLen = chaseDir.length();
-        if(chaseLen > 0.0001){
-          chaseDir.normalize();
-          hachishaku.lookAt(new THREE.Vector3(playerCenter.x, hachishaku.position.y, playerCenter.z));
-          const push = getLitJizoRepulsion(hachishaku.position);
-          const nextX = hachishaku.position.x + chaseDir.x * ENEMY_SPEED - push.x;
-          const nextZ = hachishaku.position.z + chaseDir.z * ENEMY_SPEED - push.z;
-          if(!isPointInsideAnySafeZone(nextX, nextZ)){
-            hachishaku.position.x = nextX;
-            hachishaku.position.z = nextZ;
-          }
-        }
-      } else {
-        if(losBlockedSince === null) losBlockedSince = nowPerf;
-        if(nowPerf - losBlockedSince >= 3000){
-          enemyState = 'wander';
-          losBlockedSince = null;
-          setEnemyTargetAvoidingSafeZone();
-        }
-      }
-    }
-
-    if(distToPlayer < 1.8){
-      triggerGameOver();
-      return;
-    }
-  }
+  // ── 八尺様 AI（視線ステルス統合） ──
+  updateEnemyAI(safeDelta);
 
   // 地蔵プロンプト
   updateJizoPrompt();
@@ -1095,7 +1206,7 @@ function animate(){
   camera.rotation.order='YXZ';
   camera.rotation.y=yaw; camera.rotation.x=pitch;
 
-  // 蝋燭ライト
+  // 蝋燭ライト（フリッカー付き）
   const dir=new THREE.Vector3(0,0,-1).applyEuler(camera.rotation);
   candleLight.position.copy(camera.position);
   candleLight.target.position.copy(camera.position.clone().addScaledVector(dir,6));
@@ -1114,7 +1225,7 @@ function animate(){
   // 蝋燭残量タイマー
   const now=Date.now();
   if(!gameOver&&now-lastTick>TICK_MS&&candlePercent>0){
-    candlePercent--;  lastTick=now; updateCandleUI();
+    candlePercent--; lastTick=now; updateCandleUI();
     if(candlePercent<=0){
       candlePercent=0; darkOverlay.style.background='rgba(0,0,0,0.95)';
     } else if(candlePercent<=20){
@@ -1126,7 +1237,7 @@ function animate(){
   renderer.render(scene,camera);
 }
 
-animate();
+animate(0);
 updateCandleUI();
 updateStaminaUI();
 
