@@ -99,7 +99,7 @@ renderer.setClearColor(0x000000,1);
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x000000);
-scene.fog = new THREE.FogExp2(0x000000, 0.04);
+scene.fog = new THREE.FogExp2(0x000000, 0.028); // 少し弱めて近距離が見えやすく
 
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 200);
 camera.position.set(0, 1.65, 0);
@@ -159,14 +159,15 @@ function updateCandleUI(){
 }
 
 // ===== 赤い立方体（フォールバック & 確認用）=====
+// MeshBasicMaterial: ライト・フォグの影響を受けず確実に見える
 const redCube = new THREE.Mesh(
   new THREE.BoxGeometry(1.5, 3, 1.5),
-  new THREE.MeshLambertMaterial({color:0xaa0000})
+  new THREE.MeshBasicMaterial({color:0xff0000})
 );
-redCube.position.set(0, 1.5, -10);
-redCube.castShadow = true;
+redCube.position.set(0, 1.5, -5); // 目の前5mに
+redCube.material.fog = false;      // フォグの影響を受けない → 必ず見える
 scene.add(redCube);
-const redGlow = new THREE.PointLight(0xff2200, 1.2, 6);
+const redGlow = new THREE.PointLight(0xff2200, 1.5, 8);
 redGlow.position.copy(redCube.position);
 scene.add(redGlow);
 
@@ -278,12 +279,23 @@ loadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFL
   const loader = new THREE.GLTFLoader();
   loader.load('./ie.glb',
     function(gltf){
-      statusMsg.textContent='';
-      // 赤い立方体を消す
+      const template = gltf.scene;
+
+      // メッシュ数カウント（実際にジオメトリがあるか確認）
+      let meshCount = 0;
+      template.traverse(c => { if(c.isMesh) meshCount++; });
+
+      if(meshCount === 0){
+        errorMsg.textContent = 'ie.glb は読み込めましたがメッシュが0個です（空のファイルかも）';
+        errorMsg.style.display = 'block';
+        statusMsg.textContent = '';
+        // 赤い立方体はそのまま残す
+        return;
+      }
+
+      // メッシュが存在 → 赤い立方体を消す
       redCube.visible = false;
       redGlow.visible = false;
-
-      const template = gltf.scene;
 
       // --- モデルの実寸を確認してスケール決定 ---
       const bbox = new THREE.Box3().setFromObject(template);
@@ -296,8 +308,8 @@ loadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFL
       // ローカル底辺のY
       const bottomY = bbox.min.y * autoScale;
 
-      statusMsg.textContent = `ie.glb 読み込み成功 (${size.x.toFixed(1)}x${size.y.toFixed(1)}x${size.z.toFixed(1)})`;
-      setTimeout(()=>{ statusMsg.textContent=''; }, 4000);
+      statusMsg.textContent = `✅ ie.glb 読み込み成功 / メッシュ:${meshCount}個 / サイズ:${size.x.toFixed(1)}x${size.y.toFixed(1)}x${size.z.toFixed(1)} / スケール:${autoScale.toFixed(3)}`;
+      setTimeout(()=>{ statusMsg.textContent=''; }, 6000);
 
       // 35軒配置
       const COUNT = 35;
@@ -343,10 +355,12 @@ loadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFL
       }
     },
     function(err){
-      errorMsg.textContent = 'ie.glbの読み込みに失敗しました';
+      const msg = 'ie.glbの読み込みに失敗しました：' + (err && err.message ? err.message : String(err));
+      errorMsg.textContent = msg;
       errorMsg.style.display = 'block';
+      errorMsg.style.color = '#ff4444';
       statusMsg.textContent = '';
-      console.warn('ie.glb error:', err);
+      console.error('ie.glb load error:', err);
     }
   );
 });
