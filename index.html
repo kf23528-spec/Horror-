@@ -8,7 +8,7 @@
   * { margin:0; padding:0; box-sizing:border-box; }
   html, body {
     width:100%; height:100%;
-    overflow:hidden; background:#080808;
+    overflow:hidden; background:#1a140c;
     touch-action:none; user-select:none; -webkit-user-select:none;
   }
   #gameCanvas {
@@ -17,8 +17,8 @@
   #candleUI {
     position:fixed; top:20px; left:50%; transform:translateX(-50%);
     font-family:'Georgia','Hiragino Mincho ProN',serif;
-    font-size:22px; color:#ffdd77; letter-spacing:2px; white-space:nowrap;
-    text-shadow:-2px -2px 0 #000,2px -2px 0 #000,-2px 2px 0 #000,2px 2px 0 #000,0 0 16px rgba(255,200,80,0.85);
+    font-size:22px; color:#f5c842; letter-spacing:2px; white-space:nowrap;
+    text-shadow:-2px -2px 0 #000,2px -2px 0 #000,-2px 2px 0 #000,2px 2px 0 #000,0 0 10px rgba(255,200,120,0.7);
     z-index:20; pointer-events:none;
   }
   #candleBar {
@@ -31,39 +31,39 @@
     height:100%; width:100%;
     background:linear-gradient(90deg,#ff6a00,#f5c842);
     border-radius:4px; transition:width 0.5s ease;
-    box-shadow:0 0 6px rgba(255,180,0,0.7);
+    box-shadow:0 0 10px rgba(255,200,120,0.85);
   }
   #statusMsg {
     position:fixed; top:76px; left:50%; transform:translateX(-50%);
-    font-family:monospace; font-size:13px; color:#ccffcc;
-    text-shadow:0 0 6px #000,0 0 10px #000,0 0 14px rgba(255,255,255,0.12);
+    font-family:monospace; font-size:13px; color:#aaffaa;
+    text-shadow:0 0 5px #000,0 0 8px #000;
     z-index:20; pointer-events:none; text-align:center;
   }
   #errorMsg {
     position:fixed; top:96px; left:50%; transform:translateX(-50%);
     font-family:monospace; font-size:13px; color:#ff4444;
-    text-shadow:0 0 6px #000;
+    text-shadow:0 0 5px #000;
     z-index:20; pointer-events:none; display:none; text-align:center;
   }
   #joystickBase {
     position:fixed; bottom:60px; left:60px;
     width:120px; height:120px; border-radius:50%;
-    background:rgba(255,255,255,0.11);
-    border:2px solid rgba(255,200,100,0.3);
+    background:rgba(255,255,255,0.12);
+    border:2px solid rgba(255,220,150,0.45);
     z-index:15; pointer-events:none;
   }
   #joystickStick {
     position:fixed; bottom:95px; left:95px;
     width:50px; height:50px; border-radius:50%;
-    background:rgba(255,214,102,0.48);
-    border:2px solid rgba(245,200,66,0.6);
-    box-shadow:0 0 10px rgba(255,180,0,0.4);
+    background:rgba(255,220,120,0.55);
+    border:2px solid rgba(255,220,120,0.75);
+    box-shadow:0 0 12px rgba(255,200,120,0.55);
     z-index:16; pointer-events:none;
     transition:transform 0.03s;
   }
   #vignette {
     position:fixed; inset:0;
-    background:radial-gradient(ellipse at center,transparent 22%,rgba(0,0,0,0.62) 100%);
+    background:radial-gradient(ellipse at center,transparent 18%,rgba(0,0,0,0.45) 100%);
     pointer-events:none; z-index:5;
   }
   #darknessOverlay {
@@ -98,8 +98,8 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.setClearColor(0x000000,1);
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x050505);
-scene.fog = new THREE.FogExp2(0x080808, 0.020); // 少し明るめにして見通しを上げる
+scene.background = new THREE.Color(0x1a140c);
+scene.fog = new THREE.FogExp2(0x1a140c, 0.016); // 少し弱めて近距離が見えやすく
 
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 200);
 camera.position.set(0, 1.65, 0);
@@ -111,23 +111,23 @@ window.addEventListener('resize', ()=>{
 });
 
 // ===== 地面 =====
-const groundMat = new THREE.MeshLambertMaterial({color:0x1a1a1a});
+const groundMat = new THREE.MeshLambertMaterial({color:0x111111});
 const ground = new THREE.Mesh(new THREE.PlaneGeometry(400,400,1,1), groundMat);
 ground.rotation.x = -Math.PI/2;
 ground.receiveShadow = true;
 scene.add(ground);
 
 // 石畳グリッド
-const grid = new THREE.GridHelper(400, 80, 0x2c2c2c, 0x202020);
+const grid = new THREE.GridHelper(400, 80, 0x1e1e1e, 0x141414);
 grid.position.y = 0.005;
 scene.add(grid);
 
 // ===== ライト =====
-const ambLight = new THREE.AmbientLight(0x1a1a22, 1.4);
+const ambLight = new THREE.AmbientLight(0x8a8a7a, 1.7);
 scene.add(ambLight);
 
 // 蝋燭スポットライト
-const candleLight = new THREE.SpotLight(0xffbb55, 10, 24, Math.PI/6, 0.42, 1.6);
+const candleLight = new THREE.SpotLight(0xffc35c, 14, 30, Math.PI/6, 0.45, 1.8);
 candleLight.castShadow = true;
 candleLight.shadow.mapSize.set(512,512);
 candleLight.shadow.camera.near = 0.1;
@@ -136,7 +136,7 @@ scene.add(candleLight);
 scene.add(candleLight.target);
 
 // 足元の周辺光
-const footLight = new THREE.PointLight(0xff8844, 2.6, 6.5);
+const footLight = new THREE.PointLight(0xff9a2f, 4, 8);
 scene.add(footLight);
 
 // ===== 蝋燭UI =====
@@ -174,7 +174,7 @@ scene.add(redGlow);
 // ===== 雰囲気オブジェクト =====
 // 鳥居
 function addTorii(x, z, ry){
-  const mat = new THREE.MeshLambertMaterial({color:0x8c1717});
+  const mat = new THREE.MeshLambertMaterial({color:0x7a1010});
   const grp = new THREE.Group();
   // 柱×2
   [-1.6,1.6].forEach(ox=>{
@@ -201,14 +201,14 @@ function addLantern(x,z){
   const grp = new THREE.Group();
   const body = new THREE.Mesh(
     new THREE.SphereGeometry(0.28,8,8),
-    new THREE.MeshBasicMaterial({color:0xffdd66})
+    new THREE.MeshBasicMaterial({color:0xffcc44})
   );
   body.position.y=2.4; grp.add(body);
-  const pl = new THREE.PointLight(0xffaa33,1.1,8);
+  const pl = new THREE.PointLight(0xff9900,0.9,7);
   pl.position.y=2.4; grp.add(pl);
   const pole = new THREE.Mesh(
     new THREE.CylinderGeometry(0.05,0.05,2.6,6),
-    new THREE.MeshLambertMaterial({color:0x3a2200})
+    new THREE.MeshLambertMaterial({color:0x2a1500})
   );
   pole.position.y=1.1; grp.add(pole);
   grp.position.set(x,0,z);
@@ -218,7 +218,7 @@ function addLantern(x,z){
 
 // 墓石
 function addGrave(x,z){
-  const mat = new THREE.MeshLambertMaterial({color:0x2f2f2f});
+  const mat = new THREE.MeshLambertMaterial({color:0x252525});
   const grp = new THREE.Group();
   const body = new THREE.Mesh(new THREE.BoxGeometry(0.6,1.4,0.18),mat);
   body.position.y=0.7; grp.add(body);
@@ -238,7 +238,7 @@ for(let i=0;i<25;i++){
 
 // 竹やぶ（細い円柱）
 function addBamboo(x,z){
-  const mat = new THREE.MeshLambertMaterial({color:0x22331a});
+  const mat = new THREE.MeshLambertMaterial({color:0x1a2a10});
   for(let i=0;i<5;i++){
     const b = new THREE.Mesh(
       new THREE.CylinderGeometry(0.05,0.07,4+Math.random()*2,6),
@@ -475,12 +475,12 @@ function animate(){
   footLight.position.copy(camera.position);
 
   // ゆらぎ
-  const flicker=0.88+Math.sin(frame*0.23)*0.06+Math.sin(frame*0.71)*0.04+(Math.random()-0.5)*0.08;
+  const flicker=0.95+Math.sin(frame*0.23)*0.04+Math.sin(frame*0.71)*0.03+(Math.random()-0.5)*0.05;
   if(candlePercent>0){
-    const base=8*(candlePercent/100);
+    const base=14*(candlePercent/100);
     candleLight.intensity=base*flicker;
-    candleLight.distance=12+8*(candlePercent/100)+Math.random()*0.8;
-    footLight.intensity=2*(candlePercent/100)*flicker;
+    candleLight.distance=18+10*(candlePercent/100)+Math.random()*0.8;
+    footLight.intensity=4*(candlePercent/100)*flicker;
   } else {
     candleLight.intensity=0;
     footLight.intensity=0;
@@ -495,7 +495,7 @@ function animate(){
       candlePercent=0;
       darkOverlay.style.background='rgba(0,0,0,0.95)';
     } else if(candlePercent<=20){
-      const a=0.35*(1-candlePercent/20);
+      const a=0.18*(1-candlePercent/20);
       darkOverlay.style.background=`rgba(0,0,0,${a})`;
     }
   }
