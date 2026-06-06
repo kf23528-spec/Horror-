@@ -8,7 +8,7 @@
   * { margin:0; padding:0; box-sizing:border-box; }
   html, body {
     width:100%; height:100%;
-    overflow:hidden; background:#1a140c;
+    overflow:hidden; background:#050507;
     touch-action:none; user-select:none; -webkit-user-select:none;
   }
   #gameCanvas {
@@ -17,58 +17,95 @@
   #candleUI {
     position:fixed; top:20px; left:50%; transform:translateX(-50%);
     font-family:'Georgia','Hiragino Mincho ProN',serif;
-    font-size:22px; color:#f5c842; letter-spacing:2px; white-space:nowrap;
-    text-shadow:-2px -2px 0 #000,2px -2px 0 #000,-2px 2px 0 #000,2px 2px 0 #000,0 0 10px rgba(255,200,120,0.7);
+    font-size:22px; color:#ffe18b; letter-spacing:2px; white-space:nowrap;
+    text-shadow:-2px -2px 0 #000,2px -2px 0 #000,-2px 2px 0 #000,2px 2px 0 #000,0 0 14px rgba(255,180,0,0.8);
     z-index:20; pointer-events:none;
   }
   #candleBar {
     position:fixed; top:54px; left:50%; transform:translateX(-50%);
-    width:220px; height:8px; background:rgba(0,0,0,0.5);
-    border:1px solid rgba(255,180,0,0.4); border-radius:4px;
+    width:220px; height:8px; background:rgba(0,0,0,0.42);
+    border:1px solid rgba(255,190,110,0.45); border-radius:4px;
     z-index:20; pointer-events:none; overflow:hidden;
   }
   #candleBarFill {
     height:100%; width:100%;
-    background:linear-gradient(90deg,#ff6a00,#f5c842);
+    background:linear-gradient(90deg,#ff6a00,#ffd65a);
     border-radius:4px; transition:width 0.5s ease;
-    box-shadow:0 0 10px rgba(255,200,120,0.85);
+    box-shadow:0 0 6px rgba(255,180,0,0.7);
   }
   #statusMsg {
     position:fixed; top:76px; left:50%; transform:translateX(-50%);
-    font-family:monospace; font-size:13px; color:#aaffaa;
-    text-shadow:0 0 5px #000,0 0 8px #000;
+    font-family:monospace; font-size:13px; color:#c8ffd0;
+    text-shadow:0 0 6px #000,0 0 10px #000;
     z-index:20; pointer-events:none; text-align:center;
+    white-space:pre-wrap;
+  }
+  #promptMsg {
+    position:fixed; bottom:128px; left:50%; transform:translateX(-50%);
+    font-family:'Hiragino Mincho ProN',serif;
+    font-size:18px; color:#ffffff;
+    padding:8px 14px; border-radius:999px;
+    background:rgba(0,0,0,0.38);
+    border:1px solid rgba(255,255,255,0.25);
+    text-shadow:0 0 8px #000;
+    z-index:21; pointer-events:none;
+    display:none;
   }
   #errorMsg {
     position:fixed; top:96px; left:50%; transform:translateX(-50%);
-    font-family:monospace; font-size:13px; color:#ff4444;
-    text-shadow:0 0 5px #000;
+    font-family:monospace; font-size:13px; color:#ff6666;
+    text-shadow:0 0 6px #000;
     z-index:20; pointer-events:none; display:none; text-align:center;
+    white-space:pre-wrap;
+  }
+  #gameOverMsg {
+    position:fixed; inset:0;
+    display:none;
+    z-index:40;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    background:rgba(150,0,0,0.0);
+    color:#fff3f3;
+    font-family:'Hiragino Mincho ProN','Georgia',serif;
+    text-shadow:0 0 18px rgba(0,0,0,0.95), 0 0 28px rgba(255,0,0,0.8);
+    pointer-events:none;
+  }
+  #gameOverMsg .inner {
+    padding:24px 18px;
+    font-size:34px;
+    line-height:1.5;
+    font-weight:700;
+    letter-spacing:1px;
   }
   #joystickBase {
     position:fixed; bottom:60px; left:60px;
     width:120px; height:120px; border-radius:50%;
-    background:rgba(255,255,255,0.12);
-    border:2px solid rgba(255,220,150,0.45);
+    background:rgba(255,255,255,0.08);
+    border:2px solid rgba(255,210,140,0.28);
     z-index:15; pointer-events:none;
   }
   #joystickStick {
     position:fixed; bottom:95px; left:95px;
     width:50px; height:50px; border-radius:50%;
-    background:rgba(255,220,120,0.55);
-    border:2px solid rgba(255,220,120,0.75);
-    box-shadow:0 0 12px rgba(255,200,120,0.55);
+    background:rgba(245,200,66,0.45);
+    border:2px solid rgba(245,200,66,0.7);
+    box-shadow:0 0 10px rgba(255,180,0,0.42);
     z-index:16; pointer-events:none;
     transition:transform 0.03s;
   }
   #vignette {
     position:fixed; inset:0;
-    background:radial-gradient(ellipse at center,transparent 18%,rgba(0,0,0,0.45) 100%);
+    background:radial-gradient(ellipse at center,transparent 24%,rgba(0,0,0,0.62) 100%);
     pointer-events:none; z-index:5;
   }
   #darknessOverlay {
     position:fixed; inset:0; background:rgba(0,0,0,0);
     pointer-events:none; z-index:8; transition:background 3s ease;
+  }
+  #redOverlay {
+    position:fixed; inset:0; background:rgba(180,0,0,0);
+    pointer-events:none; z-index:35; transition:background 0.3s ease;
   }
 </style>
 </head>
@@ -76,10 +113,13 @@
 <canvas id="gameCanvas"></canvas>
 <div id="vignette"></div>
 <div id="darknessOverlay"></div>
+<div id="redOverlay"></div>
 <div id="candleUI">🕯 和蝋燭の残り火：<span id="candlePercent">100</span>%</div>
 <div id="candleBar"><div id="candleBarFill"></div></div>
 <div id="statusMsg"></div>
+<div id="promptMsg">【画面をタップ】して地蔵に火を灯す</div>
 <div id="errorMsg"></div>
+<div id="gameOverMsg"><div class="inner">呪い殺された...<br>(GAME OVER)</div></div>
 <div id="joystickBase"></div>
 <div id="joystickStick"></div>
 
@@ -95,13 +135,14 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-renderer.setClearColor(0x000000,1);
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.setClearColor(0x0b0b10,1);
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x1a140c);
-scene.fog = new THREE.FogExp2(0x1a140c, 0.016); // 少し弱めて近距離が見えやすく
+scene.background = new THREE.Color(0x0c0d12);
+scene.fog = new THREE.FogExp2(0x111218, 0.021);
 
-const camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 200);
+const camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 220);
 camera.position.set(0, 1.65, 0);
 
 window.addEventListener('resize', ()=>{
@@ -110,24 +151,41 @@ window.addEventListener('resize', ()=>{
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
+// ===== 共通ユーティリティ =====
+function randRange(min, max){ return min + Math.random() * (max - min); }
+function clamp(v, min, max){ return Math.max(min, Math.min(max, v)); }
+function dist2D(ax, az, bx, bz){
+  const dx = ax - bx, dz = az - bz;
+  return Math.sqrt(dx*dx + dz*dz);
+}
+function randomPointInRange(range){
+  return {
+    x: (Math.random() - 0.5) * range,
+    z: (Math.random() - 0.5) * range
+  };
+}
+
 // ===== 地面 =====
-const groundMat = new THREE.MeshLambertMaterial({color:0x111111});
+const groundMat = new THREE.MeshLambertMaterial({color:0x171719});
 const ground = new THREE.Mesh(new THREE.PlaneGeometry(400,400,1,1), groundMat);
 ground.rotation.x = -Math.PI/2;
 ground.receiveShadow = true;
 scene.add(ground);
 
 // 石畳グリッド
-const grid = new THREE.GridHelper(400, 80, 0x1e1e1e, 0x141414);
+const grid = new THREE.GridHelper(400, 80, 0x242428, 0x1a1a1d);
 grid.position.y = 0.005;
 scene.add(grid);
 
 // ===== ライト =====
-const ambLight = new THREE.AmbientLight(0x8a8a7a, 1.7);
+const ambLight = new THREE.AmbientLight(0x7a7a86, 0.72);
 scene.add(ambLight);
 
+const hemi = new THREE.HemisphereLight(0x8d8fa7, 0x35353d, 0.55);
+scene.add(hemi);
+
 // 蝋燭スポットライト
-const candleLight = new THREE.SpotLight(0xffc35c, 14, 30, Math.PI/6, 0.45, 1.8);
+const candleLight = new THREE.SpotLight(0xffb15a, 8.5, 20, Math.PI/6, 0.45, 1.8);
 candleLight.castShadow = true;
 candleLight.shadow.mapSize.set(512,512);
 candleLight.shadow.camera.near = 0.1;
@@ -136,18 +194,21 @@ scene.add(candleLight);
 scene.add(candleLight.target);
 
 // 足元の周辺光
-const footLight = new THREE.PointLight(0xff9a2f, 4, 8);
+const footLight = new THREE.PointLight(0xff7a18, 2.2, 5.5);
 scene.add(footLight);
 
-// ===== 蝋燭UI =====
+// ===== UI / 状態 =====
 let candlePercent = 100;
 let lastTick = Date.now();
 const TICK_MS = 4000;
 const pctEl = document.getElementById('candlePercent');
 const barFill = document.getElementById('candleBarFill');
 const darkOverlay = document.getElementById('darknessOverlay');
+const redOverlay = document.getElementById('redOverlay');
 const statusMsg = document.getElementById('statusMsg');
 const errorMsg  = document.getElementById('errorMsg');
+const promptMsg = document.getElementById('promptMsg');
+const gameOverMsg = document.getElementById('gameOverMsg');
 
 function updateCandleUI(){
   const v = Math.max(0, Math.ceil(candlePercent));
@@ -158,33 +219,45 @@ function updateCandleUI(){
   barFill.style.background = `linear-gradient(90deg,rgb(${r},40,0),rgb(${r},${g},30))`;
 }
 
-// ===== 赤い立方体（フォールバック & 確認用）=====
-// MeshBasicMaterial: ライト・フォグの影響を受けず確実に見える
+let gameOver = false;
+function triggerGameOver(){
+  if(gameOver) return;
+  gameOver = true;
+  redOverlay.style.background = 'rgba(190,0,0,0.76)';
+  gameOverMsg.style.display = 'flex';
+  promptMsg.style.display = 'none';
+  statusMsg.textContent = '';
+  errorMsg.textContent = '';
+  joyId = null;
+  lookId = null;
+  joyActive = false;
+  joyDx = 0;
+  joyDy = 0;
+  joyStick.style.transform = 'translate(0,0)';
+}
+
+// ===== 赤い立方体（フォールバック & 確認用） =====
 const redCube = new THREE.Mesh(
   new THREE.BoxGeometry(1.5, 3, 1.5),
   new THREE.MeshBasicMaterial({color:0xff0000})
 );
-redCube.position.set(0, 1.5, -5); // 目の前5mに
-redCube.material.fog = false;      // フォグの影響を受けない → 必ず見える
+redCube.position.set(0, 1.5, -5);
+redCube.material.fog = false;
 scene.add(redCube);
 const redGlow = new THREE.PointLight(0xff2200, 1.5, 8);
 redGlow.position.copy(redCube.position);
 scene.add(redGlow);
 
-// ===== 雰囲気オブジェクト =====
-// 鳥居
+// ===== 村の装飾 =====
 function addTorii(x, z, ry){
-  const mat = new THREE.MeshLambertMaterial({color:0x7a1010});
+  const mat = new THREE.MeshLambertMaterial({color:0x7e1111});
   const grp = new THREE.Group();
-  // 柱×2
   [-1.6,1.6].forEach(ox=>{
     const p = new THREE.Mesh(new THREE.CylinderGeometry(0.18,0.18,5.5,8), mat);
     p.position.set(ox,2.75,0); p.castShadow=true; grp.add(p);
   });
-  // 笠木（上）
   const k1 = new THREE.Mesh(new THREE.BoxGeometry(4.4,0.35,0.35), mat);
   k1.position.set(0,5.5,0); grp.add(k1);
-  // 貫（下）
   const k2 = new THREE.Mesh(new THREE.BoxGeometry(3.8,0.25,0.25), mat);
   k2.position.set(0,4.6,0); grp.add(k2);
   grp.position.set(x,0,z);
@@ -196,7 +269,6 @@ addTorii(22,28,0.5);
 addTorii(-20,18,-0.3);
 addTorii(0,35,Math.PI);
 
-// 提灯
 function addLantern(x,z){
   const grp = new THREE.Group();
   const body = new THREE.Mesh(
@@ -216,7 +288,6 @@ function addLantern(x,z){
 }
 [[6,-14],[-6,-14],[14,-14],[-14,-14],[0,12],[16,6],[-16,6],[9,22],[-9,22],[0,-25],[20,-5],[-20,-5]].forEach(p=>addLantern(p[0],p[1]));
 
-// 墓石
 function addGrave(x,z){
   const mat = new THREE.MeshLambertMaterial({color:0x252525});
   const grp = new THREE.Group();
@@ -236,7 +307,6 @@ for(let i=0;i<25;i++){
   addGrave(gx,gz);
 }
 
-// 竹やぶ（細い円柱）
 function addBamboo(x,z){
   const mat = new THREE.MeshLambertMaterial({color:0x1a2a10});
   for(let i=0;i<5;i++){
@@ -251,37 +321,248 @@ function addBamboo(x,z){
 }
 [[30,10],[-30,10],[25,-20],[-25,-20],[35,30],[-35,-10]].forEach(p=>addBamboo(p[0],p[1]));
 
-// ===== GLTFLoader + ie.glb ロード =====
-statusMsg.textContent = 'ie.glb 読み込み中...';
+// ===== 地蔵の結界 =====
+const jizoList = [];
+const JIZO_COUNT = 3;
+const JIZO_SAFE_RADIUS = 4.0;
+const JIZO_PROMPT_RADIUS = 3.0;
+
+function createJizo(x, z){
+  const grp = new THREE.Group();
+  const bodyMat = new THREE.MeshLambertMaterial({color:0xf0f0f0, emissive:0x101010, emissiveIntensity:0.18});
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.8,1.5,0.8), bodyMat);
+  body.position.y = 0.75;
+  body.castShadow = true;
+  body.receiveShadow = true;
+  grp.add(body);
+
+  const halo = new THREE.Mesh(
+    new THREE.SphereGeometry(0.24, 12, 12),
+    new THREE.MeshBasicMaterial({color:0xffffff, transparent:true, opacity:0.12})
+  );
+  halo.position.y = 1.45;
+  grp.add(halo);
+
+  const light = new THREE.PointLight(0xff9800, 0, 7, 2);
+  light.position.y = 1.55;
+  grp.add(light);
+
+  grp.position.set(x, 0, z);
+  scene.add(grp);
+
+  const jizo = {
+    group: grp,
+    light,
+    lit: false,
+    x,
+    z
+  };
+  jizoList.push(jizo);
+  return jizo;
+}
+
+function placeJizoRandomly(){
+  for(let i=0;i<JIZO_COUNT;i++){
+    let p, tries = 0;
+    do {
+      p = randomPointInRange(120);
+      tries++;
+    } while ((Math.abs(p.x) < 8 && Math.abs(p.z) < 8) && tries < 200);
+    createJizo(p.x, p.z);
+  }
+}
+placeJizoRandomly();
+
+function getNearestJizoInPromptRange(){
+  let best = null;
+  let bestDist = Infinity;
+  for(const j of jizoList){
+    if(j.lit) continue;
+    const d = dist2D(playerPos.x, playerPos.z, j.x, j.z);
+    if(d <= JIZO_PROMPT_RADIUS && d < bestDist){
+      best = j;
+      bestDist = d;
+    }
+  }
+  return best;
+}
+
+function igniteJizo(jizo){
+  if(!jizo || jizo.lit) return;
+  jizo.lit = true;
+  jizo.light.intensity = 1.8;
+  jizo.light.color.setHex(0xffa040);
+  const haloMat = jizo.group.children.find(c => c.isMesh && c.geometry && c.geometry.type === 'SphereGeometry');
+  if(haloMat && haloMat.material){
+    haloMat.material.opacity = 0.26;
+  }
+}
+
+function updateJizoPrompt(){
+  const nearest = getNearestJizoInPromptRange();
+  if(nearest && !gameOver){
+    promptMsg.style.display = 'block';
+    promptMsg.dataset.jizoX = nearest.x.toFixed(3);
+    promptMsg.dataset.jizoZ = nearest.z.toFixed(3);
+  } else {
+    promptMsg.style.display = 'none';
+    delete promptMsg.dataset.jizoX;
+    delete promptMsg.dataset.jizoZ;
+  }
+}
+
+function getLitJizoRepulsion(enemyPos){
+  let pushX = 0;
+  let pushZ = 0;
+  for(const j of jizoList){
+    if(!j.lit) continue;
+    const dx = enemyPos.x - j.x;
+    const dz = enemyPos.z - j.z;
+    const d = Math.sqrt(dx*dx + dz*dz);
+    if(d < JIZO_SAFE_RADIUS){
+      const safeD = Math.max(d, 0.0001);
+      const overlap = JIZO_SAFE_RADIUS - safeD + 0.15;
+      pushX += (dx / safeD) * overlap;
+      pushZ += (dz / safeD) * overlap;
+    }
+  }
+  return {x: pushX, z: pushZ};
+}
+
+function isPointInsideAnySafeZone(x, z){
+  for(const j of jizoList){
+    if(!j.lit) continue;
+    if(dist2D(x, z, j.x, j.z) <= JIZO_SAFE_RADIUS){
+      return true;
+    }
+  }
+  return false;
+}
+
+// ===== GLTFLoader + モデルロード =====
+statusMsg.textContent = 'モデル読み込み中...';
 
 function loadScript(url, cb){
-  const s=document.createElement('script');
-  s.src=url;
-  s.onload=()=>cb(null);
-  s.onerror=()=>cb(new Error('script load failed: '+url));
+  const s = document.createElement('script');
+  s.src = url;
+  s.onload = ()=>cb(null);
+  s.onerror = ()=>cb(new Error('script load failed: ' + url));
   document.head.appendChild(s);
+}
+
+let enemy = null;
+let enemyTarget = null;
+let enemyTemplateLoaded = false;
+let enemySpeed = 0.016;
+let enemyModelRoot = null;
+
+function buildFallbackEnemy(){
+  const grp = new THREE.Group();
+  const mat = new THREE.MeshLambertMaterial({color:0x1a1111, emissive:0x050000, emissiveIntensity:0.2});
+
+  const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.55, 2.6, 6, 10), mat);
+  torso.position.y = 2.0;
+  grp.add(torso);
+
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.85, 14, 14), mat);
+  head.position.y = 4.0;
+  grp.add(head);
+
+  const armGeo = new THREE.CapsuleGeometry(0.14, 1.8, 4, 8);
+  const armL = new THREE.Mesh(armGeo, mat);
+  const armR = new THREE.Mesh(armGeo, mat);
+  armL.position.set(-0.95, 2.6, 0);
+  armR.position.set(0.95, 2.6, 0);
+  armL.rotation.z = 0.7;
+  armR.rotation.z = -0.7;
+  grp.add(armL, armR);
+
+  const legGeo = new THREE.CapsuleGeometry(0.18, 1.6, 4, 8);
+  const legL = new THREE.Mesh(legGeo, mat);
+  const legR = new THREE.Mesh(legGeo, mat);
+  legL.position.set(-0.26, 0.9, 0);
+  legR.position.set(0.26, 0.9, 0);
+  grp.add(legL, legR);
+
+  grp.scale.setScalar(1.0);
+  return grp;
+}
+
+function setEnemyTargetAvoidingSafeZone(){
+  let p;
+  let tries = 0;
+  do {
+    p = randomPointInRange(130);
+    tries++;
+  } while (isPointInsideAnySafeZone(p.x, p.z) && tries < 120);
+  enemyTarget = p;
+}
+
+function setupEnemyFromTemplate(template){
+  const bbox = new THREE.Box3().setFromObject(template);
+  const size = new THREE.Vector3();
+  bbox.getSize(size);
+  const targetH = 4.0;
+  const autoScale = (size.y > 0.01) ? targetH / size.y : 1.0;
+
+  enemyModelRoot = template.clone(true);
+  enemyModelRoot.scale.setScalar(autoScale);
+  enemyModelRoot.rotation.y = Math.PI;
+  enemyModelRoot.traverse(child=>{
+    if(child.isMesh){
+      child.castShadow = true;
+      child.receiveShadow = true;
+      if(child.material){
+        const mats = Array.isArray(child.material) ? child.material : [child.material];
+        mats.forEach(m=>{
+          if(m.color) m.color.multiplyScalar(0.28);
+          if('emissive' in m && m.emissive) m.emissive.multiplyScalar(0.12);
+        });
+      }
+    }
+  });
+
+  enemy = new THREE.Group();
+  enemy.add(enemyModelRoot);
+  enemy.position.set(10, 0, 10);
+  scene.add(enemy);
+  setEnemyTargetAvoidingSafeZone();
+  enemyTemplateLoaded = true;
+}
+
+function ensureEnemy(){
+  if(enemy) return;
+  enemy = new THREE.Group();
+  const fallback = buildFallbackEnemy();
+  enemy.add(fallback);
+  enemy.position.set(10, 0, 10);
+  scene.add(enemy);
+  setEnemyTargetAvoidingSafeZone();
 }
 
 loadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js', function(err){
   if(err){
-    errorMsg.textContent='GLTFLoaderの読み込みに失敗しました';
-    errorMsg.style.display='block';
-    statusMsg.textContent='';
+    errorMsg.textContent = 'GLTFLoaderの読み込みに失敗しました';
+    errorMsg.style.display = 'block';
+    statusMsg.textContent = '';
+    ensureEnemy();
     return;
   }
   if(typeof THREE.GLTFLoader === 'undefined'){
-    errorMsg.textContent='GLTFLoaderが利用できません';
-    errorMsg.style.display='block';
-    statusMsg.textContent='';
+    errorMsg.textContent = 'GLTFLoaderが利用できません';
+    errorMsg.style.display = 'block';
+    statusMsg.textContent = '';
+    ensureEnemy();
     return;
   }
 
   const loader = new THREE.GLTFLoader();
+
+  // ie.glb ロード
   loader.load('./ie.glb',
     function(gltf){
       const template = gltf.scene;
 
-      // メッシュ数カウント（実際にジオメトリがあるか確認）
       let meshCount = 0;
       template.traverse(c => { if(c.isMesh) meshCount++; });
 
@@ -289,63 +570,51 @@ loadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFL
         errorMsg.textContent = 'ie.glb は読み込めましたがメッシュが0個です（空のファイルかも）';
         errorMsg.style.display = 'block';
         statusMsg.textContent = '';
-        // 赤い立方体はそのまま残す
-        return;
-      }
+      } else {
+        redCube.visible = false;
+        redGlow.visible = false;
 
-      // メッシュが存在 → 赤い立方体を消す
-      redCube.visible = false;
-      redGlow.visible = false;
+        const bbox = new THREE.Box3().setFromObject(template);
+        const size = new THREE.Vector3();
+        bbox.getSize(size);
+        const targetH = 5.0;
+        const autoScale = (size.y > 0.01) ? targetH / size.y : 1.0;
+        const bottomY = bbox.min.y * autoScale;
 
-      // --- モデルの実寸を確認してスケール決定 ---
-      const bbox = new THREE.Box3().setFromObject(template);
-      const size = new THREE.Vector3();
-      bbox.getSize(size);
-      // 高さ約4〜6mになるよう自動スケール
-      const targetH = 5.0;
-      const autoScale = (size.y > 0.01) ? targetH / size.y : 1.0;
+        statusMsg.textContent = `✅ ie.glb 読み込み成功 / メッシュ:${meshCount}個 / サイズ:${size.x.toFixed(1)}x${size.y.toFixed(1)}x${size.z.toFixed(1)} / スケール:${autoScale.toFixed(3)}`;
+        setTimeout(()=>{ if(!gameOver) statusMsg.textContent=''; }, 6000);
 
-      // ローカル底辺のY
-      const bottomY = bbox.min.y * autoScale;
+        const COUNT = 35;
+        const RANGE = 140;
+        const MIN_DIST = 7;
 
-      statusMsg.textContent = `✅ ie.glb 読み込み成功 / メッシュ:${meshCount}個 / サイズ:${size.x.toFixed(1)}x${size.y.toFixed(1)}x${size.z.toFixed(1)} / スケール:${autoScale.toFixed(3)}`;
-      setTimeout(()=>{ statusMsg.textContent=''; }, 6000);
+        for(let i=0; i<COUNT; i++){
+          let px,pz,attempts=0;
+          do{
+            px = (Math.random()-0.5)*RANGE;
+            pz = (Math.random()-0.5)*RANGE;
+            attempts++;
+          }while(Math.sqrt(px*px+pz*pz) < MIN_DIST && attempts < 100);
 
-      // 35軒配置
-      const COUNT = 35;
-      const RANGE = 140;
-      const MIN_DIST = 7; // プレイヤー初期位置から離す
+          const house = template.clone(true);
+          house.scale.setScalar(autoScale * (0.85 + Math.random()*0.35));
+          house.rotation.y = Math.random()*Math.PI*2;
+          house.position.set(px, -bottomY, pz);
 
-      for(let i=0; i<COUNT; i++){
-        // 配置位置決定（初期位置から離す）
-        let px,pz,attempts=0;
-        do{
-          px = (Math.random()-0.5)*RANGE;
-          pz = (Math.random()-0.5)*RANGE;
-          attempts++;
-        }while(Math.sqrt(px*px+pz*pz) < MIN_DIST && attempts < 100);
-
-        // テンプレートをディープコピー
-        const house = template.clone(true);
-        house.scale.setScalar(autoScale * (0.85 + Math.random()*0.35));
-        house.rotation.y = Math.random()*Math.PI*2;
-        // 地面にぴったり置く
-        house.position.set(px, -bottomY, pz);
-
-        // 影・マテリアル暗め
-        house.traverse(child=>{
-          if(child.isMesh){
-            child.castShadow = true;
-            child.receiveShadow = true;
-            if(child.material){
-              const mats = Array.isArray(child.material) ? child.material : [child.material];
-              mats.forEach(m=>{
-                if(m.color) m.color.multiplyScalar(0.55);
-              });
+          house.traverse(child=>{
+            if(child.isMesh){
+              child.castShadow = true;
+              child.receiveShadow = true;
+              if(child.material){
+                const mats = Array.isArray(child.material) ? child.material : [child.material];
+                mats.forEach(m=>{
+                  if(m.color) m.color.multiplyScalar(0.62);
+                });
+              }
             }
-          }
-        });
-        scene.add(house);
+          });
+          scene.add(house);
+        }
       }
     },
     function(prog){
@@ -358,9 +627,28 @@ loadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFL
       const msg = 'ie.glbの読み込みに失敗しました：' + (err && err.message ? err.message : String(err));
       errorMsg.textContent = msg;
       errorMsg.style.display = 'block';
-      errorMsg.style.color = '#ff4444';
+      errorMsg.style.color = '#ff6666';
       statusMsg.textContent = '';
       console.error('ie.glb load error:', err);
+    }
+  );
+
+  // popopo.glb ロード（敵）
+  loader.load('./popopo.glb',
+    function(gltf){
+      setupEnemyFromTemplate(gltf.scene);
+      statusMsg.textContent = (statusMsg.textContent ? statusMsg.textContent + '\n' : '') + 'popopo.glb 読み込み成功';
+      setTimeout(()=>{ if(!gameOver) statusMsg.textContent=''; }, 5000);
+    },
+    function(prog){
+      // 敵の読み込みは静かに進行
+    },
+    function(err){
+      console.warn('popopo.glb load error:', err);
+      ensureEnemy();
+      errorMsg.textContent = 'popopo.glbの読み込みに失敗したため、フォールバック敵を使用します';
+      errorMsg.style.display = 'block';
+      setTimeout(()=>{ if(!gameOver) errorMsg.style.display='none'; }, 5000);
     }
   );
 });
@@ -368,21 +656,20 @@ loadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFL
 // ===== タッチ操作 =====
 const joyBase  = document.getElementById('joystickBase');
 const joyStick = document.getElementById('joystickStick');
-// ジョイスティック中心（CSS: left:60+60=120, bottom:60+60=120）
-const JOY_CX  = 120; // left + 半径
+const JOY_CX  = 120;
 const JOY_R   = 60;
-let joyId=null, joyActive=false;
-let joyDx=0, joyDy=0;
-let joyStartX=0, joyStartY=0;
+let joyId = null, joyActive = false;
+let joyDx = 0, joyDy = 0;
+let joyStartX = 0, joyStartY = 0;
 
-let lookId=null;
-let lookPrevX=0, lookPrevY=0;
+let lookId = null;
+let lookPrevX = 0, lookPrevY = 0;
 
-let yaw=0, pitch=0;
-
-// ジョイスティックスティックの初期位置
-const JOY_STICK_INIT_LEFT = 120-25; // center - half stick width
+let yaw = 0, pitch = 0;
+const JOY_STICK_INIT_LEFT = 120-25;
 const JOY_STICK_INIT_BOTTOM = 120-25;
+
+const touchStartMeta = new Map();
 
 canvas.addEventListener('touchstart', onTS, {passive:false});
 canvas.addEventListener('touchmove',  onTM, {passive:false});
@@ -391,117 +678,199 @@ canvas.addEventListener('touchcancel',onTE, {passive:false});
 
 function onTS(e){
   e.preventDefault();
+  if(gameOver) return;
   for(const t of e.changedTouches){
+    touchStartMeta.set(t.identifier, {
+      x: t.clientX,
+      y: t.clientY,
+      time: Date.now()
+    });
     const isLeft = t.clientX < window.innerWidth/2;
     if(isLeft && joyId===null){
-      joyId=t.identifier; joyActive=true;
-      joyStartX=t.clientX; joyStartY=t.clientY;
-      joyDx=0; joyDy=0;
+      joyId = t.identifier; joyActive = true;
+      joyStartX = t.clientX; joyStartY = t.clientY;
+      joyDx = 0; joyDy = 0;
     } else if(!isLeft && lookId===null){
-      lookId=t.identifier;
-      lookPrevX=t.clientX; lookPrevY=t.clientY;
+      lookId = t.identifier;
+      lookPrevX = t.clientX; lookPrevY = t.clientY;
     }
   }
 }
+
 function onTM(e){
   e.preventDefault();
+  if(gameOver) return;
   for(const t of e.changedTouches){
     if(t.identifier===joyId){
-      const dx=t.clientX-joyStartX;
-      const dy=t.clientY-joyStartY;
-      const len=Math.sqrt(dx*dx+dy*dy);
-      const clamped=Math.min(len,JOY_R);
-      const angle=Math.atan2(dy,dx);
-      joyDx=Math.cos(angle)*clamped/JOY_R;
-      joyDy=Math.sin(angle)*clamped/JOY_R;
-      const sx=Math.cos(angle)*clamped;
-      const sy=Math.sin(angle)*clamped;
-      joyStick.style.transform=`translate(${sx}px,${sy}px)`;
+      const dx = t.clientX - joyStartX;
+      const dy = t.clientY - joyStartY;
+      const len = Math.sqrt(dx*dx + dy*dy);
+      const clamped = Math.min(len,JOY_R);
+      const angle = Math.atan2(dy,dx);
+      joyDx = Math.cos(angle)*clamped/JOY_R;
+      joyDy = Math.sin(angle)*clamped/JOY_R;
+      const sx = Math.cos(angle)*clamped;
+      const sy = Math.sin(angle)*clamped;
+      joyStick.style.transform = `translate(${sx}px,${sy}px)`;
     }
     if(t.identifier===lookId){
-      const dx=t.clientX-lookPrevX;
-      const dy=t.clientY-lookPrevY;
+      const dx = t.clientX - lookPrevX;
+      const dy = t.clientY - lookPrevY;
       yaw   -= dx*0.0030;
       pitch -= dy*0.0028;
-      pitch=Math.max(-Math.PI/2.2, Math.min(Math.PI/2.2, pitch));
-      lookPrevX=t.clientX; lookPrevY=t.clientY;
+      pitch = Math.max(-Math.PI/2.2, Math.min(Math.PI/2.2, pitch));
+      lookPrevX = t.clientX; lookPrevY = t.clientY;
     }
   }
 }
+
+function tryIgniteJizoByTap(t){
+  if(gameOver) return;
+  const meta = touchStartMeta.get(t.identifier);
+  if(!meta) return;
+  const duration = Date.now() - meta.time;
+  const move = Math.hypot(t.clientX - meta.x, t.clientY - meta.y);
+  if(duration > 350 || move > 24) return;
+
+  const nearest = getNearestJizoInPromptRange();
+  if(nearest){
+    igniteJizo(nearest);
+    promptMsg.style.display = 'none';
+  }
+}
+
 function onTE(e){
   e.preventDefault();
   for(const t of e.changedTouches){
     if(t.identifier===joyId){
-      joyId=null; joyActive=false; joyDx=0; joyDy=0;
-      joyStick.style.transform='translate(0,0)';
+      joyId = null; joyActive = false; joyDx = 0; joyDy = 0;
+      joyStick.style.transform = 'translate(0,0)';
     }
-    if(t.identifier===lookId) lookId=null;
+    if(t.identifier===lookId) lookId = null;
+
+    tryIgniteJizoByTap(t);
+    touchStartMeta.delete(t.identifier);
   }
 }
 
 // ===== プレイヤー =====
-const SPEED=0.055;
-const playerPos=new THREE.Vector3(0,1.65,0);
+const SPEED = 0.055;
+const playerPos = new THREE.Vector3(0,1.65,0);
 
 function updateMove(){
+  if(gameOver) return;
   if(!joyActive) return;
-  const fwd=new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw));
-  const rgt=new THREE.Vector3( Math.cos(yaw),0,-Math.sin(yaw));
+  const fwd = new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw));
+  const rgt = new THREE.Vector3( Math.cos(yaw),0,-Math.sin(yaw));
   playerPos.addScaledVector(fwd,-joyDy*SPEED);
   playerPos.addScaledVector(rgt, joyDx*SPEED);
-  playerPos.x=Math.max(-90,Math.min(90,playerPos.x));
-  playerPos.z=Math.max(-90,Math.min(90,playerPos.z));
+  playerPos.x = Math.max(-90,Math.min(90,playerPos.x));
+  playerPos.z = Math.max(-90,Math.min(90,playerPos.z));
+}
+
+// ===== 敵の徘徊 =====
+function updateEnemy(){
+  if(!enemy || gameOver) return;
+
+  if(!enemyTarget) setEnemyTargetAvoidingSafeZone();
+
+  const ex = enemy.position.x;
+  const ez = enemy.position.z;
+  const targetX = enemyTarget.x;
+  const targetZ = enemyTarget.z;
+
+  const dx = targetX - ex;
+  const dz = targetZ - ez;
+  const dist = Math.sqrt(dx*dx + dz*dz);
+
+  const push = getLitJizoRepulsion(enemy.position);
+  if(push.x !== 0 || push.z !== 0){
+    enemy.position.x -= push.x;
+    enemy.position.z -= push.z;
+    setEnemyTargetAvoidingSafeZone();
+  }
+
+  if(dist < 0.9){
+    setEnemyTargetAvoidingSafeZone();
+  } else {
+    const nx = dx / Math.max(dist, 0.0001);
+    const nz = dz / Math.max(dist, 0.0001);
+
+    let moveX = nx * enemySpeed;
+    let moveZ = nz * enemySpeed;
+
+    const nextX = ex + moveX;
+    const nextZ = ez + moveZ;
+    if(isPointInsideAnySafeZone(nextX, nextZ)){
+      setEnemyTargetAvoidingSafeZone();
+      return;
+    }
+
+    enemy.position.x = nextX;
+    enemy.position.z = nextZ;
+    enemy.rotation.y = Math.atan2(nx, nz);
+
+    const sway = Math.sin(performance.now() * 0.004) * 0.02;
+    enemy.position.y = sway;
+    if(enemyModelRoot){
+      enemyModelRoot.rotation.z = Math.sin(performance.now() * 0.0025) * 0.03;
+    }
+  }
+
+  const dPlayer = dist2D(playerPos.x, playerPos.z, enemy.position.x, enemy.position.z);
+  if(dPlayer <= 2.0){
+    triggerGameOver();
+  }
 }
 
 // ===== アニメーションループ =====
-let frame=0;
+let frame = 0;
 function animate(){
   requestAnimationFrame(animate);
   frame++;
 
   updateMove();
+  updateEnemy();
+  updateJizoPrompt();
 
   camera.position.copy(playerPos);
   camera.rotation.order='YXZ';
   camera.rotation.y=yaw;
   camera.rotation.x=pitch;
 
-  // 蝋燭ライトをカメラと同期
-  const dir=new THREE.Vector3(0,0,-1).applyEuler(camera.rotation);
+  const dir = new THREE.Vector3(0,0,-1).applyEuler(camera.rotation);
   candleLight.position.copy(camera.position);
-  const tgt=camera.position.clone().addScaledVector(dir,6);
+  const tgt = camera.position.clone().addScaledVector(dir,6);
   candleLight.target.position.copy(tgt);
   candleLight.target.updateMatrixWorld();
   footLight.position.copy(camera.position);
 
-  // ゆらぎ
-  const flicker=0.95+Math.sin(frame*0.23)*0.04+Math.sin(frame*0.71)*0.03+(Math.random()-0.5)*0.05;
+  const flicker = 0.9 + Math.sin(frame*0.23)*0.06 + Math.sin(frame*0.71)*0.04 + (Math.random()-0.5)*0.08;
   if(candlePercent>0){
-    const base=14*(candlePercent/100);
-    candleLight.intensity=base*flicker;
-    candleLight.distance=18+10*(candlePercent/100)+Math.random()*0.8;
-    footLight.intensity=4*(candlePercent/100)*flicker;
+    const base = 8.5*(candlePercent/100);
+    candleLight.intensity = base*flicker;
+    candleLight.distance = 12 + 8*(candlePercent/100) + Math.random()*0.8;
+    footLight.intensity = 2.2*(candlePercent/100)*flicker;
   } else {
-    candleLight.intensity=0;
-    footLight.intensity=0;
+    candleLight.intensity = 0;
+    footLight.intensity = 0;
   }
 
-  // 蝋燭消費
-  const now=Date.now();
-  if(now-lastTick>TICK_MS && candlePercent>0){
-    candlePercent-=1; lastTick=now;
+  const now = Date.now();
+  if(!gameOver && now-lastTick>TICK_MS && candlePercent>0){
+    candlePercent -= 1;
+    lastTick = now;
     updateCandleUI();
     if(candlePercent<=0){
       candlePercent=0;
       darkOverlay.style.background='rgba(0,0,0,0.95)';
     } else if(candlePercent<=20){
-      const a=0.18*(1-candlePercent/20);
+      const a = 0.35*(1-candlePercent/20);
       darkOverlay.style.background=`rgba(0,0,0,${a})`;
     }
   }
 
-  // 赤キューブ回転（見えてる間）
-  if(redCube.visible) redCube.rotation.y+=0.012;
+  if(redCube.visible) redCube.rotation.y += 0.012;
 
   renderer.render(scene,camera);
 }
