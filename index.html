@@ -1,120 +1,4 @@
-// ===== 敵の追跡AI =====
-function updateEnemy(){
-  if(!enemy || gameOver) return;
-
-  const playerSafe = isPointInsideAnySafeZone(playerPos.x, playerPos.z);
-  const playerEye = new THREE.Vector3(playerPos.x, 1.65, playerPos.z);
-  const enemyEye = new THREE.Vector3(enemy.position.x, 2.1, enemy.position.z);
-
-  const dxP = playerPos.x - enemy.position.x;
-  const dzP = playerPos.z - enemy.position.z;
-  const distToPlayer = Math.sqrt(dxP*dxP + dzP*dzP);
-
-  const toPlayer = new THREE.Vector3(dxP, 0, dzP);
-  const toPlayerNorm = toPlayer.lengthSq() > 0.0001 ? toPlayer.clone().normalize() : new THREE.Vector3(0,0,1);
-  const facing = new THREE.Vector3(Math.sin(enemyFacing), 0, Math.cos(enemyFacing));
-  const inFov = facing.dot(toPlayerNorm) >= 0;
-  const los = lineOfSightClear(enemyEye, playerEye);
-
-  if(playerSafe){
-    enemyState = 'flee';
-    enemyMemoryUntil = performance.now() + 600;
-  } else if(enemyState !== 'chase'){
-    if((distToPlayer <= 30 || inFov) && los){
-      enemyState = 'chase';
-      enemyLastSeen = { x: playerPos.x, z: playerPos.z };
-      enemyMemoryUntil = performance.now() + 2500;
-    }
-  }
-
-  if(enemyState === 'chase'){
-    const chaseAllowed = los && distToPlayer <= 40 && !playerSafe;
-    if(chaseAllowed){
-      enemyLastSeen = { x: playerPos.x, z: playerPos.z };
-      enemyMemoryUntil = performance.now() + 2000;
-
-      const speed = 0.064 + Math.min(0.024, (30 - Math.min(30, distToPlayer)) * 0.0007);
-      const dir = new THREE.Vector3(dxP, 0, dzP);
-      const len = dir.length();
-      if(len > 0.0001){
-        dir.multiplyScalar(1 / len);
-        const nextX = enemy.position.x + dir.x * speed;
-        const nextZ = enemy.position.z + dir.z * speed;
-        enemy.position.x = nextX;
-        enemy.position.z = nextZ;
-        enemyFacing = Math.atan2(dir.x, dir.z);
-        enemy.rotation.y = enemyFacing;
-      }
-    } else if(performance.now() > enemyMemoryUntil || distToPlayer > 40 || !los){
-      enemyState = 'wander';
-      setEnemyTargetAvoidingSafeZone();
-    }
-  }
-
-  if(enemyState === 'flee'){
-    const awaySource = playerSafe ? nearestLitJizoToPoint(playerPos.x, playerPos.z) : null;
-    const fromX = awaySource ? enemy.position.x - awaySource.x : enemy.position.x - playerPos.x;
-    const fromZ = awaySource ? enemy.position.z - awaySource.z : enemy.position.z - playerPos.z;
-    const awayLen = Math.sqrt(fromX*fromX + fromZ*fromZ) || 1;
-    const awayX = fromX / awayLen;
-    const awayZ = fromZ / awayLen;
-    const speed = 0.052;
-    const nextX = enemy.position.x + awayX * speed;
-    const nextZ = enemy.position.z + awayZ * speed;
-    if(!pointNearAnySafeZone(nextX, nextZ, JIZO_SAFE_RADIUS + 0.6)){
-      enemy.position.x = nextX;
-      enemy.position.z = nextZ;
-    }
-    enemyFacing = Math.atan2(awayX, awayZ);
-    enemy.rotation.y = enemyFacing;
-    if(!playerSafe && performance.now() > enemyMemoryUntil){
-      enemyState = 'wander';
-      setEnemyTargetAvoidingSafeZone();
-    }
-  }
-
-  if(enemyState === 'wander'){
-    if(!enemyTarget) setEnemyTargetAvoidingSafeZone();
-    const dx = enemyTarget.x - enemy.position.x;
-    const dz = enemyTarget.z - enemy.position.z;
-    const dist = Math.sqrt(dx*dx + dz*dz);
-
-    const push = getLitJizoRepulsion(enemy.position);
-    if(push.x !== 0 || push.z !== 0){
-      enemy.position.x += push.x * 0.8;
-      enemy.position.z += push.z * 0.8;
-      setEnemyTargetAvoidingSafeZone();
-    }
-
-    if(dist < 1.2){
-      setEnemyTargetAvoidingSafeZone();
-    } else {
-      const nx = dx / Math.max(dist, 0.0001);
-      const nz = dz / Math.max(dist, 0.0001);
-      const nextX = enemy.position.x + nx * enemySpeed;
-      const nextZ = enemy.position.z + nz * enemySpeed;
-      if(!pointNearAnySafeZone(nextX, nextZ, JIZO_SAFE_RADIUS + 0.2)){
-        enemy.position.x = nextX;
-        enemy.position.z = nextZ;
-      } else {
-        setEnemyTargetAvoidingSafeZone();
-      }
-      enemyFacing = Math.atan2(nx, nz);
-      enemy.rotation.y = enemyFacing;
-    }
-  }
-
-  const sway = Math.sin(performance.now() * 0.004) * 0.02;
-  enemy.position.y = sway;
-  if(enemyModelRoot){
-    enemyModelRoot.rotation.z = Math.sin(performance.now() * 0.0025) * 0.03;
-  }
-
-  const dPlayer = dist2D(playerPos.x, playerPos.z, enemy.position.x, enemy.position.z);
-  if(dPlayer <= 1.5){
-    triggerGameOver();
-  }
-}<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -182,16 +66,16 @@ function updateEnemy(){
     justify-content:center;
     text-align:center;
     background:rgba(150,0,0,0.0);
-    color:#ffb4b4;
+    color:#fff3f3;
     font-family:'Hiragino Mincho ProN','Georgia',serif;
-    text-shadow:0 0 18px rgba(0,0,0,0.95), 0 0 28px rgba(255,0,0,0.95);
+    text-shadow:0 0 18px rgba(0,0,0,0.95), 0 0 28px rgba(255,0,0,0.8);
     pointer-events:none;
   }
   #gameOverMsg .inner {
     padding:24px 18px;
-    font-size:40px;
+    font-size:34px;
     line-height:1.5;
-    font-weight:800;
+    font-weight:700;
     letter-spacing:1px;
   }
   #joystickBase {
@@ -252,11 +136,11 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputEncoding = THREE.sRGBEncoding;
-renderer.setClearColor(0x030304,1);
+renderer.setClearColor(0x0b0b10,1);
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x050608);
-scene.fog = new THREE.FogExp2(0x050608, 0.034);
+scene.background = new THREE.Color(0x0c0d12);
+scene.fog = new THREE.FogExp2(0x111218, 0.021);
 
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 220);
 camera.position.set(0, 1.65, 0);
@@ -282,187 +166,35 @@ function randomPointInRange(range){
 }
 
 // ===== 地面 =====
-const groundMat = new THREE.MeshLambertMaterial({color:0x141416});
+const groundMat = new THREE.MeshLambertMaterial({color:0x171719});
 const ground = new THREE.Mesh(new THREE.PlaneGeometry(400,400,1,1), groundMat);
 ground.rotation.x = -Math.PI/2;
 ground.receiveShadow = true;
 scene.add(ground);
 
-// ===== 道と村の骨格 =====
-const roadSegments = [
-  { x: 0,  z: 0,   w: 9,  h: 170 },
-  { x: 0,  z: 0,   w: 118, h: 9 },
-  { x: -34, z: -8, w: 9,  h: 74 },
-  { x: 34,  z: 8,  w: 9,  h: 74 },
-  { x: -52, z: 42, w: 68, h: 9 },
-  { x: 52,  z: -42,w: 68, h: 9 },
-  { x: -20, z: 54, w: 9,  h: 52 },
-  { x: 20,  z: -54,w: 9,  h: 52 },
-  { x: -60, z: -46,w: 44, h: 9 },
-  { x: 60,  z: 46, w: 44, h: 9 },
-];
-const obstacleRoots = [];
-const villageHouses = [];
-const roadMaterialA = new THREE.MeshLambertMaterial({color:0x5a4f44});
-const roadMaterialB = new THREE.MeshLambertMaterial({color:0x6f6254});
-const roadMaterialC = new THREE.MeshLambertMaterial({color:0x3f372f});
-
-function registerObstacle(obj){
-  obstacleRoots.push(obj);
-}
-
-function pointInRoad(x, z, margin = 0.0){
-  return roadSegments.some(seg =>
-    Math.abs(x - seg.x) <= (seg.w / 2 + margin) &&
-    Math.abs(z - seg.z) <= (seg.h / 2 + margin)
-  );
-}
-
-function randomRoadPoint(){
-  const seg = roadSegments[Math.floor(Math.random() * roadSegments.length)];
-  return {
-    x: seg.x + randRange(-(seg.w / 2) + 2.5, (seg.w / 2) - 2.5),
-    z: seg.z + randRange(-(seg.h / 2) + 2.5, (seg.h / 2) - 2.5),
-    seg
-  };
-}
-
-function addRoadSegment(seg){
-  const base = new THREE.Mesh(new THREE.PlaneGeometry(seg.w, seg.h), roadMaterialA);
-  base.rotation.x = -Math.PI / 2;
-  base.position.set(seg.x, 0.021, seg.z);
-  base.receiveShadow = true;
-  scene.add(base);
-
-  const rough = new THREE.Mesh(new THREE.PlaneGeometry(Math.max(1.2, seg.w * 0.72), Math.max(1.2, seg.h * 0.72)), roadMaterialB);
-  rough.rotation.x = -Math.PI / 2;
-  rough.position.set(seg.x + randRange(-0.18, 0.18), 0.026, seg.z + randRange(-0.18, 0.18));
-  rough.receiveShadow = true;
-  scene.add(rough);
-
-  const trail = new THREE.Mesh(new THREE.PlaneGeometry(Math.max(1.0, seg.w * 0.34), Math.max(1.0, seg.h * 0.34)), roadMaterialC);
-  trail.rotation.x = -Math.PI / 2;
-  trail.position.set(seg.x + randRange(-0.12, 0.12), 0.03, seg.z + randRange(-0.12, 0.12));
-  trail.receiveShadow = true;
-  scene.add(trail);
-}
-roadSegments.forEach(addRoadSegment);
-
-function addMazeHedge(x, z, w, h, rot = 0){
-  const grp = new THREE.Group();
-  const mat = new THREE.MeshLambertMaterial({color:0x080b08});
-  const wall = new THREE.Mesh(new THREE.BoxGeometry(w, h, 1.8), mat);
-  wall.position.y = h / 2;
-  wall.rotation.y = rot;
-  wall.castShadow = true;
-  wall.receiveShadow = true;
-  grp.add(wall);
-  grp.position.set(x, 0, z);
-  scene.add(grp);
-  registerObstacle(grp);
-}
-
-function addFenceLine(x, z, len, rot = 0){
-  const grp = new THREE.Group();
-  const mat = new THREE.MeshLambertMaterial({color:0x141215});
-  const postGeo = new THREE.CylinderGeometry(0.08, 0.1, 1.7, 5);
-  const railGeo = new THREE.BoxGeometry(0.16, 0.12, len);
-  const rail = new THREE.Mesh(railGeo, mat);
-  rail.position.y = 0.95;
-  rail.rotation.y = rot;
-  rail.castShadow = true;
-  grp.add(rail);
-  for(let i = -Math.floor(len / 2); i <= Math.floor(len / 2); i += 2){
-    const post = new THREE.Mesh(postGeo, mat);
-    post.position.set(rot === 0 ? i : 0, 0.85, rot === 0 ? 0 : i);
-    post.castShadow = true;
-    grp.add(post);
-  }
-  grp.position.set(x, 0, z);
-  scene.add(grp);
-  registerObstacle(grp);
-}
-
-function addDarkTree(x, z, scale = 1){
-  const grp = new THREE.Group();
-  const trunk = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.12 * scale, 0.16 * scale, 2.4 * scale, 6),
-    new THREE.MeshLambertMaterial({color:0x1b120c})
-  );
-  trunk.position.y = 1.2 * scale;
-  trunk.castShadow = true;
-  grp.add(trunk);
-
-  const canopy1 = new THREE.Mesh(
-    new THREE.ConeGeometry(0.95 * scale, 2.8 * scale, 8),
-    new THREE.MeshLambertMaterial({color:0x050705})
-  );
-  canopy1.position.y = 2.9 * scale;
-  canopy1.castShadow = true;
-  grp.add(canopy1);
-
-  const canopy2 = new THREE.Mesh(
-    new THREE.ConeGeometry(0.7 * scale, 1.8 * scale, 8),
-    new THREE.MeshLambertMaterial({color:0x090b09})
-  );
-  canopy2.position.y = 3.8 * scale;
-  canopy2.castShadow = true;
-  grp.add(canopy2);
-
-  grp.position.set(x, 0, z);
-  scene.add(grp);
-  registerObstacle(grp);
-}
-
-function addBorderEnvironment(){
-  const edge = 96;
-  for(let i = -92; i <= 92; i += 8){
-    addFenceLine(i, -edge, 7, 0);
-    addFenceLine(i, edge, 7, 0);
-    addFenceLine(-edge, i, 7, Math.PI / 2);
-    addFenceLine(edge, i, 7, Math.PI / 2);
-
-    addDarkTree(i + randRange(-2, 2), -edge - 6 + randRange(-1, 1), 0.9 + Math.random() * 0.5);
-    addDarkTree(i + randRange(-2, 2), edge + 6 + randRange(-1, 1), 0.9 + Math.random() * 0.5);
-    addDarkTree(-edge - 6 + randRange(-1, 1), i + randRange(-2, 2), 0.9 + Math.random() * 0.5);
-    addDarkTree(edge + 6 + randRange(-1, 1), i + randRange(-2, 2), 0.9 + Math.random() * 0.5);
-  }
-
-  // 迷路感を強める内側の黒い生け垣
-  const hedges = [
-    [-18,  24, 34, 2.1, 0],
-    [ 18, -24, 34, 2.1, 0],
-    [-43,  -8, 16, 2.1, 0],
-    [ 43,   8, 16, 2.1, 0],
-    [-26,  48, 18, 2.1, 0],
-    [ 26, -48, 18, 2.1, 0],
-    [-58, -20, 16, 2.1, 0],
-    [ 58,  20, 16, 2.1, 0],
-    [-12,  63, 20, 2.1, 0],
-    [ 12, -63, 20, 2.1, 0]
-  ];
-  hedges.forEach(h => addMazeHedge(h[0], h[1], h[2], h[3], h[4]));
-}
-addBorderEnvironment();
+// 石畳グリッド
+const grid = new THREE.GridHelper(400, 80, 0x242428, 0x1a1a1d);
+grid.position.y = 0.005;
+scene.add(grid);
 
 // ===== ライト =====
-const ambLight = new THREE.AmbientLight(0x8a8a95, 0.42);
+const ambLight = new THREE.AmbientLight(0x7a7a86, 0.72);
 scene.add(ambLight);
 
-const hemi = new THREE.HemisphereLight(0x9aa0b6, 0x1b1b22, 0.38);
+const hemi = new THREE.HemisphereLight(0x8d8fa7, 0x35353d, 0.55);
 scene.add(hemi);
 
 // 蝋燭スポットライト
-const candleLight = new THREE.SpotLight(0xffb15a, 8.8, 15, Math.PI/6, 0.45, 1.8);
+const candleLight = new THREE.SpotLight(0xffb15a, 8.5, 20, Math.PI/6, 0.45, 1.8);
 candleLight.castShadow = true;
 candleLight.shadow.mapSize.set(512,512);
 candleLight.shadow.camera.near = 0.1;
-candleLight.shadow.camera.far = 15;
+candleLight.shadow.camera.far = 20;
 scene.add(candleLight);
 scene.add(candleLight.target);
 
 // 足元の周辺光
-const footLight = new THREE.PointLight(0xff7a18, 2.5, 5.0);
+const footLight = new THREE.PointLight(0xff7a18, 2.2, 5.5);
 scene.add(footLight);
 
 // ===== UI / 状態 =====
@@ -488,47 +220,11 @@ function updateCandleUI(){
 }
 
 let gameOver = false;
-let jumpscareStart = 0;
-let audioCtx = null;
-let noiseSource = null;
-let noiseGain = null;
-function initAudio(){
-  if(audioCtx) return;
-  const AC = window.AudioContext || window.webkitAudioContext;
-  if(!AC) return;
-  audioCtx = new AC();
-}
-function playWhiteNoise(){
-  if(!audioCtx) return;
-  if(noiseSource){
-    try{ noiseSource.stop(); }catch(e){}
-    noiseSource = null;
-  }
-  const duration = 1.8;
-  const buffer = audioCtx.createBuffer(1, Math.floor(audioCtx.sampleRate * duration), audioCtx.sampleRate);
-  const data = buffer.getChannelData(0);
-  for(let i=0;i<data.length;i++) data[i] = Math.random() * 2 - 1;
-  const source = audioCtx.createBufferSource();
-  source.buffer = buffer;
-  source.loop = true;
-  const hp = audioCtx.createBiquadFilter();
-  hp.type = 'highpass';
-  hp.frequency.value = 1100;
-  const gain = audioCtx.createGain();
-  gain.gain.value = 0.95;
-  source.connect(hp);
-  hp.connect(gain);
-  gain.connect(audioCtx.destination);
-  source.start();
-  noiseSource = source;
-  noiseGain = gain;
-}
 function triggerGameOver(){
   if(gameOver) return;
   gameOver = true;
-  jumpscareStart = performance.now();
-  redOverlay.style.background = 'rgba(255,0,0,0.96)';
-  gameOverMsg.style.display = 'none';
+  redOverlay.style.background = 'rgba(190,0,0,0.76)';
+  gameOverMsg.style.display = 'flex';
   promptMsg.style.display = 'none';
   statusMsg.textContent = '';
   errorMsg.textContent = '';
@@ -538,16 +234,6 @@ function triggerGameOver(){
   joyDx = 0;
   joyDy = 0;
   joyStick.style.transform = 'translate(0,0)';
-
-  if(audioCtx){
-    audioCtx.resume().then(()=>playWhiteNoise()).catch(()=>playWhiteNoise());
-  }
-  setTimeout(()=>{
-    if(gameOver){
-      gameOverMsg.innerHTML = '<div class="inner">生贄に捧げられた…</div>';
-      gameOverMsg.style.display = 'flex';
-    }
-  }, 850);
 }
 
 // ===== 赤い立方体（フォールバック & 確認用） =====
@@ -578,10 +264,10 @@ function addTorii(x, z, ry){
   grp.rotation.y = ry||0;
   scene.add(grp);
 }
-addTorii(0,-34,0);
-addTorii(-34,0,-Math.PI/2);
-addTorii(34,0,Math.PI/2);
-addTorii(0,34,Math.PI);
+addTorii(0,-18,0);
+addTorii(22,28,0.5);
+addTorii(-20,18,-0.3);
+addTorii(0,35,Math.PI);
 
 function addLantern(x,z){
   const grp = new THREE.Group();
@@ -600,7 +286,7 @@ function addLantern(x,z){
   grp.position.set(x,0,z);
   scene.add(grp);
 }
-[[0,-22],[-10,-14],[10,-14],[-22,0],[22,0],[-14,14],[14,14],[0,22],[30,8],[-30,-8],[8,30],[-8,-30]].forEach(p=>addLantern(p[0],p[1]));
+[[6,-14],[-6,-14],[14,-14],[-14,-14],[0,12],[16,6],[-16,6],[9,22],[-9,22],[0,-25],[20,-5],[-20,-5]].forEach(p=>addLantern(p[0],p[1]));
 
 function addGrave(x,z){
   const mat = new THREE.MeshLambertMaterial({color:0x252525});
@@ -614,12 +300,12 @@ function addGrave(x,z){
   grp.castShadow=true;
   scene.add(grp);
 }
-const graveSpots = [
-  [-72,-66], [-62,-58], [-56,-72], [66,-64], [72,-52],
-  [-74, 56], [-58, 68], [62, 72], [70, 58], [-46, 44],
-  [48, -46], [-38, 62], [38, -62], [0, 72], [0, -72]
-];
-graveSpots.forEach(p=>addGrave(p[0],p[1]));
+for(let i=0;i<25;i++){
+  let gx,gz;
+  do{ gx=(Math.random()-0.5)*100; gz=(Math.random()-0.5)*100; }
+  while(Math.sqrt(gx*gx+gz*gz)<6);
+  addGrave(gx,gz);
+}
 
 function addBamboo(x,z){
   const mat = new THREE.MeshLambertMaterial({color:0x1a2a10});
@@ -675,16 +361,13 @@ function createJizo(x, z){
   return jizo;
 }
 
-const jizoCandidates = [
-  {x:-28, z: 28}, {x: 28, z:-28}, {x: 0, z: 54}, {x: 54, z: 0},
-  {x:-54, z: 0}, {x: 0, z:-54}, {x:-16, z: 16}, {x: 16, z:-16},
-  {x:-40, z: 40}, {x: 40, z:-40}
-];
-
 function placeJizoRandomly(){
-  const shuffled = jizoCandidates.slice().sort(()=>Math.random()-0.5);
   for(let i=0;i<JIZO_COUNT;i++){
-    const p = shuffled[i];
+    let p, tries = 0;
+    do {
+      p = randomPointInRange(120);
+      tries++;
+    } while ((Math.abs(p.x) < 8 && Math.abs(p.z) < 8) && tries < 200);
     createJizo(p.x, p.z);
   }
 }
@@ -756,104 +439,6 @@ function isPointInsideAnySafeZone(x, z){
   return false;
 }
 
-
-function getNearestLitJizo(enemyPos){
-  let best = null;
-  let bestDist = Infinity;
-  for(const j of jizoList){
-    if(!j.lit) continue;
-    const d = dist2D(enemyPos.x, enemyPos.z, j.x, j.z);
-    if(d < bestDist){
-      best = j;
-      bestDist = d;
-    }
-  }
-  return best;
-}
-
-function pointNearAnySafeZone(x, z, radius){
-  for(const j of jizoList){
-    if(!j.lit) continue;
-    if(dist2D(x, z, j.x, j.z) <= radius){
-      return true;
-    }
-  }
-  return false;
-}
-
-function lineOfSightClear(a, b){
-  if(obstacleRoots.length === 0) return true;
-  const raycaster = new THREE.Raycaster();
-  const dir = new THREE.Vector3().subVectors(b, a);
-  const len = dir.length();
-  if(len < 0.001) return true;
-  raycaster.set(a, dir.normalize());
-  raycaster.far = len;
-  const hits = raycaster.intersectObjects(obstacleRoots, true);
-  if(!hits.length) return true;
-  return hits[0].distance >= len - 0.5;
-}
-
-function placeVillageHouses(template, autoScale, bottomY){
-  const placed = [];
-
-  function canPlace(x, z){
-    if(Math.hypot(x, z) < 16) return false;
-    if(pointInRoad(x, z, 7.5)) return false;
-    if(pointNearAnySafeZone(x, z, 4.8)) return false;
-    for(const p of placed){
-      if(dist2D(x, z, p.x, p.z) < 9.0) return false;
-    }
-    return true;
-  }
-
-  function addHouse(x, z, yaw, scaleMul = 1){
-    if(!canPlace(x, z)) return;
-    const house = template.clone(true);
-    house.scale.setScalar(autoScale * scaleMul);
-    house.rotation.y = yaw + randRange(-0.12, 0.12);
-    house.position.set(x, -bottomY, z);
-    house.traverse(child=>{
-      if(child.isMesh){
-        child.castShadow = true;
-        child.receiveShadow = true;
-        if(child.material){
-          const mats = Array.isArray(child.material) ? child.material : [child.material];
-          mats.forEach(m=>{
-            if(m.color) m.color.multiplyScalar(0.60);
-          });
-        }
-      }
-    });
-    scene.add(house);
-    registerObstacle(house);
-    villageHouses.push(house);
-    placed.push({x, z});
-  }
-
-  for(let z = -72; z <= 72; z += 12){
-    if(Math.abs(z) < 16) continue;
-    addHouse(-14.5 + randRange(-1.0, 1.0), z + randRange(-1.0, 1.0), Math.PI / 2, 0.94 + Math.random() * 0.18);
-    addHouse(14.5 + randRange(-1.0, 1.0), z + randRange(-1.0, 1.0), -Math.PI / 2, 0.94 + Math.random() * 0.18);
-  }
-
-  for(let x = -72; x <= 72; x += 12){
-    if(Math.abs(x) < 16) continue;
-    addHouse(x + randRange(-1.0, 1.0), -14.5 + randRange(-1.0, 1.0), 0, 0.94 + Math.random() * 0.18);
-    addHouse(x + randRange(-1.0, 1.0), 14.5 + randRange(-1.0, 1.0), Math.PI, 0.94 + Math.random() * 0.18);
-  }
-
-  for(let z = -58; z <= -8; z += 11){
-    addHouse(-43 + randRange(-0.8, 0.8), z + randRange(-0.8, 0.8), Math.PI / 2, 0.9 + Math.random() * 0.2);
-    addHouse(43 + randRange(-0.8, 0.8), -z + randRange(-0.8, 0.8), -Math.PI / 2, 0.9 + Math.random() * 0.2);
-  }
-
-  addHouse(-52, 52, Math.PI / 2, 1.05);
-  addHouse(52, -52, -Math.PI / 2, 1.05);
-  addHouse(-60, -38, Math.PI / 2, 0.98);
-  addHouse(60, 38, -Math.PI / 2, 0.98);
-}
-
 // ===== GLTFLoader + モデルロード =====
 statusMsg.textContent = 'モデル読み込み中...';
 
@@ -868,12 +453,8 @@ function loadScript(url, cb){
 let enemy = null;
 let enemyTarget = null;
 let enemyTemplateLoaded = false;
-let enemySpeed = 0.014;
+let enemySpeed = 0.016;
 let enemyModelRoot = null;
-let enemyState = 'wander';
-let enemyLastSeen = null;
-let enemyMemoryUntil = 0;
-let enemyFacing = 0;
 
 function buildFallbackEnemy(){
   const grp = new THREE.Group();
@@ -911,9 +492,9 @@ function setEnemyTargetAvoidingSafeZone(){
   let p;
   let tries = 0;
   do {
-    p = randomRoadPoint();
+    p = randomPointInRange(130);
     tries++;
-  } while ((isPointInsideAnySafeZone(p.x, p.z) || Math.hypot(p.x, p.z) < 12) && tries < 120);
+  } while (isPointInsideAnySafeZone(p.x, p.z) && tries < 120);
   enemyTarget = p;
 }
 
@@ -927,8 +508,6 @@ function setupEnemyFromTemplate(template){
   enemyModelRoot = template.clone(true);
   enemyModelRoot.scale.setScalar(autoScale);
   enemyModelRoot.rotation.y = Math.PI;
-  // 下半身が埋まらないよう、モデル基準を地面へ持ち上げる
-  enemyModelRoot.position.y = (-bbox.min.y * autoScale);
   enemyModelRoot.traverse(child=>{
     if(child.isMesh){
       child.castShadow = true;
@@ -936,8 +515,8 @@ function setupEnemyFromTemplate(template){
       if(child.material){
         const mats = Array.isArray(child.material) ? child.material : [child.material];
         mats.forEach(m=>{
-          if(m.color) m.color.multiplyScalar(0.22);
-          if('emissive' in m && m.emissive) m.emissive.multiplyScalar(0.10);
+          if(m.color) m.color.multiplyScalar(0.28);
+          if('emissive' in m && m.emissive) m.emissive.multiplyScalar(0.12);
         });
       }
     }
@@ -955,7 +534,6 @@ function ensureEnemy(){
   if(enemy) return;
   enemy = new THREE.Group();
   const fallback = buildFallbackEnemy();
-  fallback.position.y = 2.0;
   enemy.add(fallback);
   enemy.position.set(10, 0, 10);
   scene.add(enemy);
@@ -1006,7 +584,37 @@ loadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFL
         statusMsg.textContent = `✅ ie.glb 読み込み成功 / メッシュ:${meshCount}個 / サイズ:${size.x.toFixed(1)}x${size.y.toFixed(1)}x${size.z.toFixed(1)} / スケール:${autoScale.toFixed(3)}`;
         setTimeout(()=>{ if(!gameOver) statusMsg.textContent=''; }, 6000);
 
-        placeVillageHouses(template, autoScale, bottomY);
+        const COUNT = 35;
+        const RANGE = 140;
+        const MIN_DIST = 7;
+
+        for(let i=0; i<COUNT; i++){
+          let px,pz,attempts=0;
+          do{
+            px = (Math.random()-0.5)*RANGE;
+            pz = (Math.random()-0.5)*RANGE;
+            attempts++;
+          }while(Math.sqrt(px*px+pz*pz) < MIN_DIST && attempts < 100);
+
+          const house = template.clone(true);
+          house.scale.setScalar(autoScale * (0.85 + Math.random()*0.35));
+          house.rotation.y = Math.random()*Math.PI*2;
+          house.position.set(px, -bottomY, pz);
+
+          house.traverse(child=>{
+            if(child.isMesh){
+              child.castShadow = true;
+              child.receiveShadow = true;
+              if(child.material){
+                const mats = Array.isArray(child.material) ? child.material : [child.material];
+                mats.forEach(m=>{
+                  if(m.color) m.color.multiplyScalar(0.62);
+                });
+              }
+            }
+          });
+          scene.add(house);
+        }
       }
     },
     function(prog){
@@ -1070,8 +678,6 @@ canvas.addEventListener('touchcancel',onTE, {passive:false});
 
 function onTS(e){
   e.preventDefault();
-  initAudio();
-  if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(()=>{});
   if(gameOver) return;
   for(const t of e.changedTouches){
     touchStartMeta.set(t.identifier, {
@@ -1093,8 +699,6 @@ function onTS(e){
 
 function onTM(e){
   e.preventDefault();
-  initAudio();
-  if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(()=>{});
   if(gameOver) return;
   for(const t of e.changedTouches){
     if(t.identifier===joyId){
@@ -1243,10 +847,10 @@ function animate(){
 
   const flicker = 0.9 + Math.sin(frame*0.23)*0.06 + Math.sin(frame*0.71)*0.04 + (Math.random()-0.5)*0.08;
   if(candlePercent>0){
-    const base = 8.8*(candlePercent/100);
+    const base = 8.5*(candlePercent/100);
     candleLight.intensity = base*flicker;
-    candleLight.distance = 10 + 5*(candlePercent/100) + Math.random()*0.5;
-    footLight.intensity = 2.5*(candlePercent/100)*flicker;
+    candleLight.distance = 12 + 8*(candlePercent/100) + Math.random()*0.8;
+    footLight.intensity = 2.2*(candlePercent/100)*flicker;
   } else {
     candleLight.intensity = 0;
     footLight.intensity = 0;
@@ -1263,20 +867,6 @@ function animate(){
     } else if(candlePercent<=20){
       const a = 0.35*(1-candlePercent/20);
       darkOverlay.style.background=`rgba(0,0,0,${a})`;
-    }
-  }
-
-  if(gameOver){
-    const t = performance.now() - jumpscareStart;
-    if(t < 1000){
-      const shake = (1 - t / 1000);
-      camera.position.x += (Math.random() - 0.5) * 0.35 * shake;
-      camera.position.y += (Math.random() - 0.5) * 0.22 * shake;
-      camera.rotation.y += (Math.random() - 0.5) * 0.08 * shake;
-      camera.rotation.x += (Math.random() - 0.5) * 0.06 * shake;
-      redOverlay.style.background = `rgba(255,0,0,${0.92 - t / 1500})`;
-    } else {
-      redOverlay.style.background = 'rgba(160,0,0,0.86)';
     }
   }
 
