@@ -717,25 +717,24 @@ function hasLineOfSight(enemyPos, playerPos3D){
 // ★ 八尺様の向き制御ヘルパー
 //
 //  設計方針：
-//  ・hachishaku（外側Group）の rotation.y だけで向きを決める。
-//  ・FBXモデル（fbxRoot）は内側で rotation.y = Math.PI を初期値として持つ。
-//    これにより「外側GroupのZ+方向」= FBXモデルの正面になる。
-//  ・外側Groupを回転させるだけで正しくプレイヤーを向く。
-//  ・lookAt() は使わない（内側PIオフセットと干渉するため）。
+//  ・hachishaku（外側Group）は進行方向を受け持つ。
+//  ・FBX本体は内側Visualの固定オフセットだけで「正面」を作る。
+//  ・Meshyの前方軸は参照しない。コード側の補正値だけで決める。
+//  ・lookAt() は使わず、毎フレームの角度を直接設定する。
 // ===================================================================
+
+const ENEMY_VISUAL_YAW_OFFSET = Math.PI; // 体が逆なら Math.PI、90度ずれなら ±Math.PI/2 に変更
 
 /**
  * hachishaku（外側Group）を目標XZ座標に向ける。
- * atan2で角度を計算し、FBXの初期180度オフセットをキャンセルして適用。
  * @param {number} tx  目標X
  * @param {number} tz  目標Z
  */
 function faceEnemyToward(tx, tz){
   if(!hachishaku) return;
-  // lookAt は外側の追跡用 Group にだけ使う。
-  // FBX本体は onLoad 内で 180度回転しているので、ここでは余計なPIオフセットを足さない。
-  const targetPos = new THREE.Vector3(tx, hachishaku.position.y, tz);
-  hachishaku.lookAt(targetPos);
+  const dx = tx - hachishaku.position.x;
+  const dz = tz - hachishaku.position.z;
+  hachishaku.rotation.y = Math.atan2(dx, dz);
   hachishaku.rotation.x = 0;
   hachishaku.rotation.z = 0;
 }
@@ -863,10 +862,14 @@ function updateEnemyAI(deltaMs){
 function ensureHachishaku(){
   if(hachishaku) return;
   hachishaku = new THREE.Group();
+  const visualRoot = new THREE.Group();
+  visualRoot.rotation.y = ENEMY_VISUAL_YAW_OFFSET;
   const fb = buildFallbackEnemy();
-  hachishaku.add(fb);
+  visualRoot.add(fb);
+  hachishaku.add(visualRoot);
   const box = new THREE.Box3().setFromObject(hachishaku);
   hachishaku.position.set(18, -box.min.y, 18);
+  hachishaku.position.y = getTerrainHeight(hachishaku.position.x, hachishaku.position.z);
   scene.add(hachishaku);
   setEnemyTargetAvoidingSafeZone();
 }
@@ -1014,11 +1017,9 @@ function tryLoadFBX(){
       const bottomY = box2.min.y; // スケール適用後の底面Y値
       fbx.position.y = -bottomY;  // 底面をY=0に揃える
 
-      // ─ ③ 向き補正（FBX本体を180度回転して正面を統一） ───────────
-      // FBXモデルは多くの場合 -Z方向（後ろ）を向いているため、
-      // 本体だけを 180度回転させて「正面 = プレイヤー方向」に合わせる。
-      // 追跡時は外側の hachishaku.lookAt(target) だけで向きを制御する。
-      fbx.rotation.y = Math.PI;
+      // ─ ③ 向き補正 ───────────────────────────────────────────────
+      // Meshyの向きは無視し、見た目の正面はコード側の固定オフセットで決める。
+      fbx.rotation.set(0, 0, 0);
 
       // ─ ④ 暗色化 ─────────────────────────────────────────────────
       fbx.traverse(child=>{
@@ -1036,8 +1037,12 @@ function tryLoadFBX(){
 
       // ─ ⑤ シーンへ追加 ────────────────────────────────────────────
       hachishaku = new THREE.Group();
-      hachishaku.add(fbx);
+      const visualRoot = new THREE.Group();
+      visualRoot.rotation.y = ENEMY_VISUAL_YAW_OFFSET;
+      visualRoot.add(fbx);
+      hachishaku.add(visualRoot);
       hachishaku.position.set(18, 0, 18);
+      hachishaku.position.y = getTerrainHeight(hachishaku.position.x, hachishaku.position.z);
       scene.add(hachishaku);
       setEnemyTargetAvoidingSafeZone();
 
