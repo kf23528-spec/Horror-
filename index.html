@@ -272,6 +272,55 @@ function randRange(a,b){ return a+Math.random()*(b-a); }
 function randomPointInRange(r){ return {x:(Math.random()-0.5)*r, z:(Math.random()-0.5)*r}; }
 
 // ===================================================================
+// 地形（段差・階段）
+// ===================================================================
+function addTerrainBlock(x, y, z, w, h, d, color=0x3b342c){
+  const m = new THREE.Mesh(
+    new THREE.BoxGeometry(w, h, d),
+    new THREE.MeshLambertMaterial({ color })
+  );
+  m.position.set(x, y + h/2, z);
+  m.castShadow = true;
+  m.receiveShadow = true;
+  scene.add(m);
+  return m;
+}
+
+function addStaircase(cx, cz, stepCount, stepW, stepD, stepRise, axis='z', color=0x4a4338){
+  for(let i=0;i<stepCount;i++){
+    if(axis === 'z'){
+      addTerrainBlock(cx, i*stepRise, cz + i*stepD, stepW, stepRise, stepD, color);
+    } else {
+      addTerrainBlock(cx + i*stepD, i*stepRise, cz, stepD, stepRise, stepW, color);
+    }
+  }
+}
+
+// 参道の階段
+addStaircase(0, -54, 6, 8, 2.0, 0.18, 'z', 0x4b4338);
+// 東側の小高い区画
+addTerrainBlock(34, 0.45, 0, 24, 0.9, 24, 0x433a2f);
+addTerrainBlock(39, 1.10, 0, 12, 0.8, 12, 0x4a4135);
+addTerrainBlock(42, 1.62, 0, 6, 0.6, 6, 0x52483b);
+
+function getTerrainHeight(x, z){
+  let h = 0;
+  if (Math.abs(x) < 5.5 && z > -58 && z < -46) {
+    h = Math.max(h, Math.min(1.08, (z + 58) * 0.18));
+  }
+  if (x > 28 && x < 48 && Math.abs(z) < 14) {
+    h = Math.max(h, 0.45);
+  }
+  if (x > 35 && x < 46 && Math.abs(z) < 9) {
+    h = Math.max(h, 1.10);
+  }
+  if (x > 40 && x < 45 && Math.abs(z) < 5.5) {
+    h = Math.max(h, 1.62);
+  }
+  return h;
+}
+
+// ===================================================================
 // 地面
 // ===================================================================
 const groundMat = new THREE.MeshLambertMaterial({color:0x16161a});
@@ -596,7 +645,7 @@ function placeJizoRandomly(){
 }
 placeJizoRandomly();
 
-const playerPos=new THREE.Vector3(0,1.65,0);
+const playerPos=new THREE.Vector3(0,1.65 + getTerrainHeight(0,0),0);
 
 function getNearestJizoInPromptRange(){
   let best=null,bestDist=Infinity;
@@ -723,7 +772,7 @@ function hasLineOfSight(enemyPos, playerPos3D){
 //  ・lookAt() は使わず、毎フレームの角度を直接設定する。
 // ===================================================================
 
-const ENEMY_VISUAL_YAW_OFFSET = Math.PI; // 体が逆なら Math.PI、90度ずれなら ±Math.PI/2 に変更
+const ENEMY_VISUAL_YAW_OFFSET = -Math.PI / 2; // 見た目の前方をコード側で固定
 
 /**
  * hachishaku（外側Group）を目標XZ座標に向ける。
@@ -734,9 +783,8 @@ function faceEnemyToward(tx, tz){
   if(!hachishaku) return;
   const dx = tx - hachishaku.position.x;
   const dz = tz - hachishaku.position.z;
-  hachishaku.rotation.y = Math.atan2(dx, dz);
-  hachishaku.rotation.x = 0;
-  hachishaku.rotation.z = 0;
+  const yaw = Math.atan2(dx, dz);
+  hachishaku.rotation.set(0, yaw, 0);
 }
 
 // ===================================================================
@@ -849,7 +897,7 @@ function updateEnemyAI(deltaMs){
   }
 
   // 地面揺れ（微小）
-  hachishaku.position.y = Math.sin(performance.now()*0.004)*0.015;
+  hachishaku.position.y = getTerrainHeight(hachishaku.position.x, hachishaku.position.z) + Math.sin(performance.now()*0.004)*0.015;
 
   // 即死判定
   const d3 = hachishaku.position.distanceTo(camera.position);
@@ -867,9 +915,7 @@ function ensureHachishaku(){
   const fb = buildFallbackEnemy();
   visualRoot.add(fb);
   hachishaku.add(visualRoot);
-  const box = new THREE.Box3().setFromObject(hachishaku);
-  hachishaku.position.set(18, -box.min.y, 18);
-  hachishaku.position.y = getTerrainHeight(hachishaku.position.x, hachishaku.position.z);
+  hachishaku.position.set(18, getTerrainHeight(18, 18), 18);
   scene.add(hachishaku);
   setEnemyTargetAvoidingSafeZone();
 }
@@ -1041,8 +1087,7 @@ function tryLoadFBX(){
       visualRoot.rotation.y = ENEMY_VISUAL_YAW_OFFSET;
       visualRoot.add(fbx);
       hachishaku.add(visualRoot);
-      hachishaku.position.set(18, 0, 18);
-      hachishaku.position.y = getTerrainHeight(hachishaku.position.x, hachishaku.position.z);
+      hachishaku.position.set(18, getTerrainHeight(18, 18), 18);
       scene.add(hachishaku);
       setEnemyTargetAvoidingSafeZone();
 
@@ -1191,6 +1236,7 @@ function updateMove(){
   playerPos.addScaledVector(rgt, joyDx*spd);
   playerPos.x = Math.max(-82, Math.min(82, playerPos.x));
   playerPos.z = Math.max(-82, Math.min(82, playerPos.z));
+  playerPos.y = 1.65 + getTerrainHeight(playerPos.x, playerPos.z);
 }
 
 // ===================================================================
