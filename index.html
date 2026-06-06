@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>夜の村 - 和風ホラー</title>
+<script src="https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FBXLoader.js"></script>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   html, body {
@@ -194,7 +196,7 @@
 
 <div id="gameOverScreen">
   <div id="gameOverInner">
-    <div id="gameOverTitle">八尺様に捕まった…</div>
+    <div id="gameOverTitle">捕まった…</div>
     <div id="gameOverSub">GAME OVER</div>
   </div>
 </div>
@@ -204,7 +206,6 @@
 <!-- 走るボタン（右下） -->
 <div id="dashBtn"><div class="dashLabel">走る</div></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 (function(){
 'use strict';
@@ -233,6 +234,10 @@ window.addEventListener('resize', ()=>{
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
+
+// Line-of-sight blocker registry used by fences / houses
+const raycaster = new THREE.Raycaster();
+const losBlockers = [];
 
 // ===================================================================
 // ユーティリティ
@@ -385,6 +390,7 @@ const fenceMat = new THREE.MeshLambertMaterial({color:0x3a2010});
 function addFence(x,z,w,d){
   const m=new THREE.Mesh(new THREE.BoxGeometry(w,0.9,d), fenceMat);
   m.position.set(x,0.45,z); m.castShadow=true; scene.add(m);
+  losBlockers.push(m);
 }
 // 道路脇に沿って塀を並べる（南北道左右）
 for(let z=-80;z<80;z+=6){
@@ -465,6 +471,7 @@ function addBambooCluster(cx,cz,count){
 function addHedgeWall(x,z,w,d){
   const m=new THREE.Mesh(new THREE.BoxGeometry(w,2.8,d),hedgeMat);
   m.position.set(x,1.4,z); m.castShadow=true; m.receiveShadow=true; scene.add(m);
+  losBlockers.push(m);
 }
 
 // 外周竹林（マップ端をぐるりと囲む）
@@ -641,6 +648,8 @@ redGlow.position.copy(redCube.position); scene.add(redGlow);
 // 八尺様（hachishaku）
 // ===================================================================
 let hachishaku=null, hachishakuModelRoot=null, enemyTarget=null;
+let enemyState='wander';
+let losBlockedSince=null;
 
 // ★ 1.2倍に強化した速度
 const ENEMY_SPEED        = 0.05 * 1.2;   // 追跡速度
@@ -669,54 +678,79 @@ function setEnemyTargetAvoidingSafeZone(){
   while(isPointInsideAnySafeZone(p.x,p.z)&&tries<120);
   enemyTarget=p;
 }
-function setupHachishakuFromTemplate(template){
-  hachishaku=new THREE.Group();
-  hachishakuModelRoot=template.clone(true);
-
-  // スケール計算
-  let box=new THREE.Box3().setFromObject(hachishakuModelRoot);
-  let size=new THREE.Vector3(); box.getSize(size);
-  const targetH=4.0;
-  const autoScale=(size.y>0.01)?targetH/size.y:1.0;
-  hachishakuModelRoot.scale.setScalar(autoScale);
-
-  // スケール後に底面補正（埋まり防止）
-  box=new THREE.Box3().setFromObject(hachishakuModelRoot);
-  const bottomY=box.min.y;
-  hachishakuModelRoot.position.y=-bottomY;
-
-  hachishakuModelRoot.rotation.y=Math.PI;
-  hachishakuModelRoot.traverse(child=>{
+function getEnemyEyePosition(){
+  if(!hachishaku) return null;
+  return hachishaku.position.clone().add(new THREE.Vector3(0,2.0,0));
+}
+function hasLineOfSightToPlayer(){
+  if(!hachishaku || losBlockers.length===0) return true;
+  const origin=getEnemyEyePosition();
+  const target=camera.position.clone().add(new THREE.Vector3(0,0.15,0));
+  const dir=target.clone().sub(origin);
+  const dist=dir.length();
+  if(dist<0.001) return true;
+  dir.normalize();
+  raycaster.set(origin, dir);
+  raycaster.far = dist;
+  const hits = raycaster.intersectObjects(losBlockers, true);
+  if(!hits.length) return true;
+  return hits[0].distance >= dist - 0.15;
+}
+function setupHachishakuFromTemplate(fbx){
+  hachishaku = fbx;
+  hachishakuModelRoot = fbx;
+  hachishaku.scale.set(0.02, 0.02, 0.02);
+  const box = new THREE.Box3().setFromObject(hachishaku);
+  const size = new THREE.Vector3();
+  box.getSize(size);
+  hachishaku.position.y = size.y / 2;
+  const groundedBox = new THREE.Box3().setFromObject(hachishaku);
+  if (groundedBox.min.y < 0) {
+    hachishaku.position.y += -groundedBox.min.y;
+  }
+  hachishaku.position.set(18, hachishaku.position.y, 18);
+  hachishaku.rotation.y = Math.PI;
+  hachishaku.traverse(child=>{
     if(child.isMesh){
-      child.castShadow=true; child.receiveShadow=true;
+      child.castShadow = true;
+      child.receiveShadow = true;
       if(child.material){
-        const mats=Array.isArray(child.material)?child.material:[child.material];
+        const mats = Array.isArray(child.material) ? child.material : [child.material];
         mats.forEach(m=>{
           if(m.color) m.color.multiplyScalar(0.28);
-          if('emissive'in m&&m.emissive) m.emissive.multiplyScalar(0.12);
+          if('emissive' in m && m.emissive) m.emissive.multiplyScalar(0.12);
         });
       }
     }
   });
-  hachishaku.add(hachishakuModelRoot);
-  hachishaku.position.set(18,0,18);
   scene.add(hachishaku);
+  enemyState = 'wander';
+  losBlockedSince = null;
   setEnemyTargetAvoidingSafeZone();
 }
 function ensureHachishaku(){
   if(hachishaku) return;
-  hachishaku=new THREE.Group();
-  const fb=buildFallbackEnemy();
+  hachishaku = new THREE.Group();
+  const fb = buildFallbackEnemy();
   hachishaku.add(fb);
-  const box=new THREE.Box3().setFromObject(hachishaku);
-  const bottomY=box.min.y;
-  hachishaku.position.set(18,-bottomY,18);
+  const box = new THREE.Box3().setFromObject(hachishaku);
+  const size = new THREE.Vector3();
+  box.getSize(size);
+  hachishaku.position.y = size.y / 2;
+  const groundedBox = new THREE.Box3().setFromObject(hachishaku);
+  if (groundedBox.min.y < 0) {
+    hachishaku.position.y += -groundedBox.min.y;
+  }
+  hachishaku.position.set(18, hachishaku.position.y, 18);
+  hachishaku.rotation.y = Math.PI;
   scene.add(hachishaku);
+  enemyState = 'wander';
+  losBlockedSince = null;
   setEnemyTargetAvoidingSafeZone();
 }
 
 // ===================================================================
-// GLTFLoader + ie.glb / popopo.glb
+// GLTFLoader + ie.glb / popopo.fbx
 // ===================================================================
 statusMsg.textContent='モデル読み込み中...';
 
@@ -776,6 +810,7 @@ function placeHousesAlongRoads(template){
       }
     });
     scene.add(house);
+    losBlockers.push(house);
     placed++;
   }
   return placed;
@@ -816,25 +851,49 @@ loadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFL
     }
   );
 
-  // popopo.glb（八尺様）
-  loader.load('./popopo.glb',
-    function(gltf){
-      setupHachishakuFromTemplate(gltf.scene);
+  const fbxLoader = new THREE.FBXLoader();
+  fbxLoader.load('./popopo.fbx', (fbx) => {
+      hachishaku = fbx;
+      hachishaku.scale.set(0.02, 0.02, 0.02);
+      const box = new THREE.Box3().setFromObject(hachishaku);
+      const size = new THREE.Vector3();
+      box.getSize(size);
+      hachishaku.position.y = size.y / 2;
+      const groundedBox = new THREE.Box3().setFromObject(hachishaku);
+      if (groundedBox.min.y < 0) {
+        hachishaku.position.y += -groundedBox.min.y;
+      }
+      hachishaku.position.set(18, hachishaku.position.y, 18);
+      hachishaku.rotation.y = Math.PI;
+      hachishaku.traverse(child=>{
+        if(child.isMesh){
+          child.castShadow = true;
+          child.receiveShadow = true;
+          if(child.material){
+            const mats = Array.isArray(child.material) ? child.material : [child.material];
+            mats.forEach(m=>{
+              if(m.color) m.color.multiplyScalar(0.28);
+              if('emissive' in m && m.emissive) m.emissive.multiplyScalar(0.12);
+            });
+          }
+        }
+      });
+      scene.add(hachishaku);
+      hachishakuModelRoot = hachishaku;
+      enemyState = 'wander';
+      losBlockedSince = null;
+      setEnemyTargetAvoidingSafeZone();
       const extra=statusMsg.textContent?statusMsg.textContent+'\n':'';
-      statusMsg.textContent=extra+'popopo.glb 読み込み成功';
+      statusMsg.textContent=extra+'popopo.fbx 読み込み成功';
       setTimeout(()=>{if(!gameOver)statusMsg.textContent='';},5000);
-    },
-    function(){},
-    function(e){
-      console.warn('popopo.glb load error:',e);
+  }, function(progress){}, function(e){
+      console.warn('popopo.fbx load error:', e);
       ensureHachishaku();
-      errorMsg.textContent='popopo.glb失敗→フォールバック使用';
+      errorMsg.textContent='popopo.fbx失敗→フォールバック使用';
       errorMsg.style.display='block';
       setTimeout(()=>{if(!gameOver)errorMsg.style.display='none';},5000);
-    }
-  );
+  });
 });
-
 // ===================================================================
 // タッチ操作（左:ジョイスティック / 右:視点 + ダッシュボタン）
 // ===================================================================
@@ -959,59 +1018,73 @@ function animate(){
   updateMove();
 
   // ── 八尺様 AI（毎フレーム実行） ──
-  if(hachishaku&&!gameOver){
-    const distToPlayer=hachishaku.position.distanceTo(camera.position);
+  if(hachishaku && !gameOver){
+    const playerCenter = camera.position.clone();
+    const enemyCenter = hachishaku.position.clone().add(new THREE.Vector3(0, 2.0, 0));
+    const distToPlayer = enemyCenter.distanceTo(playerCenter);
+    const losClear = hasLineOfSightToPlayer();
+    const nowPerf = performance.now();
 
-    if(distToPlayer<25){
-      // 索敵25m以内：追跡
-      const targetPos=new THREE.Vector3(camera.position.x,hachishaku.position.y,camera.position.z);
-      hachishaku.lookAt(targetPos);
-      const direction=new THREE.Vector3();
-      direction.subVectors(camera.position,hachishaku.position);
-      direction.y=0; direction.normalize();
-      const push=getLitJizoRepulsion(hachishaku.position);
-      const nextX=hachishaku.position.x+direction.x*ENEMY_SPEED-push.x;
-      const nextZ=hachishaku.position.z+direction.z*ENEMY_SPEED-push.z;
-      if(!isPointInsideAnySafeZone(nextX,nextZ)){
-        hachishaku.position.x=nextX;
-        hachishaku.position.z=nextZ;
+    if(enemyState === 'wander'){
+      if(distToPlayer <= 30 && losClear){
+        enemyState = 'chase';
+        losBlockedSince = null;
       } else {
-        setEnemyTargetAvoidingSafeZone();
-      }
-    } else {
-      // 索敵圏外：徘徊
-      if(!enemyTarget) setEnemyTargetAvoidingSafeZone();
-      const ex=hachishaku.position.x, ez=hachishaku.position.z;
-      const dx=enemyTarget.x-ex, dz=enemyTarget.z-ez;
-      const dist=Math.sqrt(dx*dx+dz*dz);
-      const push=getLitJizoRepulsion(hachishaku.position);
-      if(push.x!==0||push.z!==0){
-        hachishaku.position.x-=push.x;
-        hachishaku.position.z-=push.z;
-        setEnemyTargetAvoidingSafeZone();
-      }
-      if(dist<0.9){
-        setEnemyTargetAvoidingSafeZone();
-      } else {
-        const nx=dx/Math.max(dist,0.0001), nz=dz/Math.max(dist,0.0001);
-        const nextX=ex+nx*ENEMY_WANDER_SPEED, nextZ=ez+nz*ENEMY_WANDER_SPEED;
-        if(!isPointInsideAnySafeZone(nextX,nextZ)){
-          hachishaku.position.x=nextX; hachishaku.position.z=nextZ;
-          hachishaku.rotation.y=Math.atan2(nx,nz);
+        if(!enemyTarget) setEnemyTargetAvoidingSafeZone();
+        const ex = hachishaku.position.x, ez = hachishaku.position.z;
+        const dx = enemyTarget.x - ex, dz = enemyTarget.z - ez;
+        const dist = Math.sqrt(dx*dx + dz*dz);
+        const push = getLitJizoRepulsion(hachishaku.position);
+        if(push.x !== 0 || push.z !== 0){
+          hachishaku.position.x -= push.x;
+          hachishaku.position.z -= push.z;
+          setEnemyTargetAvoidingSafeZone();
+        }
+        if(dist < 0.9){
+          setEnemyTargetAvoidingSafeZone();
         } else {
+          const nx = dx / Math.max(dist, 0.0001), nz = dz / Math.max(dist, 0.0001);
+          const nextX = ex + nx * ENEMY_WANDER_SPEED, nextZ = ez + nz * ENEMY_WANDER_SPEED;
+          if(!isPointInsideAnySafeZone(nextX, nextZ)){
+            hachishaku.position.x = nextX;
+            hachishaku.position.z = nextZ;
+            hachishaku.lookAt(new THREE.Vector3(playerCenter.x, hachishaku.position.y, playerCenter.z));
+          } else {
+            setEnemyTargetAvoidingSafeZone();
+          }
+        }
+      }
+    } else if(enemyState === 'chase'){
+      if(losClear){
+        losBlockedSince = null;
+        const chaseDir = playerCenter.clone().sub(hachishaku.position);
+        chaseDir.y = 0;
+        const chaseLen = chaseDir.length();
+        if(chaseLen > 0.0001){
+          chaseDir.normalize();
+          hachishaku.lookAt(new THREE.Vector3(playerCenter.x, hachishaku.position.y, playerCenter.z));
+          const push = getLitJizoRepulsion(hachishaku.position);
+          const nextX = hachishaku.position.x + chaseDir.x * ENEMY_SPEED - push.x;
+          const nextZ = hachishaku.position.z + chaseDir.z * ENEMY_SPEED - push.z;
+          if(!isPointInsideAnySafeZone(nextX, nextZ)){
+            hachishaku.position.x = nextX;
+            hachishaku.position.z = nextZ;
+          }
+        }
+      } else {
+        if(losBlockedSince === null) losBlockedSince = nowPerf;
+        if(nowPerf - losBlockedSince >= 3000){
+          enemyState = 'wander';
+          losBlockedSince = null;
           setEnemyTargetAvoidingSafeZone();
         }
       }
     }
 
-    // 地面揺れ（微小）
-    hachishaku.position.y=Math.sin(performance.now()*0.004)*0.015;
-    if(hachishakuModelRoot){
-      hachishakuModelRoot.rotation.z=Math.sin(performance.now()*0.0025)*0.025;
+    if(distToPlayer < 1.8){
+      triggerGameOver();
+      return;
     }
-
-    // 即死判定
-    if(distToPlayer<1.8){ triggerGameOver(); return; }
   }
 
   // 地蔵プロンプト
