@@ -8,7 +8,7 @@
   * { margin:0; padding:0; box-sizing:border-box; }
   html, body {
     width:100%; height:100%;
-    overflow:hidden; background:#000;
+    overflow:hidden; background:#0b0b10;
     touch-action:none; user-select:none; -webkit-user-select:none;
   }
   #gameCanvas {
@@ -17,8 +17,8 @@
   #candleUI {
     position:fixed; top:20px; left:50%; transform:translateX(-50%);
     font-family:'Georgia','Hiragino Mincho ProN',serif;
-    font-size:22px; color:#f5c842; letter-spacing:2px; white-space:nowrap;
-    text-shadow:-2px -2px 0 #000,2px -2px 0 #000,-2px 2px 0 #000,2px 2px 0 #000,0 0 14px rgba(255,180,0,0.7);
+    font-size:22px; color:#ffe08a; letter-spacing:2px; white-space:nowrap;
+    text-shadow:-2px -2px 0 #000,2px -2px 0 #000,-2px 2px 0 #000,2px 2px 0 #000,0 0 16px rgba(255,210,120,0.8);
     z-index:20; pointer-events:none;
   }
   #candleBar {
@@ -48,22 +48,22 @@
   #joystickBase {
     position:fixed; bottom:60px; left:60px;
     width:120px; height:120px; border-radius:50%;
-    background:rgba(255,255,255,0.07);
-    border:2px solid rgba(255,200,100,0.3);
+    background:rgba(255,255,255,0.11);
+    border:2px solid rgba(255,220,140,0.45);
     z-index:15; pointer-events:none;
   }
   #joystickStick {
     position:fixed; bottom:95px; left:95px;
     width:50px; height:50px; border-radius:50%;
-    background:rgba(245,200,66,0.4);
-    border:2px solid rgba(245,200,66,0.6);
-    box-shadow:0 0 10px rgba(255,180,0,0.4);
+    background:rgba(255,218,120,0.55);
+    border:2px solid rgba(255,218,120,0.75);
+    box-shadow:0 0 12px rgba(255,210,120,0.55);
     z-index:16; pointer-events:none;
     transition:transform 0.03s;
   }
   #vignette {
     position:fixed; inset:0;
-    background:radial-gradient(ellipse at center,transparent 28%,rgba(0,0,0,0.8) 100%);
+    background:radial-gradient(ellipse at center,transparent 40%,rgba(0,0,0,0.55) 100%);
     pointer-events:none; z-index:5;
   }
   #darknessOverlay {
@@ -98,8 +98,8 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.setClearColor(0x000000,1);
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x000000);
-scene.fog = new THREE.FogExp2(0x000000, 0.028); // 少し弱めて近距離が見えやすく
+scene.background = new THREE.Color(0x08080c);
+scene.fog = new THREE.FogExp2(0x121218, 0.020); // 少し明るめにして見通しを良くする
 
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 200);
 camera.position.set(0, 1.65, 0);
@@ -111,23 +111,23 @@ window.addEventListener('resize', ()=>{
 });
 
 // ===== 地面 =====
-const groundMat = new THREE.MeshLambertMaterial({color:0x111111});
+const groundMat = new THREE.MeshLambertMaterial({color:0x1a1a1a});
 const ground = new THREE.Mesh(new THREE.PlaneGeometry(400,400,1,1), groundMat);
 ground.rotation.x = -Math.PI/2;
 ground.receiveShadow = true;
 scene.add(ground);
 
 // 石畳グリッド
-const grid = new THREE.GridHelper(400, 80, 0x1e1e1e, 0x141414);
+const grid = new THREE.GridHelper(400, 80, 0x343434, 0x242424);
 grid.position.y = 0.005;
 scene.add(grid);
 
 // ===== ライト =====
-const ambLight = new THREE.AmbientLight(0x040408, 1);
+const ambLight = new THREE.AmbientLight(0x20202a, 1.5);
 scene.add(ambLight);
 
 // 蝋燭スポットライト
-const candleLight = new THREE.SpotLight(0xffaa44, 8, 20, Math.PI/6, 0.45, 1.8);
+const candleLight = new THREE.SpotLight(0xffb35a, 9.5, 22, Math.PI/6, 0.45, 1.8);
 candleLight.castShadow = true;
 candleLight.shadow.mapSize.set(512,512);
 candleLight.shadow.camera.near = 0.1;
@@ -136,7 +136,7 @@ scene.add(candleLight);
 scene.add(candleLight.target);
 
 // 足元の周辺光
-const footLight = new THREE.PointLight(0xff7700, 2, 5);
+const footLight = new THREE.PointLight(0xff8a33, 2.6, 6);
 scene.add(footLight);
 
 // ===== 蝋燭UI =====
@@ -201,7 +201,7 @@ function addLantern(x,z){
   const grp = new THREE.Group();
   const body = new THREE.Mesh(
     new THREE.SphereGeometry(0.28,8,8),
-    new THREE.MeshBasicMaterial({color:0xffcc44})
+    new THREE.MeshBasicMaterial({color:0xffd76a})
   );
   body.position.y=2.4; grp.add(body);
   const pl = new THREE.PointLight(0xff9900,0.9,7);
@@ -493,7 +493,7 @@ function animate(){
     updateCandleUI();
     if(candlePercent<=0){
       candlePercent=0;
-      darkOverlay.style.background='rgba(0,0,0,0.95)';
+      darkOverlay.style.background='rgba(0,0,0,0.82)';
     } else if(candlePercent<=20){
       const a=0.35*(1-candlePercent/20);
       darkOverlay.style.background=`rgba(0,0,0,${a})`;
