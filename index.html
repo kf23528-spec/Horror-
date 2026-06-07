@@ -1,200 +1,81 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>【生配信】事故物件の街でストーカーに待ち伏せされた結果【閲覧注意】</title>
-<style>
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { background:#000; overflow:hidden; font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif; touch-action:none; }
-  #canvas { display:block; width:100vw; height:100vh; }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>【生配信】事故物件の街でストーカーに待ち伏せされた結果【閲覧注意】</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#000; overflow:hidden; font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif; touch-action:none; }
+    #canvas { display:block; width:100vw; height:100vh; }
 
-  /* ========== PROLOGUE SCREEN ========== */
-  #prologue {
-    position:fixed; inset:0; background:#000; z-index:1000;
-    display:flex; flex-direction:column; align-items:center; justify-content:center;
-    cursor:pointer;
-  }
-  #prologue-page {
-    max-width:680px; width:90%; padding:20px;
-    color:#c8c8c8; font-size:clamp(13px,2vw,16px); line-height:2;
-    min-height:60vh; display:flex; flex-direction:column; justify-content:center;
-  }
-  #prologue-title {
-    font-size:clamp(10px,1.4vw,13px); color:#555; letter-spacing:4px;
-    text-align:center; margin-bottom:30px; font-weight:400;
-  }
-  #prologue-text { white-space:pre-wrap; }
-  #prologue-hint {
-    margin-top:40px; color:#444; font-size:12px; text-align:center;
-    animation: blink 1.4s ease-in-out infinite;
-  }
-  @keyframes blink { 0%,100%{opacity:0.2} 50%{opacity:1} }
-  #prologue-dots { color:#333; font-size:11px; text-align:center; margin-top:10px; letter-spacing:2px; }
-  #page-indicator { color:#333; font-size:11px; text-align:center; margin-bottom:20px; letter-spacing:4px; }
+    #prologue { position:fixed; inset:0; background:#000; z-index:1000; display:flex; flex-direction:column; align-items:center; justify-content:center; cursor:pointer; }
+    #prologue-page { max-width:680px; width:90%; padding:20px; color:#c8c8c8; font-size:clamp(13px,2vw,16px); line-height:2; min-height:60vh; display:flex; flex-direction:column; justify-content:center; }
+    #prologue-title { font-size:clamp(10px,1.4vw,13px); color:#555; letter-spacing:4px; text-align:center; margin-bottom:30px; font-weight:400; }
+    #prologue-text { white-space:pre-wrap; }
+    #prologue-hint { margin-top:40px; color:#444; font-size:12px; text-align:center; animation: blink 1.4s ease-in-out infinite; }
+    @keyframes blink { 0%,100%{opacity:0.2} 50%{opacity:1} }
+    #prologue-dots { color:#333; font-size:11px; text-align:center; margin-top:10px; letter-spacing:2px; }
+    #page-indicator { color:#333; font-size:11px; text-align:center; margin-bottom:20px; letter-spacing:4px; }
 
-  /* ========== GAME OVERLAY ========== */
-  #overlay {
-    position:fixed; inset:0; pointer-events:none; z-index:100;
-  }
+    #overlay { position:fixed; inset:0; pointer-events:none; z-index:100; }
+    #live-badge { position:absolute; top:16px; right:16px; display:flex; flex-direction:column; align-items:flex-end; gap:4px; pointer-events:none; }
+    #live-label { background:rgba(0,0,0,0.55); border:1px solid rgba(255,50,50,0.4); padding:3px 10px; border-radius:3px; font-size:clamp(12px,2vw,15px); font-weight:700; letter-spacing:2px; }
+    #live-dot { display:inline-block; color:#ff2222; animation: pulse 1s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    #live-text { color:#fff; }
+    #viewer-count { background:rgba(0,0,0,0.55); border:1px solid rgba(255,255,255,0.1); padding:2px 8px; border-radius:3px; font-size:clamp(11px,1.8vw,13px); color:#ddd; }
 
-  /* LIVE badge */
-  #live-badge {
-    position:absolute; top:16px; right:16px;
-    display:flex; flex-direction:column; align-items:flex-end; gap:4px;
-    pointer-events:none;
-  }
-  #live-label {
-    background:rgba(0,0,0,0.55); border:1px solid rgba(255,50,50,0.4);
-    padding:3px 10px; border-radius:3px;
-    font-size:clamp(12px,2vw,15px); font-weight:700; letter-spacing:2px;
-  }
-  #live-dot { display:inline-block; color:#ff2222; animation: pulse 1s ease-in-out infinite; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-  #live-text { color:#fff; }
-  #viewer-count {
-    background:rgba(0,0,0,0.55); border:1px solid rgba(255,255,255,0.1);
-    padding:2px 8px; border-radius:3px;
-    font-size:clamp(11px,1.8vw,13px); color:#ddd;
-  }
+    #objective { position:absolute; top:16px; left:16px; background:rgba(0,0,0,0.65); border-left:3px solid #ff2222; padding:8px 12px; max-width:min(360px,55vw); pointer-events:none; }
+    #objective-label { font-size:10px; color:#888; letter-spacing:2px; margin-bottom:3px; }
+    #objective-text { font-size:clamp(11px,1.8vw,13px); color:#eee; line-height:1.5; }
 
-  /* Objective */
-  #objective {
-    position:absolute; top:16px; left:16px;
-    background:rgba(0,0,0,0.65); border-left:3px solid #ff2222;
-    padding:8px 12px; max-width:min(360px,55vw); pointer-events:none;
-  }
-  #objective-label { font-size:10px; color:#888; letter-spacing:2px; margin-bottom:3px; }
-  #objective-text { font-size:clamp(11px,1.8vw,13px); color:#eee; line-height:1.5; }
+    #timestamp { position:absolute; top:50px; right:16px; font-size:11px; color:rgba(255,255,255,0.35); pointer-events:none; font-family:monospace; }
+    #vignette { position:absolute; inset:0; pointer-events:none; background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.72) 100%); }
+    #scanlines { position:absolute; inset:0; pointer-events:none; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px); }
+    #noise { position:absolute; inset:0; pointer-events:none; opacity:0.025; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
 
-  /* Timestamp watermark */
-  #timestamp {
-    position:absolute; top:50px; right:16px;
-    font-size:11px; color:rgba(255,255,255,0.35); pointer-events:none;
-    font-family:monospace;
-  }
+    #rec-indicator { position:absolute; top:16px; left:50%; transform:translateX(-50%); font-size:10px; color:rgba(255,100,100,0.6); letter-spacing:3px; pointer-events:none; font-family:monospace; }
 
-  /* Corner vignette / scan lines */
-  #vignette {
-    position:absolute; inset:0; pointer-events:none;
-    background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.72) 100%);
-  }
-  #scanlines {
-    position:absolute; inset:0; pointer-events:none;
-    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px);
-  }
-  #noise {
-    position:absolute; inset:0; pointer-events:none; opacity:0.025;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  }
+    #chat-container { position:absolute; bottom:140px; left:10px; width:min(280px,42vw); height:200px; overflow:hidden; pointer-events:none; mask-image:linear-gradient(to top, rgba(0,0,0,1) 70%, transparent 100%); }
+    #chat-inner { display:flex; flex-direction:column; gap:4px; }
+    .chat-msg { font-size:clamp(10px,1.5vw,12px); color:#eee; background:rgba(0,0,0,0.5); padding:3px 7px; border-radius:3px; border-left:2px solid transparent; line-height:1.4; animation: fadeInUp 0.3s ease; }
+    @keyframes fadeInUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+    .chat-name { font-weight:700; margin-right:4px; }
 
-  /* Recording indicator */
-  #rec-indicator {
-    position:absolute; top:16px; left:50%; transform:translateX(-50%);
-    font-size:10px; color:rgba(255,100,100,0.6); letter-spacing:3px; pointer-events:none;
-    font-family:monospace;
-  }
+    #story-panel { position:fixed; inset:0; z-index:500; background:rgba(0,0,0,0.93); display:none; flex-direction:column; align-items:center; justify-content:center; padding:30px; }
+    #story-panel.active { display:flex; }
+    #story-panel-inner { max-width:660px; width:100%; }
+    #story-label { font-size:10px; color:#555; letter-spacing:4px; margin-bottom:20px; text-align:center; }
+    #story-text { font-size:clamp(13px,2.2vw,16px); color:#ddd; line-height:2; white-space:pre-wrap; min-height:120px; }
+    #story-page-num { font-size:11px; color:#444; text-align:right; margin-top:15px; }
+    #story-hint { font-size:12px; color:#555; text-align:center; margin-top:25px; animation: blink 1.4s ease-in-out infinite; }
+    .story-red { color:#ff4444; }
+    .story-yellow { color:#ffcc44; }
 
-  /* ========== CHAT ========== */
-  #chat-container {
-    position:absolute; bottom:140px; left:10px;
-    width:min(280px,42vw); height:200px;
-    overflow:hidden; pointer-events:none;
-    mask-image:linear-gradient(to top, rgba(0,0,0,1) 70%, transparent 100%);
-  }
-  #chat-inner { display:flex; flex-direction:column; gap:4px; }
-  .chat-msg {
-    font-size:clamp(10px,1.5vw,12px); color:#eee;
-    background:rgba(0,0,0,0.5); padding:3px 7px; border-radius:3px;
-    border-left:2px solid transparent; line-height:1.4;
-    animation: fadeInUp 0.3s ease;
-  }
-  @keyframes fadeInUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
-  .chat-name { font-weight:700; margin-right:4px; }
+    #joystick-zone { position:fixed; bottom:30px; left:20px; width:130px; height:130px; z-index:200; pointer-events:auto; }
+    #joystick-base { width:130px; height:130px; border-radius:50%; background:rgba(255,255,255,0.07); border:2px solid rgba(255,255,255,0.15); position:relative; }
+    #joystick-thumb { width:50px; height:50px; border-radius:50%; background:rgba(255,255,255,0.25); border:2px solid rgba(255,255,255,0.4); position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); transition:none; }
 
-  /* ========== STORY TEXT (Black band) ========== */
-  #story-panel {
-    position:fixed; inset:0; z-index:500;
-    background:rgba(0,0,0,0.93);
-    display:none; flex-direction:column; align-items:center; justify-content:center;
-    padding:30px;
-  }
-  #story-panel.active { display:flex; }
-  #story-panel-inner {
-    max-width:660px; width:100%;
-  }
-  #story-label {
-    font-size:10px; color:#555; letter-spacing:4px; margin-bottom:20px; text-align:center;
-  }
-  #story-text {
-    font-size:clamp(13px,2.2vw,16px); color:#ddd; line-height:2;
-    white-space:pre-wrap; min-height:120px;
-  }
-  #story-page-num { font-size:11px; color:#444; text-align:right; margin-top:15px; }
-  #story-hint {
-    font-size:12px; color:#555; text-align:center; margin-top:25px;
-    animation: blink 1.4s ease-in-out infinite;
-  }
-  .story-red { color:#ff4444; }
-  .story-yellow { color:#ffcc44; }
+    #dash-btn { position:fixed; bottom:30px; right:20px; z-index:200; width:70px; height:70px; border-radius:50%; background:rgba(255,50,50,0.15); border:2px solid rgba(255,50,50,0.4); color:#ff6666; font-size:11px; font-weight:700; letter-spacing:1px; text-align:center; line-height:70px; pointer-events:auto; user-select:none; -webkit-user-select:none; }
+    #dash-btn.active { background:rgba(255,50,50,0.35); }
 
-  /* ========== CONTROLS ========== */
-  #joystick-zone {
-    position:fixed; bottom:30px; left:20px;
-    width:130px; height:130px; z-index:200;
-    pointer-events:auto;
-  }
-  #joystick-base {
-    width:130px; height:130px; border-radius:50%;
-    background:rgba(255,255,255,0.07); border:2px solid rgba(255,255,255,0.15);
-    position:relative;
-  }
-  #joystick-thumb {
-    width:50px; height:50px; border-radius:50%;
-    background:rgba(255,255,255,0.25); border:2px solid rgba(255,255,255,0.4);
-    position:absolute; top:50%; left:50%;
-    transform:translate(-50%,-50%);
-    transition:none;
-  }
+    #stamina-bar-wrap { position:fixed; bottom:108px; right:20px; z-index:200; pointer-events:none; width:70px; display:flex; flex-direction:column; align-items:center; gap:3px; }
+    #stamina-label { font-size:9px; color:#888; letter-spacing:2px; }
+    #stamina-bar-bg { width:70px; height:5px; background:rgba(255,255,255,0.1); border-radius:3px; }
+    #stamina-bar { height:5px; background:#ff4444; border-radius:3px; width:100%; transition:width 0.15s; }
 
-  #dash-btn {
-    position:fixed; bottom:30px; right:20px; z-index:200;
-    width:70px; height:70px; border-radius:50%;
-    background:rgba(255,50,50,0.15); border:2px solid rgba(255,50,50,0.4);
-    color:#ff6666; font-size:11px; font-weight:700; letter-spacing:1px;
-    text-align:center; line-height:70px; pointer-events:auto;
-    user-select:none; -webkit-user-select:none;
-  }
-  #dash-btn.active { background:rgba(255,50,50,0.35); }
+    #interact-prompt { position:fixed; bottom:50%; left:50%; transform:translate(-50%,50%); z-index:200; pointer-events:none; display:none; background:rgba(0,0,0,0.75); border:1px solid rgba(255,80,80,0.5); padding:8px 16px; border-radius:4px; font-size:13px; color:#ffaaaa; letter-spacing:1px; text-align:center; }
 
-  #stamina-bar-wrap {
-    position:fixed; bottom:108px; right:20px; z-index:200; pointer-events:none;
-    width:70px; display:flex; flex-direction:column; align-items:center; gap:3px;
-  }
-  #stamina-label { font-size:9px; color:#888; letter-spacing:2px; }
-  #stamina-bar-bg { width:70px; height:5px; background:rgba(255,255,255,0.1); border-radius:3px; }
-  #stamina-bar { height:5px; background:#ff4444; border-radius:3px; width:100%; transition:width 0.15s; }
-
-  /* Interaction prompt */
-  #interact-prompt {
-    position:fixed; bottom:50%; left:50%; transform:translate(-50%,50%);
-    z-index:200; pointer-events:none; display:none;
-    background:rgba(0,0,0,0.75); border:1px solid rgba(255,80,80,0.5);
-    padding:8px 16px; border-radius:4px;
-    font-size:13px; color:#ffaaaa; letter-spacing:1px; text-align:center;
-  }
-
-  /* Chapter clear flash */
-  #chapter-flash {
-    position:fixed; inset:0; z-index:600; background:#ff0000;
-    display:none; opacity:0; pointer-events:none;
-  }
-</style>
+    #chapter-flash { position:fixed; inset:0; z-index:600; background:#ff0000; display:none; opacity:0; pointer-events:none; }
+    #loading { position:fixed; inset:0; z-index:900; display:flex; align-items:center; justify-content:center; background:#000; color:#bbb; letter-spacing:3px; font-size:12px; pointer-events:none; opacity:0; transition:opacity .25s ease; }
+    #loading.active { opacity:1; }
+  </style>
 </head>
 <body>
 <canvas id="canvas"></canvas>
+<div id="loading">LOADING...</div>
 
-<!-- PROLOGUE -->
 <div id="prologue">
   <div id="prologue-page">
     <div id="prologue-title">▌ CHAPTER 01 ▌ 首吊りニュータウン</div>
@@ -205,37 +86,26 @@
   </div>
 </div>
 
-<!-- GAME OVERLAY -->
 <div id="overlay">
   <div id="vignette"></div>
   <div id="scanlines"></div>
   <div id="noise"></div>
 
-  <!-- Objective top-left -->
   <div id="objective">
     <div id="objective-label">▶ 目的</div>
     <div id="objective-text">再生数のために、赤いスマホが落ちている不気味な一軒家を探せ</div>
   </div>
 
-  <!-- LIVE badge top-right -->
   <div id="live-badge">
     <div id="live-label"><span id="live-dot">●</span> <span id="live-text">LIVE</span></div>
     <div id="viewer-count">👁️ <span id="viewer-num">312</span>人</div>
   </div>
 
-  <!-- Recording indicator -->
   <div id="rec-indicator">● REC ─── 02:14:38</div>
-
-  <!-- Timestamp -->
-  <div id="timestamp" id="timestamp-el">深夜 02:14</div>
-
-  <!-- Chat -->
-  <div id="chat-container">
-    <div id="chat-inner"></div>
-  </div>
+  <div id="timestamp">深夜 02:14</div>
+  <div id="chat-container"><div id="chat-inner"></div></div>
 </div>
 
-<!-- STORY PANEL -->
 <div id="story-panel">
   <div id="story-panel-inner">
     <div id="story-label">▌ FOUND: 前の配信者のスマートフォン</div>
@@ -245,32 +115,20 @@
   </div>
 </div>
 
-<!-- CONTROLS -->
-<div id="joystick-zone">
-  <div id="joystick-base">
-    <div id="joystick-thumb"></div>
-  </div>
-</div>
-
+<div id="joystick-zone"><div id="joystick-base"><div id="joystick-thumb"></div></div></div>
 <div id="dash-btn">DASH</div>
 <div id="stamina-bar-wrap">
   <div id="stamina-label">STAMINA</div>
   <div id="stamina-bar-bg"><div id="stamina-bar"></div></div>
 </div>
-
 <div id="interact-prompt">📱 タップして調べる</div>
-
 <div id="chapter-flash"></div>
 
-<!-- THREE.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script>
-// ========================================================
-// PROLOGUE SYSTEM
-// ========================================================
 const prologuePages = [
-  // Page 1
-  `チャンネル登録者数、わずか302人。
+`チャンネル登録者数、わずか302人。
 オカルト系底辺配信者である私のチャンネルは、完全に限界を迎えていた。
 
 「一発逆転するなら、ガチでヤバい場所に行くしかない」
@@ -280,9 +138,7 @@ const prologuePages = [
 今は地図からも、行政の記録からも完全に消された、狂気の新興住宅街。
 
 誰も訪れないその街は、今夜、私が最初で最後の配信者となる。`,
-
-  // Page 2
-  `深夜2時。私はスマホ1台を片手に、この街へ生配信をしながら足を踏み入れた。
+`深夜2時。私はスマホ1台を片手に、この街へ生配信をしながら足を踏み入れた。
 
 街に一歩入った瞬間、空気が変わった。
 月明かりすら届かない闇の中、全く同じ形の家が、整然と、不気味なほど静かに並んでいる。
@@ -293,9 +149,7 @@ const prologuePages = [
 「ガチじゃん」「やめろよマジで」「主、後ろ見て」
 
 ……嘘だよな？　釣りだよな？`,
-
-  // Page 3
-  `だが、この時の私はまだ知らなかった。
+`だが、この時の私はまだ知らなかった。
 
 配信のコメント欄が、この後「本当の絶望」で埋め尽くされることを。
 そして、この街には私以外にも──
@@ -309,41 +163,35 @@ const prologuePages = [
 
 ▶ 画面をタップして、生配信を開始する`
 ];
-
 let prologuePageIdx = 0;
 let prologueTyping = false;
 let prologueTypingTimer = null;
 let prologueDone = false;
-
 const prologueEl = document.getElementById('prologue');
 const prologueTextEl = document.getElementById('prologue-text');
 const prologueHintEl = document.getElementById('prologue-hint');
 const pageIndicatorEl = document.getElementById('page-indicator');
+const loadingEl = document.getElementById('loading');
 
 function showProloguePage(idx) {
   prologuePageIdx = idx;
   prologueTextEl.textContent = '';
   prologueHintEl.textContent = '';
-  pageIndicatorEl.textContent = `— ${idx+1} / ${prologuePages.length} —`;
+  pageIndicatorEl.textContent = `— ${idx + 1} / ${prologuePages.length} —`;
   typePage(prologuePages[idx], () => {
-    if (idx < prologuePages.length - 1) {
-      prologueHintEl.textContent = '▶ タップして続ける';
-    } else {
-      prologueHintEl.textContent = '▶ 画面をタップして、生配信を開始する';
-    }
+    prologueHintEl.textContent = (idx < prologuePages.length - 1)
+      ? '▶ タップして続ける'
+      : '▶ 画面をタップして、生配信を開始する';
   });
 }
-
 function typePage(text, onDone) {
   prologueTyping = true;
   prologueDone = false;
   let i = 0;
   clearInterval(prologueTypingTimer);
   prologueTypingTimer = setInterval(() => {
-    if (i < text.length) {
-      prologueTextEl.textContent += text[i];
-      i++;
-    } else {
+    if (i < text.length) prologueTextEl.textContent += text[i++];
+    else {
       clearInterval(prologueTypingTimer);
       prologueTyping = false;
       prologueDone = true;
@@ -351,41 +199,61 @@ function typePage(text, onDone) {
     }
   }, 28);
 }
-
 prologueEl.addEventListener('click', handlePrologueTap);
-prologueEl.addEventListener('touchstart', (e) => { e.preventDefault(); handlePrologueTap(); }, {passive:false});
-
+prologueEl.addEventListener('touchstart', (e) => { e.preventDefault(); handlePrologueTap(); }, { passive:false });
 function handlePrologueTap() {
   if (prologueTyping) {
-    // Skip typing
     clearInterval(prologueTypingTimer);
     prologueTyping = false;
     prologueDone = true;
     prologueTextEl.textContent = prologuePages[prologuePageIdx];
-    if (prologuePageIdx < prologuePages.length - 1) {
-      prologueHintEl.textContent = '▶ タップして続ける';
-    } else {
-      prologueHintEl.textContent = '▶ 画面をタップして、生配信を開始する';
-    }
+    prologueHintEl.textContent = (prologuePageIdx < prologuePages.length - 1) ? '▶ タップして続ける' : '▶ 画面をタップして、生配信を開始する';
     return;
   }
   if (!prologueDone) return;
-
-  if (prologuePageIdx < prologuePages.length - 1) {
-    showProloguePage(prologuePageIdx + 1);
-  } else {
-    // Start game
+  if (prologuePageIdx < prologuePages.length - 1) showProloguePage(prologuePageIdx + 1);
+  else {
     prologueEl.style.transition = 'opacity 1.2s';
     prologueEl.style.opacity = '0';
     setTimeout(() => { prologueEl.style.display = 'none'; startGame(); }, 1200);
   }
 }
-
 showProloguePage(0);
 
-// ========================================================
-// VIEWER COUNT ANIMATION
-// ========================================================
+let audioCtx = null;
+let bgmStarted = false;
+function startBGM() {
+  if (bgmStarted) return;
+  bgmStarted = true;
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) return;
+  audioCtx = new AudioContextClass();
+  const master = audioCtx.createGain();
+  master.gain.value = 0.03;
+  master.connect(audioCtx.destination);
+
+  const lowpass = audioCtx.createBiquadFilter();
+  lowpass.type = 'lowpass';
+  lowpass.frequency.value = 420;
+  lowpass.Q.value = 1.2;
+  lowpass.connect(master);
+
+  const osc1 = audioCtx.createOscillator(); osc1.type = 'sine'; osc1.frequency.value = 48;
+  const osc2 = audioCtx.createOscillator(); osc2.type = 'triangle'; osc2.frequency.value = 65.4;
+  const osc3 = audioCtx.createOscillator(); osc3.type = 'sine'; osc3.frequency.value = 98.0;
+
+  const gain1 = audioCtx.createGain(); const gain2 = audioCtx.createGain(); const gain3 = audioCtx.createGain();
+  gain1.gain.value = 0.8; gain2.gain.value = 0.22; gain3.gain.value = 0.12;
+  osc1.connect(gain1).connect(lowpass); osc2.connect(gain2).connect(lowpass); osc3.connect(gain3).connect(lowpass);
+
+  const lfo = audioCtx.createOscillator(); const lfoGain = audioCtx.createGain(); lfo.frequency.value = 0.08; lfoGain.gain.value = 18; lfo.connect(lfoGain).connect(osc2.frequency);
+  const lfo2 = audioCtx.createOscillator(); const lfo2Gain = audioCtx.createGain(); lfo2.frequency.value = 0.11; lfo2Gain.gain.value = 8; lfo2.connect(lfo2Gain).connect(osc3.frequency);
+
+  osc1.start(); osc2.start(); osc3.start(); lfo.start(); lfo2.start();
+}
+window.addEventListener('pointerdown', startBGM, { passive:true });
+window.addEventListener('touchstart', startBGM, { passive:true });
+
 const viewerNumEl = document.getElementById('viewer-num');
 let baseViewers = 312;
 setInterval(() => {
@@ -394,11 +262,7 @@ setInterval(() => {
   viewerNumEl.textContent = baseViewers;
 }, 2400);
 
-// ========================================================
-// CHAT SYSTEM
-// ========================================================
 const chatMessages = [
-  // Normal early comments
   {name:'匿名A', msg:'おいこれガチの場所じゃん', color:'#ffaaaa'},
   {name:'夜行列車', msg:'釣り乙ｗ', color:'#aaaaff'},
   {name:'ななし', msg:'早く進めよ', color:'#cccccc'},
@@ -425,25 +289,17 @@ const chatMessages = [
   {name:'真相追求', msg:'その家の前で足止まったぞ', color:'#aaccff'},
   {name:'匿名Z', msg:'主、本当に帰れるの？', color:'#ff8888'},
 ];
-
 const chatInner = document.getElementById('chat-inner');
-
-function addChatMessage() {
-  const msg = chatMessages[Math.floor(Math.random() * chatMessages.length)];
+function addChatMessage(custom) {
+  const msg = custom || chatMessages[Math.floor(Math.random() * chatMessages.length)];
   const div = document.createElement('div');
   div.className = 'chat-msg';
   div.innerHTML = `<span class="chat-name" style="color:${msg.color}">${msg.name}</span>${msg.msg}`;
   chatInner.appendChild(div);
-  // Keep only last ~20 messages visible
-  while (chatInner.children.length > 20) {
-    chatInner.removeChild(chatInner.firstChild);
-  }
+  while (chatInner.children.length > 20) chatInner.removeChild(chatInner.firstChild);
 }
-
-// Chat starts after game begins
 let chatInterval = null;
 function startChat() {
-  // Add initial burst
   for (let i = 0; i < 5; i++) setTimeout(addChatMessage, i * 300);
   chatInterval = setInterval(addChatMessage, 1800 + Math.random() * 1200);
   setInterval(() => {
@@ -452,20 +308,15 @@ function startChat() {
   }, 15000);
 }
 
-// ========================================================
-// STORY PANEL SYSTEM
-// ========================================================
 const storyPages = [
-  `あ、あったわ！みんな見て、机の上に前の配信者のものらしきスマホが落ちてる。
+`あ、あったわ！みんな見て、机の上に前の配信者のものらしきスマホが落ちてる。
 画面バキバキだけど、電源が入るな……どれどれ、保存されてる動画データを見てみよう……`,
-
-  `動画内の前の配信者
+`動画内の前の配信者
 「ハァハァ……おい嘘だろ、出口が見つからない！
 どの角を曲がっても同じ家ばかりだ！
 それに……後ろからアイツが追ってくる！
 関節をパキパキ鳴らしながら、四つん這いで、あり得ないスピードで這いつくばって……！」`,
-
-  `動画内の前の配信者
+`動画内の前の配信者
 「いやだ、来ないでくれ！
 ストーカーみたいにずっと私の後ろを……ッ！
 窓から覗いてる！
@@ -473,24 +324,20 @@ const storyPages = [
 
 ……ここで動画が途切れてる。
 これ、ガチのやつじゃん……`,
-
-  `（コメント欄：「おい主、後ろ」「ガチでヤバいって」「窓の外に誰かいる」「四つん這いの女映ったぞ！！」）
+`（コメント欄：「おい主、後ろ」「ガチでヤバいって」「窓の外に誰かいる」「四つん這いの女映ったぞ！！」）
 
 ……え？みんな何言って……。
 
 その時、遠くの道路から
 『パキッ、パキパキ……』と、骨が折れるような音が響き渡った。`
 ];
-
 let storyPageIdx = 0;
 let storyActive = false;
-let storyFinished = false;
 const storyPanel = document.getElementById('story-panel');
 const storyText = document.getElementById('story-text');
 const storyPageNum = document.getElementById('story-page-num');
 let phonePickedUp = false;
 let chapter1Done = false;
-
 function openStory() {
   if (storyActive || phonePickedUp) return;
   storyActive = true;
@@ -499,14 +346,11 @@ function openStory() {
   showStoryPage(0);
   lockMovement = true;
 }
-
 function showStoryPage(idx) {
   storyText.innerHTML = '';
   storyPageNum.textContent = `${idx + 1} / ${storyPages.length}`;
-  // Inject red styling for comment sections
   let text = storyPages[idx];
   if (idx === 3) {
-    // Highlight comment section
     text = text.replace('（コメント欄：', '<span class="story-yellow">（コメント欄：');
     text = text.replace('）', '）</span>');
   }
@@ -515,97 +359,125 @@ function showStoryPage(idx) {
   }
   storyText.innerHTML = text;
 }
-
 function advanceStory() {
   if (!storyActive) return;
   storyPageIdx++;
   if (storyPageIdx < storyPages.length) {
     showStoryPage(storyPageIdx);
   } else {
-    // Close story
     storyPanel.classList.remove('active');
     storyActive = false;
     phonePickedUp = true;
     lockMovement = false;
     chapter1Done = true;
-    // Update objective
     document.getElementById('objective-text').textContent = '何かが来る。家や柵の裏に隠れて視線を切り、お地蔵様の結界へ逃げろ！';
-    // Flash red
     const flash = document.getElementById('chapter-flash');
     flash.style.display = 'block';
     flash.style.opacity = '0.6';
     setTimeout(() => { flash.style.opacity = '0'; setTimeout(() => { flash.style.display = 'none'; }, 500); }, 300);
-    // Special chat burst
     const specialMsgs = ['おい主、後ろ！！', '窓から顔見えた', '四つん這いの影！！', 'ガチだこれ逃げろ！', '骨の音やばすぎ', '早く逃げて！！'];
-    specialMsgs.forEach((m, i) => {
-      setTimeout(() => {
-        const div = document.createElement('div');
-        div.className = 'chat-msg';
-        div.style.color = '#ff4444';
-        div.style.borderLeft = '2px solid #ff4444';
-        div.innerHTML = `<span class="chat-name" style="color:#ff6666">警告</span>${m}`;
-        chatInner.appendChild(div);
-        while (chatInner.children.length > 20) chatInner.removeChild(chatInner.firstChild);
-      }, i * 180);
-    });
+    specialMsgs.forEach((m, i) => setTimeout(() => addChatMessage({ name:'警告', msg:m, color:'#ff6666' }), i * 180));
   }
 }
-
-// Story panel tap handler
 storyPanel.addEventListener('click', advanceStory);
-storyPanel.addEventListener('touchstart', (e) => { e.preventDefault(); advanceStory(); }, {passive:false});
+storyPanel.addEventListener('touchstart', (e) => { e.preventDefault(); advanceStory(); }, { passive:false });
 
-// ========================================================
-// THREE.JS GAME
-// ========================================================
 let gameStarted = false;
 let lockMovement = false;
 
 function startGame() {
+  if (gameStarted) return;
   gameStarted = true;
+  loadingEl.classList.add('active');
   startChat();
   initThree();
 }
 
-function initThree() {
+function loadGLTF(url) {
+  return new Promise((resolve, reject) => {
+    const loader = new THREE.GLTFLoader();
+    loader.load(url, resolve, undefined, reject);
+  });
+}
+
+function normalizeModel(root, targetHeight = 5) {
+  root.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(root);
+  const size = box.getSize(new THREE.Vector3());
+  const scale = targetHeight / Math.max(size.y, 0.0001);
+  root.scale.setScalar(scale);
+  root.updateMatrixWorld(true);
+  const box2 = new THREE.Box3().setFromObject(root);
+  const center = box2.getCenter(new THREE.Vector3());
+  const min = box2.min.clone();
+  root.position.x -= center.x;
+  root.position.z -= center.z;
+  root.position.y -= min.y;
+  root.updateMatrixWorld(true);
+  return root;
+}
+function clonePreparedModel(template) {
+  const cloned = template.clone(true);
+  cloned.traverse(obj => {
+    if (obj.isMesh) {
+      obj.castShadow = false;
+      obj.receiveShadow = false;
+      if (obj.material) obj.material = obj.material.clone();
+    }
+  });
+  return cloned;
+}
+function makeFallbackHouse() {
+  const group = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.BoxGeometry(6, 3.5, 5), new THREE.MeshLambertMaterial({ color:0x0c0c0e }));
+  body.position.y = 1.75; group.add(body);
+  const roof = new THREE.Mesh(new THREE.ConeGeometry(4.5, 2.5, 4), new THREE.MeshLambertMaterial({ color:0x090909 }));
+  roof.rotation.y = Math.PI / 4; roof.position.y = 4.75; group.add(roof);
+  return group;
+}
+function makeFallbackLamp() {
+  const group = new THREE.Group();
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 5, 6), new THREE.MeshLambertMaterial({ color:0x0a0a0c }));
+  pole.position.y = 2.5; group.add(pole);
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.25, 0.6), new THREE.MeshLambertMaterial({ color:0x151520 }));
+  head.position.y = 5.1; group.add(head);
+  return group;
+}
+
+async function initThree() {
   const canvas = document.getElementById('canvas');
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias:false });
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias:false, alpha:false });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.shadowMap.enabled = false;
   renderer.setClearColor(0x000000);
 
   const scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(0x000000, 0.045);
+  scene.fog = new THREE.FogExp2(0x000000, 0.038);
+  scene.background = new THREE.Color(0x000204);
 
-  const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 120);
+  const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1200);
   camera.position.set(0, 1.65, 0);
+  scene.add(camera);
 
-  // ─── LIGHTING ───
-  const ambLight = new THREE.AmbientLight(0x111827, 1.2);
-  scene.add(ambLight);
+  const ambLight = new THREE.AmbientLight(0x111827, 1.05); scene.add(ambLight);
+  const ptLight = new THREE.PointLight(0x223344, 1.2, 28); ptLight.position.set(0, 6, 0); scene.add(ptLight);
+  const ptLight2 = new THREE.PointLight(0x112233, 0.7, 22); ptLight2.position.set(12, 5, -30); scene.add(ptLight2);
 
-  // Single weak street lamp simulation
-  const ptLight = new THREE.PointLight(0x223344, 1.5, 25);
-  ptLight.position.set(0, 6, 0);
-  scene.add(ptLight);
+  const flashlight = new THREE.SpotLight(0xfff6dd, 2.8, 55, Math.PI / 7, 0.45, 1.7);
+  flashlight.position.set(0, 0, 0);
+  flashlight.target.position.set(0, 0, -10);
+  camera.add(flashlight);
+  camera.add(flashlight.target);
 
-  const ptLight2 = new THREE.PointLight(0x112233, 0.8, 20);
-  ptLight2.position.set(12, 5, -30);
-  scene.add(ptLight2);
-
-  // Flickering effect
   let flickerTimer = 0;
 
-  // ─── GROUND ───
   const groundGeo = new THREE.PlaneGeometry(300, 300);
   const groundMat = new THREE.MeshLambertMaterial({ color:0x0a0a0c });
   const ground = new THREE.Mesh(groundGeo, groundMat);
   ground.rotation.x = -Math.PI / 2;
-  ground.position.y = 0;
   scene.add(ground);
 
-  // Road
   const roadGeo = new THREE.PlaneGeometry(8, 300);
   const roadMat = new THREE.MeshLambertMaterial({ color:0x0d0d10 });
   const road = new THREE.Mesh(roadGeo, roadMat);
@@ -613,7 +485,6 @@ function initThree() {
   road.position.set(0, 0.01, 0);
   scene.add(road);
 
-  // Road center line
   for (let z = -140; z < 140; z += 8) {
     const lineGeo = new THREE.PlaneGeometry(0.15, 4);
     const lineMat = new THREE.MeshBasicMaterial({ color:0x222222 });
@@ -623,7 +494,6 @@ function initThree() {
     scene.add(line);
   }
 
-  // Sidewalks
   [-4.5, 4.5].forEach(x => {
     const swGeo = new THREE.PlaneGeometry(1.5, 300);
     const swMat = new THREE.MeshLambertMaterial({ color:0x0e0e12 });
@@ -633,145 +503,24 @@ function initThree() {
     scene.add(sw);
   });
 
-  // ─── HOUSE BUILDER ───
-  const collisionBoxes = []; // Array of THREE.Box3
-  const houseObjects = [];   // For rendering
-
-  const houseColors = [0x0c0c0e, 0x0b0c0f, 0x0d0b0e];
-  const roofColors = [0x080809, 0x090909, 0x0a090b];
-
-  function buildHouse(x, z) {
-    const group = new THREE.Group();
-
-    // Body
-    const bodyGeo = new THREE.BoxGeometry(6, 3.5, 5);
-    const bodyMat = new THREE.MeshLambertMaterial({ color: houseColors[Math.floor(Math.random()*3)] });
-    const body = new THREE.Mesh(bodyGeo, bodyMat);
-    body.position.set(0, 1.75, 0);
-    group.add(body);
-
-    // Roof (triangular prism approximation with a box)
-    const roofGeo = new THREE.ConeGeometry(4.5, 2.5, 4);
-    const roofMat = new THREE.MeshLambertMaterial({ color: roofColors[Math.floor(Math.random()*3)] });
-    const roof = new THREE.Mesh(roofGeo, roofMat);
-    roof.rotation.y = Math.PI / 4;
-    roof.position.set(0, 3.5 + 1.25, 0);
-    group.add(roof);
-
-    // Door
-    const doorGeo = new THREE.BoxGeometry(0.9, 2.0, 0.08);
-    const doorMat = new THREE.MeshLambertMaterial({ color:0x060606 });
-    const door = new THREE.Mesh(doorGeo, doorMat);
-    door.position.set(0, 1.0, 2.54);
-    group.add(door);
-
-    // Windows (2)
-    [-1.5, 1.5].forEach(wx => {
-      const winGeo = new THREE.BoxGeometry(1.1, 0.9, 0.07);
-      const winMat = new THREE.MeshLambertMaterial({ color:0x050810 });
-      const win = new THREE.Mesh(winGeo, winMat);
-      win.position.set(wx, 1.9, 2.54);
-      group.add(win);
-    });
-
-    // Fence
-    for (let fx = -3; fx <= 3; fx += 1) {
-      const fenceGeo = new THREE.BoxGeometry(0.12, 0.9, 0.12);
-      const fenceMat = new THREE.MeshLambertMaterial({ color:0x0d0d0d });
-      const fence = new THREE.Mesh(fenceGeo, fenceMat);
-      fence.position.set(fx, 0.45, 2.8);
-      group.add(fence);
-    }
-
-    group.position.set(x, 0, z);
-    scene.add(group);
-    houseObjects.push(group);
-
-    // Bounding box for collision (slightly smaller than visual)
-    const bb = new THREE.Box3();
-    bb.setFromCenterAndSize(
-      new THREE.Vector3(x, 1.75, z),
-      new THREE.Vector3(6.2, 3.6, 5.4)
-    );
-    collisionBoxes.push(bb);
-  }
-
-  // Place houses along both sides of road
-  const houseSpacing = 9;
-  const numHouses = 18;
-  for (let i = 0; i < numHouses; i++) {
-    const z = -80 + i * houseSpacing;
-    buildHouse(-11, z);  // Left side
-    buildHouse(11, z);   // Right side
-  }
-
-  // Street lamps
-  function addLamp(x, z) {
-    const poleGeo = new THREE.CylinderGeometry(0.08, 0.1, 5, 6);
-    const poleMat = new THREE.MeshLambertMaterial({ color:0x0a0a0c });
-    const pole = new THREE.Mesh(poleGeo, poleMat);
-    pole.position.set(x, 2.5, z);
-    scene.add(pole);
-    const headGeo = new THREE.BoxGeometry(0.6, 0.25, 0.6);
-    const headMat = new THREE.MeshLambertMaterial({ color:0x151520 });
-    const head = new THREE.Mesh(headGeo, headMat);
-    head.position.set(x, 5.1, z);
-    scene.add(head);
-  }
-  for (let i = 0; i < numHouses; i += 2) {
-    const z = -80 + i * houseSpacing;
-    addLamp(-5.5, z);
-    addLamp(5.5, z);
-  }
-
-  // ─── RED PHONE (target object) ───
-  // Place inside one specific house (index 4, left side)
-  const phoneHouseZ = -80 + 3 * houseSpacing; // house index 3
-  const phoneHouseX = -11;
-  const phoneGeo = new THREE.BoxGeometry(0.12, 0.24, 0.015);
-  const phoneMat = new THREE.MeshLambertMaterial({ color:0xff1111, emissive:0x880000, emissiveIntensity:0.5 });
-  const phoneMesh = new THREE.Mesh(phoneGeo, phoneMat);
-  phoneMesh.position.set(phoneHouseX + 0.3, 0.85, phoneHouseZ + 0.4); // on "table" inside
-  scene.add(phoneMesh);
-  phoneMesh.rotation.z = 0.15;
-
-  // Small glow for phone
-  const phoneGlow = new THREE.PointLight(0xff2222, 0.8, 3);
-  phoneGlow.position.copy(phoneMesh.position);
-  scene.add(phoneGlow);
-
-  // Phone bounding box for interaction
-  const phoneInteractDist = 3.5;
-
-  // ─── SKY (dark) ───
-  scene.background = new THREE.Color(0x000204);
-
-  // ─── STARS ───
   const starGeo = new THREE.BufferGeometry();
-  const starCount = 600;
   const starVerts = [];
-  for (let i = 0; i < starCount; i++) {
-    starVerts.push((Math.random()-0.5)*200, 30+Math.random()*50, (Math.random()-0.5)*200);
-  }
+  for (let i = 0; i < 600; i++) starVerts.push((Math.random() - 0.5) * 200, 30 + Math.random() * 50, (Math.random() - 0.5) * 200);
   starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starVerts, 3));
   const starMat = new THREE.PointsMaterial({ color:0x445566, size:0.15 });
   scene.add(new THREE.Points(starGeo, starMat));
 
-  // ─── PLAYER ───
   const playerBox = new THREE.Box3();
   const playerHalfSize = new THREE.Vector3(0.3, 0.9, 0.3);
-
   let stamina = 100;
   const staminaBarEl = document.getElementById('stamina-bar');
   let isDashing = false;
 
-  // ─── CONTROLS STATE ───
   let joystickActive = false;
-  let joystickOrigin = {x:0, y:0};
-  let joystickDelta = {x:0, y:0};
+  let joystickOrigin = { x:0, y:0 };
+  let joystickDelta = { x:0, y:0 };
   let joystickTouchId = null;
-  let lookDelta = {x:0, y:0};
-  let lookPrevPos = {x:0, y:0};
+  let lookPrevPos = { x:0, y:0 };
   let lookTouchId = null;
   let dashTouchId = null;
 
@@ -779,35 +528,31 @@ function initThree() {
   const joystickBase = document.getElementById('joystick-base');
   const joystickThumb = document.getElementById('joystick-thumb');
   const dashBtn = document.getElementById('dash-btn');
-
   const JOYSTICK_RADIUS = 40;
   const WALK_SPEED = 0.045;
   const DASH_SPEED = 0.09;
-
-  // Camera yaw
   let yaw = 0;
   let pitch = 0;
 
-  // Joystick events
   joystickZone.addEventListener('touchstart', (e) => {
     e.preventDefault();
     if (joystickTouchId === null) {
       const t = e.changedTouches[0];
       joystickTouchId = t.identifier;
       const r = joystickBase.getBoundingClientRect();
-      joystickOrigin = {x: r.left + r.width/2, y: r.top + r.height/2};
+      joystickOrigin = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
       joystickActive = true;
     }
-  }, {passive:false});
+  }, { passive:false });
 
   document.addEventListener('touchmove', (e) => {
-    for (let t of e.changedTouches) {
+    for (const t of e.changedTouches) {
       if (t.identifier === joystickTouchId) {
         let dx = t.clientX - joystickOrigin.x;
         let dy = t.clientY - joystickOrigin.y;
-        const len = Math.sqrt(dx*dx+dy*dy);
-        if (len > JOYSTICK_RADIUS) { dx *= JOYSTICK_RADIUS/len; dy *= JOYSTICK_RADIUS/len; }
-        joystickDelta = {x: dx/JOYSTICK_RADIUS, y: dy/JOYSTICK_RADIUS};
+        const len = Math.sqrt(dx*dx + dy*dy);
+        if (len > JOYSTICK_RADIUS) { dx *= JOYSTICK_RADIUS / len; dy *= JOYSTICK_RADIUS / len; }
+        joystickDelta = { x: dx / JOYSTICK_RADIUS, y: dy / JOYSTICK_RADIUS };
         joystickThumb.style.left = (65 + dx) + 'px';
         joystickThumb.style.top = (65 + dy) + 'px';
         joystickThumb.style.transform = '';
@@ -818,36 +563,32 @@ function initThree() {
         yaw -= dx * 0.003;
         pitch -= dy * 0.003;
         pitch = Math.max(-0.6, Math.min(0.6, pitch));
-        lookPrevPos = {x: t.clientX, y: t.clientY};
+        lookPrevPos = { x: t.clientX, y: t.clientY };
       }
     }
-  }, {passive:false});
+  }, { passive:false });
 
   document.addEventListener('touchend', (e) => {
-    for (let t of e.changedTouches) {
+    for (const t of e.changedTouches) {
       if (t.identifier === joystickTouchId) {
         joystickTouchId = null;
         joystickActive = false;
-        joystickDelta = {x:0, y:0};
+        joystickDelta = { x:0, y:0 };
         joystickThumb.style.left = '';
         joystickThumb.style.top = '';
         joystickThumb.style.transform = 'translate(-50%,-50%)';
       }
-      if (t.identifier === lookTouchId) {
-        lookTouchId = null;
-      }
+      if (t.identifier === lookTouchId) lookTouchId = null;
       if (t.identifier === dashTouchId) {
         dashTouchId = null;
         isDashing = false;
         dashBtn.classList.remove('active');
       }
     }
-  }, {passive:false});
+  }, { passive:false });
 
-  // Right-side look area
   document.addEventListener('touchstart', (e) => {
-    for (let t of e.changedTouches) {
-      // Joystick zone handled separately
+    for (const t of e.changedTouches) {
       const inJoyZone = joystickZone.contains(e.target);
       const inDash = dashBtn.contains(e.target);
       const inStory = storyPanel.contains(e.target);
@@ -861,168 +602,183 @@ function initThree() {
         continue;
       }
       if (!inJoyZone && lookTouchId === null) {
-        const rightHalf = t.clientX > window.innerWidth / 2;
-        if (rightHalf || true) { // Allow anywhere on right + center
-          lookTouchId = t.identifier;
-          lookPrevPos = {x: t.clientX, y: t.clientY};
-          // Story interaction
-          checkPhoneInteraction();
-        }
+        lookTouchId = t.identifier;
+        lookPrevPos = { x: t.clientX, y: t.clientY };
+        checkPhoneInteraction();
       }
     }
-  }, {passive:false});
+  }, { passive:false });
 
-  // Click for desktop testing
   let mouseDown = false;
-  let lastMousePos = {x:0, y:0};
-  canvas.addEventListener('mousedown', (e) => {
-    mouseDown = true;
-    lastMousePos = {x:e.clientX, y:e.clientY};
-    checkPhoneInteraction();
-  });
+  let lastMousePos = { x:0, y:0 };
+  canvas.addEventListener('mousedown', (e) => { mouseDown = true; lastMousePos = { x:e.clientX, y:e.clientY }; checkPhoneInteraction(); });
   canvas.addEventListener('mousemove', (e) => {
     if (mouseDown) {
       yaw -= (e.clientX - lastMousePos.x) * 0.003;
       pitch -= (e.clientY - lastMousePos.y) * 0.003;
       pitch = Math.max(-0.6, Math.min(0.6, pitch));
-      lastMousePos = {x:e.clientX, y:e.clientY};
+      lastMousePos = { x:e.clientX, y:e.clientY };
     }
   });
   canvas.addEventListener('mouseup', () => { mouseDown = false; });
   document.addEventListener('keydown', (e) => { if (e.key === 'Shift') isDashing = true; });
   document.addEventListener('keyup', (e) => { if (e.key === 'Shift') isDashing = false; });
 
-  // Keyboard movement for desktop
   const keys = {};
   document.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
   document.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
 
-  // Phone interaction
   const interactPrompt = document.getElementById('interact-prompt');
+  const collisionBoxes = [];
+  let phoneMesh = null;
+  let phoneGlow = null;
+  const phoneInteractDist = 3.5;
+  const phoneHouseIndex = 3;
+  const houseSpacing = 9;
+  const numHouses = 18;
 
-  function checkPhoneInteraction() {
-    if (phonePickedUp || storyActive) return;
-    const pPos = camera.position;
-    const phPos = phoneMesh.position;
-    const dist = pPos.distanceTo(phPos);
-    if (dist <= phoneInteractDist + 1.0) {
-      openStory();
-    }
+  function buildPhone() {
+    const phoneGeo = new THREE.BoxGeometry(0.12, 0.24, 0.015);
+    const phoneMat = new THREE.MeshLambertMaterial({ color:0xff1111, emissive:0x880000, emissiveIntensity:0.5 });
+    phoneMesh = new THREE.Mesh(phoneGeo, phoneMat);
+    phoneMesh.position.set(-10.7, 0.85, -80 + phoneHouseIndex * houseSpacing + 0.4);
+    phoneMesh.rotation.z = 0.15;
+    scene.add(phoneMesh);
+    phoneGlow = new THREE.PointLight(0xff2222, 0.8, 3);
+    phoneGlow.position.copy(phoneMesh.position);
+    scene.add(phoneGlow);
   }
 
-  // ─── RESIZE ───
+  function placeHouse(modelTemplate, x, z, side) {
+    const obj = clonePreparedModel(modelTemplate);
+    obj.position.set(x, 0, z);
+    obj.rotation.y = (side === 'left') ? Math.PI / 2 : -Math.PI / 2;
+    scene.add(obj);
+    collisionBoxes.push(new THREE.Box3().setFromObject(obj));
+  }
+  function placeLamp(modelTemplate, x, z) {
+    const obj = clonePreparedModel(modelTemplate);
+    obj.position.set(x, 0, z);
+    scene.add(obj);
+  }
+  function placeFallbackHouseAt(x, z, side) {
+    const obj = makeFallbackHouse();
+    obj.position.set(x, 0, z);
+    obj.rotation.y = (side === 'left') ? Math.PI / 2 : -Math.PI / 2;
+    scene.add(obj);
+    collisionBoxes.push(new THREE.Box3().setFromObject(obj));
+  }
+  function placeFallbackLampAt(x, z) {
+    const obj = makeFallbackLamp();
+    obj.position.set(x, 0, z);
+    scene.add(obj);
+  }
+
+  async function buildWorld() {
+    loadingEl.classList.add('active');
+    const houseResult = await loadGLTF('./ie.glb').then(gltf => ({ ok:true, scene: normalizeModel(gltf.scene, 5.0) }), err => ({ ok:false, err }));
+    const lampResult = await loadGLTF('./gaitou.glb').then(gltf => ({ ok:true, scene: normalizeModel(gltf.scene, 5.5) }), err => ({ ok:false, err }));
+    const houseTemplate = houseResult.ok ? houseResult.scene : null;
+    const lampTemplate = lampResult.ok ? lampResult.scene : null;
+
+    for (let i = 0; i < numHouses; i++) {
+      const z = -80 + i * houseSpacing;
+      if (houseTemplate) { placeHouse(houseTemplate, -10, z, 'left'); placeHouse(houseTemplate, 10, z, 'right'); }
+      else { placeFallbackHouseAt(-10, z, 'left'); placeFallbackHouseAt(10, z, 'right'); }
+
+      if (i % 2 === 0) {
+        if (lampTemplate) { placeLamp(lampTemplate, -5.5, z); placeLamp(lampTemplate, 5.5, z); }
+        else { placeFallbackLampAt(-5.5, z); placeFallbackLampAt(5.5, z); }
+      }
+    }
+    buildPhone();
+    loadingEl.classList.remove('active');
+  }
+  const buildPromise = buildWorld();
+
+  function checkPhoneInteraction() {
+    if (!phoneMesh || phonePickedUp || storyActive) return;
+    const dist = camera.position.distanceTo(phoneMesh.position);
+    if (dist <= phoneInteractDist + 1.0) openStory();
+  }
+
   window.addEventListener('resize', () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
   });
 
-  // ─── ANIMATION LOOP ───
   const clock = new THREE.Clock();
-
   function animate() {
     requestAnimationFrame(animate);
     const dt = clock.getDelta();
     const elapsed = clock.getElapsedTime();
 
-    // Flicker lights
     flickerTimer += dt;
     if (flickerTimer > 0.1) {
       flickerTimer = 0;
-      if (Math.random() < 0.04) {
-        ptLight.intensity = 0.2 + Math.random() * 0.3;
-      } else {
-        ptLight.intensity = 1.4 + Math.sin(elapsed * 1.5) * 0.1;
-      }
+      if (Math.random() < 0.04) ptLight.intensity = 0.2 + Math.random() * 0.3;
+      else ptLight.intensity = 1.4 + Math.sin(elapsed * 1.5) * 0.1;
     }
 
-    // Phone glow pulse
-    phoneGlow.intensity = 0.6 + Math.sin(elapsed * 2.5) * 0.3;
-    if (!phonePickedUp) {
+    if (phoneGlow && phoneMesh && !phonePickedUp) {
+      phoneGlow.intensity = 0.6 + Math.sin(elapsed * 2.5) * 0.3;
       phoneMesh.rotation.y = elapsed * 0.5;
-    } else {
+      phoneGlow.position.copy(phoneMesh.position);
+    } else if (phoneMesh && phonePickedUp) {
       phoneMesh.visible = false;
       phoneGlow.visible = false;
     }
 
-    // Player movement
     if (!lockMovement && !storyActive) {
       const speed = (isDashing && stamina > 0) ? DASH_SPEED : WALK_SPEED;
-
-      // Stamina
-      if (isDashing && (joystickActive || keys['w'] || keys['arrowup'])) {
-        stamina = Math.max(0, stamina - 35 * dt);
-      } else {
-        stamina = Math.min(100, stamina + 18 * dt);
-      }
+      if (isDashing && (joystickActive || keys['w'] || keys['arrowup'])) stamina = Math.max(0, stamina - 35 * dt);
+      else stamina = Math.min(100, stamina + 18 * dt);
       staminaBarEl.style.width = stamina + '%';
 
-      // Direction from joystick or keyboard
       let moveX = joystickDelta.x;
       let moveZ = joystickDelta.y;
-      if (keys['w'] || keys['arrowup'])    moveZ = -1;
-      if (keys['s'] || keys['arrowdown'])  moveZ = 1;
-      if (keys['a'] || keys['arrowleft'])  moveX = -1;
+      if (keys['w'] || keys['arrowup']) moveZ = -1;
+      if (keys['s'] || keys['arrowdown']) moveZ = 1;
+      if (keys['a'] || keys['arrowleft']) moveX = -1;
       if (keys['d'] || keys['arrowright']) moveX = 1;
 
-      // Transform by camera yaw
-      const sinY = Math.sin(yaw);
-      const cosY = Math.cos(yaw);
+      const sinY = Math.sin(yaw), cosY = Math.cos(yaw);
       const worldX = (cosY * moveX - sinY * moveZ) * speed;
       const worldZ = (sinY * moveX + cosY * moveZ) * speed;
 
-      // Attempt move X
-      const tryX = camera.position.clone();
-      tryX.x += worldX;
-      playerBox.setFromCenterAndSize(
-        new THREE.Vector3(tryX.x, tryX.y - 0.75, tryX.z),
-        playerHalfSize.clone().multiplyScalar(2)
-      );
+      const tryX = camera.position.clone(); tryX.x += worldX;
+      playerBox.setFromCenterAndSize(new THREE.Vector3(tryX.x, tryX.y - 0.75, tryX.z), playerHalfSize.clone().multiplyScalar(2));
       let blockedX = false;
-      for (const bb of collisionBoxes) {
-        if (playerBox.intersectsBox(bb)) { blockedX = true; break; }
-      }
+      for (const bb of collisionBoxes) { if (playerBox.intersectsBox(bb)) { blockedX = true; break; } }
       if (!blockedX) camera.position.x = tryX.x;
 
-      // Attempt move Z
-      const tryZ = camera.position.clone();
-      tryZ.z += worldZ;
-      playerBox.setFromCenterAndSize(
-        new THREE.Vector3(tryZ.x, tryZ.y - 0.75, tryZ.z),
-        playerHalfSize.clone().multiplyScalar(2)
-      );
+      const tryZ = camera.position.clone(); tryZ.z += worldZ;
+      playerBox.setFromCenterAndSize(new THREE.Vector3(tryZ.x, tryZ.y - 0.75, tryZ.z), playerHalfSize.clone().multiplyScalar(2));
       let blockedZ = false;
-      for (const bb of collisionBoxes) {
-        if (playerBox.intersectsBox(bb)) { blockedZ = true; break; }
-      }
+      for (const bb of collisionBoxes) { if (playerBox.intersectsBox(bb)) { blockedZ = true; break; } }
       if (!blockedZ) camera.position.z = tryZ.z;
 
-      // Clamp to map
       camera.position.x = Math.max(-60, Math.min(60, camera.position.x));
       camera.position.z = Math.max(-100, Math.min(30, camera.position.z));
       camera.position.y = 1.65;
     }
 
-    // Camera rotation
     camera.rotation.order = 'YXZ';
     camera.rotation.y = yaw;
     camera.rotation.x = pitch;
 
-    // Phone proximity prompt
-    if (!phonePickedUp && !storyActive) {
+    flashlight.target.position.set(0, 0, -10);
+
+    if (!phonePickedUp && !storyActive && phoneMesh) {
       const dist = camera.position.distanceTo(phoneMesh.position);
-      if (dist <= phoneInteractDist) {
-        interactPrompt.style.display = 'block';
-      } else {
-        interactPrompt.style.display = 'none';
-      }
+      interactPrompt.style.display = (dist <= phoneInteractDist) ? 'block' : 'none';
     } else {
       interactPrompt.style.display = 'none';
     }
 
     renderer.render(scene, camera);
   }
-
   animate();
 }
 </script>
