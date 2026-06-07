@@ -1,13 +1,14 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>夜の村 - 和風ホラー</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fflate@0.7.4/umd/index.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FBXLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
@@ -18,7 +19,21 @@ html, body {
 }
 #gameCanvas { display:block; width:100%; height:100%; touch-action:none; }
 
-/* ── 蝋燭UI ── */
+#vignette {
+  position:fixed; inset:0;
+  background:radial-gradient(ellipse at center,transparent 24%,rgba(0,0,0,0.62) 100%);
+  pointer-events:none; z-index:5;
+}
+#darknessOverlay {
+  position:fixed; inset:0; background:rgba(0,0,0,0);
+  pointer-events:none; z-index:8; transition:background 1.2s ease;
+}
+#dangerVeil {
+  position:fixed; inset:0; background:rgba(180,0,0,0);
+  pointer-events:none; z-index:9; transition:background 0.25s ease;
+}
+
+/* 蝋燭UI */
 #candleUI {
   position:fixed; top:20px; left:50%; transform:translateX(-50%);
   font-family:'Georgia','Hiragino Mincho ProN',serif;
@@ -35,11 +50,11 @@ html, body {
 #candleBarFill {
   height:100%; width:100%;
   background:linear-gradient(90deg,#ff6a00,#ffd65a);
-  border-radius:4px; transition:width 0.5s ease;
+  border-radius:4px; transition:width 0.35s ease;
   box-shadow:0 0 6px rgba(255,180,0,0.7);
 }
 
-/* ── スタミナUI ── */
+/* スタミナUI */
 #staminaUI {
   position:fixed; top:64px; left:50%; transform:translateX(-50%);
   font-family:'Georgia','Hiragino Mincho ProN',serif;
@@ -60,7 +75,7 @@ html, body {
   box-shadow:0 0 5px rgba(0,200,255,0.6);
 }
 
-/* ── 走るボタン ── */
+/* 走るボタン */
 #dashBtn {
   position:fixed; bottom:60px; right:60px;
   width:80px; height:80px; border-radius:50%;
@@ -69,7 +84,7 @@ html, body {
   box-shadow:0 0 14px rgba(0,180,255,0.3);
   z-index:15; pointer-events:auto;
   display:flex; align-items:center; justify-content:center;
-  transition:background 0.1s, opacity 0.3s;
+  transition:background 0.1s, opacity 0.3s, transform 0.1s;
   touch-action:none;
 }
 #dashBtn .dashLabel {
@@ -82,7 +97,7 @@ html, body {
 #dashBtn.pressing { background:rgba(0,200,255,0.42); box-shadow:0 0 22px rgba(0,220,255,0.65); }
 #dashBtn.exhausted { background:rgba(60,60,80,0.3); border-color:rgba(120,120,160,0.3); opacity:0.55; }
 
-/* ── 八尺様警告インジケーター ── */
+/* 警告 */
 #alertIndicator {
   position:fixed; top:110px; left:50%; transform:translateX(-50%);
   font-family:'Hiragino Mincho ProN',serif;
@@ -93,7 +108,6 @@ html, body {
 }
 @keyframes alertPulse { 0%,100%{opacity:0.6;} 50%{opacity:1.0;} }
 
-/* ── その他UI ── */
 #statusMsg {
   position:fixed; top:130px; left:50%; transform:translateX(-50%);
   font-family:monospace; font-size:12px; color:#c8ffd0;
@@ -118,126 +132,53 @@ html, body {
   text-align:center; white-space:pre-wrap;
 }
 
-/* ═══════════════════════════════════════════
-   ★ ジャンプスケア演出レイヤー
-   ═══════════════════════════════════════════ */
-#jumpScareLayer {
-  position:fixed; inset:0;
-  display:none;
-  z-index:200;
-  pointer-events:none;
-  background:#000;
-}
-#jumpScareLayer.active {
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-
-/* 赤フラッシュ背景 */
-#jsRedFlash {
-  position:absolute; inset:0;
-  background:rgba(255,0,0,0);
-  animation:none;
-}
-#jsRedFlash.flashing {
-  animation:redFlash 0.08s steps(1) 0s 12 alternate;
-}
-@keyframes redFlash {
-  0%   { background:rgba(220,0,0,0.97); }
-  100% { background:rgba(80,0,0,0.85); }
-}
-
-/* 顔シルエットキャンバス */
-#jsFaceCanvas {
-  position:absolute; inset:0;
-  width:100%; height:100%;
-  opacity:0;
-  transition:opacity 0.04s;
-}
-#jsFaceCanvas.show { opacity:1; }
-
-/* テキスト（ジャンプスケア中の叫び） */
-#jsScreamText {
-  position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
-  font-family:'Hiragino Mincho ProN','Georgia',serif;
-  font-size:clamp(60px,18vw,160px);
-  color:#ffffff;
-  text-shadow:0 0 30px #ff0000, 0 0 60px #ff0000, 0 0 10px #fff;
-  letter-spacing:8px;
-  opacity:0;
-  white-space:nowrap;
-  animation:none;
-}
-#jsScreamText.show {
-  animation:screamAppear 0.06s ease-out forwards;
-}
-@keyframes screamAppear {
-  0%   { opacity:0; transform:translate(-50%,-50%) scale(3.5); }
-  100% { opacity:1; transform:translate(-50%,-50%) scale(1.0); }
-}
-
-/* ── ゲームオーバー ── */
+/* ゲームオーバー */
 #gameOverScreen {
   position:fixed; inset:0; display:none;
-  z-index:180; align-items:center; justify-content:center;
-  text-align:center; background:rgba(0,0,0,0); pointer-events:none;
+  z-index:100; align-items:center; justify-content:center;
+  text-align:center; background:rgba(0,0,0,0.0); pointer-events:none;
 }
 #gameOverScreen.active {
-  display:flex; animation:gameOverDark 1.2s 0.3s both;
+  display:flex; animation:gameOverFlash 0.55s forwards;
 }
-@keyframes gameOverDark {
+@keyframes gameOverFlash {
   0%   { background:rgba(0,0,0,0); }
-  100% { background:rgba(8,0,0,0.95); }
+  14%  { background:rgba(90,0,0,0.86); }
+  38%  { background:rgba(130,0,0,0.90); }
+  70%  { background:rgba(70,0,0,0.92); }
+  100% { background:rgba(0,0,0,0.94); }
 }
 #gameOverInner {
-  display:flex; flex-direction:column; align-items:center; gap:22px;
-  animation:gameOverTextIn 0.8s 1.0s both;
+  display:flex; flex-direction:column; align-items:center; gap:16px;
+  animation:gameOverTextIn 0.55s 0.12s both;
 }
-@keyframes gameOverTextIn {
-  0%  { opacity:0; transform:translateY(30px); }
-  100%{ opacity:1; transform:translateY(0); }
-}
+@keyframes gameOverTextIn { 0%{opacity:0;transform:scale(1.35);} 100%{opacity:1;transform:scale(1.0);} }
 #gameOverTitle {
   font-family:'Hiragino Mincho ProN','Georgia',serif;
-  font-size:clamp(28px,8vw,56px); color:#cc2200;
-  font-weight:900; letter-spacing:4px; line-height:1.4;
-  text-shadow:0 0 8px #ff0000,0 0 20px rgba(255,0,0,0.5),2px 2px 0 #110000;
-}
-/* 血が垂れるアニメーション */
-#gameOverTitle::after {
-  content:''; display:block; height:3px;
-  background:linear-gradient(90deg,transparent 10%, #cc0000 40%, #880000 60%, transparent 90%);
-  margin-top:8px;
-  animation:bloodDrip 2s 1.5s ease-in infinite;
-  transform-origin:top;
-}
-@keyframes bloodDrip {
-  0%   { transform:scaleY(1); opacity:0.9; }
-  60%  { transform:scaleY(4) translateY(6px); opacity:0.7; }
-  100% { transform:scaleY(1); opacity:0.9; }
+  font-size:clamp(32px,9vw,64px); color:#ffeaea;
+  font-weight:900; letter-spacing:4px; line-height:1.25;
+  text-shadow:
+    0 0 10px #ff0000,
+    0 0 24px #ff0000,
+    0 0 46px rgba(255,0,0,0.75),
+    3px 3px 0 #220000,
+    -3px -3px 0 #220000;
 }
 #gameOverSub {
   font-family:'Hiragino Mincho ProN','Georgia',serif;
-  font-size:clamp(16px,3.5vw,24px); color:#ff4444; letter-spacing:8px;
-  text-shadow:0 0 10px rgba(255,0,0,0.6);
-  animation:pulse 1.8s 1.5s ease-in-out infinite;
+  font-size:clamp(18px,4vw,28px); color:#ff9a9a; letter-spacing:6px;
+  text-shadow:0 0 12px rgba(255,0,0,0.8),0 0 4px #000;
+  animation:pulse 1.1s ease-in-out infinite;
 }
-@keyframes pulse { 0%,100%{opacity:0.5;} 50%{opacity:1.0;} }
-#gameOverBlood {
-  font-family:'Hiragino Mincho ProN',serif;
-  font-size:clamp(12px,2vw,16px); color:#882222; letter-spacing:4px;
-  text-shadow:0 0 6px #550000;
-  animation:pulse 2.2s 2s ease-in-out infinite;
-}
+@keyframes pulse { 0%,100%{opacity:0.7;} 50%{opacity:1.0;} }
 
-/* ── ジョイスティック ── */
+/* ジョイスティック */
 #joystickBase {
   position:fixed; bottom:60px; left:60px;
   width:120px; height:120px; border-radius:50%;
   background:rgba(255,255,255,0.08);
   border:2px solid rgba(255,210,140,0.28);
-  z-index:15; pointer-events:none; transition:opacity 0.3s;
+  z-index:15; pointer-events:none; transition:opacity 0.25s;
 }
 #joystickStick {
   position:fixed; bottom:95px; left:95px;
@@ -246,51 +187,104 @@ html, body {
   border:2px solid rgba(245,200,66,0.7);
   box-shadow:0 0 10px rgba(255,180,0,0.42);
   z-index:16; pointer-events:none;
-  transition:transform 0.03s, opacity 0.3s;
+  transition:transform 0.03s, opacity 0.25s;
 }
-#vignette {
-  position:fixed; inset:0;
-  background:radial-gradient(ellipse at center,transparent 24%,rgba(0,0,0,0.62) 100%);
-  pointer-events:none; z-index:5;
+
+/* ジャンプスケア */
+#jumpscareOverlay {
+  position:fixed; inset:0; z-index:120; display:none; overflow:hidden;
+  background:#000;
+  pointer-events:none;
 }
-#darknessOverlay {
-  position:fixed; inset:0; background:rgba(0,0,0,0);
-  pointer-events:none; z-index:8; transition:background 3s ease;
+#jumpscareOverlay.active { display:block; }
+#jumpscareOverlay .bg {
+  position:absolute; inset:-8%;
+  background:
+    radial-gradient(circle at 50% 40%, rgba(255,0,0,0.92) 0%, rgba(120,0,0,0.85) 26%, rgba(20,0,0,0.96) 58%, rgba(0,0,0,1) 100%);
+  animation:scareBg 0.12s infinite alternate;
 }
-#dangerVeil {
-  position:fixed; inset:0; background:rgba(180,0,0,0);
-  pointer-events:none; z-index:9; transition:background 0.4s ease;
+@keyframes scareBg {
+  from { transform:scale(1.00); filter:brightness(1.0) contrast(1.1); }
+  to   { transform:scale(1.03); filter:brightness(1.25) contrast(1.35); }
+}
+#jumpscareFace {
+  position:absolute; left:50%; top:50%;
+  width:86vw; height:86vh; transform:translate(-50%,-50%) scale(1.0);
+  background:
+    radial-gradient(circle at 50% 50%, rgba(0,0,0,0) 0 34%, rgba(0,0,0,0.98) 35% 100%);
+  clip-path: polygon(15% 10%, 38% 0%, 62% 0%, 85% 10%, 95% 36%, 87% 65%, 67% 92%, 33% 92%, 13% 65%, 5% 36%);
+  filter: drop-shadow(0 0 26px rgba(255,0,0,0.9)) drop-shadow(0 0 60px rgba(255,0,0,0.45));
+  opacity:0.98;
+  animation:faceLunge 0.17s infinite alternate;
+}
+@keyframes faceLunge {
+  from { transform:translate(-50%,-50%) scale(1.0) rotate(-1deg); }
+  to   { transform:translate(-50%,-50%) scale(1.04) rotate(1deg); }
+}
+#jumpscareFace::before,
+#jumpscareFace::after {
+  content:"";
+  position:absolute;
+  top:28%;
+  width:17%;
+  height:10%;
+  background:rgba(255,255,255,0.94);
+  filter:blur(0.4px);
+  box-shadow:0 0 18px rgba(255,255,255,0.85), 0 0 30px rgba(255,0,0,0.55);
+  clip-path: polygon(0 0, 100% 20%, 85% 100%, 10% 80%);
+}
+#jumpscareFace::before { left:22%; transform:rotate(-12deg); }
+#jumpscareFace::after  { right:22%; transform:rotate(12deg); }
+#jumpscareMouth {
+  position:absolute; left:50%; top:60%;
+  width:30%; height:16%;
+  transform:translateX(-50%);
+  background:rgba(255,255,255,0.92);
+  clip-path: polygon(10% 10%, 90% 10%, 100% 60%, 75% 100%, 25% 100%, 0 60%);
+  box-shadow:0 0 22px rgba(255,255,255,0.85), 0 0 40px rgba(255,0,0,0.65);
+  animation:march 0.09s infinite alternate;
+}
+@keyframes march {
+  from { transform:translateX(-50%) scale(1.0) rotate(0deg); }
+  to   { transform:translateX(-50%) scale(1.04) rotate(2deg); }
+}
+#jumpscareOverlay.fadeOut .bg { animation:none; background:rgba(0,0,0,0.96); }
+#jumpscareOverlay.fadeOut #jumpscareFace,
+#jumpscareOverlay.fadeOut #jumpscareMouth {
+  opacity:0.0;
+  transition:opacity 0.25s ease;
 }
 </style>
 </head>
 <body>
 <canvas id="gameCanvas"></canvas>
+
 <div id="vignette"></div>
 <div id="darknessOverlay"></div>
 <div id="dangerVeil"></div>
 
 <div id="candleUI">🕯 和蝋燭の残り火：<span id="candlePercent">100</span>%</div>
 <div id="candleBar"><div id="candleBarFill"></div></div>
+
 <div id="staminaUI">🏃 スタミナ：<span id="staminaPct">100</span>%</div>
 <div id="staminaBar"><div id="staminaBarFill"></div></div>
+
 <div id="alertIndicator">⚠ 八尺様に発見された…</div>
 <div id="statusMsg"></div>
 <div id="promptMsg">【画面をタップ】して地蔵に火を灯す</div>
 <div id="errorMsg"></div>
 
-<!-- ★ ジャンプスケアレイヤー ★ -->
-<div id="jumpScareLayer">
-  <div id="jsRedFlash"></div>
-  <canvas id="jsFaceCanvas"></canvas>
-  <div id="jsScreamText">八尺様</div>
-</div>
-
-<!-- ゲームオーバー -->
 <div id="gameOverScreen">
   <div id="gameOverInner">
     <div id="gameOverTitle">生贄に捧げられた…</div>
-    <div id="gameOverSub">ＧＡＭＥ　ＯＶＥＲ</div>
-    <div id="gameOverBlood">もう　逃げられない</div>
+    <div id="gameOverSub">GAME OVER</div>
+  </div>
+</div>
+
+<div id="jumpscareOverlay">
+  <div class="bg"></div>
+  <div id="jumpscareFace">
+    <div id="jumpscareMouth"></div>
   </div>
 </div>
 
@@ -299,15 +293,12 @@ html, body {
 <div id="dashBtn"><div class="dashLabel">走る</div></div>
 
 <script>
-(function(){
+(() => {
 'use strict';
 
-// ===================================================================
-// レンダラー基本セットアップ
-// ===================================================================
 const canvas = document.getElementById('gameCanvas');
-const renderer = new THREE.WebGLRenderer({canvas, antialias:false, powerPreference:'high-performance'});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+const renderer = new THREE.WebGLRenderer({ canvas, antialias:false, powerPreference:'high-performance' });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -319,30 +310,24 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0c0d12);
 scene.fog = new THREE.FogExp2(0x111218, 0.022);
 
-const camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 180);
+const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 180);
 camera.position.set(0, 2.5, 0);
+camera.rotation.order = 'YXZ';
 
 const clock = new THREE.Clock();
-let mixer = null;
 
-window.addEventListener('resize', ()=>{
-  camera.aspect = window.innerWidth/window.innerHeight;
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// ===================================================================
-// ユーティリティ
-// ===================================================================
-function dist2D(ax,az,bx,bz){ const d=ax-bx,e=az-bz; return Math.sqrt(d*d+e*e); }
-function randRange(a,b){ return a+Math.random()*(b-a); }
-function randomPointInRange(r){ return {x:(Math.random()-0.5)*r, z:(Math.random()-0.5)*r}; }
-function smoothStep(t){ return t*t*(3-2*t); }
+function dist2D(ax, az, bx, bz) { const dx = ax - bx, dz = az - bz; return Math.sqrt(dx*dx + dz*dz); }
+function randRange(a, b) { return a + Math.random() * (b - a); }
+function randomPointInRange(r) { return { x:(Math.random()-0.5)*r, z:(Math.random()-0.5)*r }; }
+function smoothStep(t) { return t*t*(3-2*t); }
 
-// ===================================================================
-// 高低差地形システム
-// ===================================================================
-function terrainNoise(x, z){
+function terrainNoise(x, z) {
   let h = 0;
   h += Math.sin(x * 0.038 + 1.2) * Math.cos(z * 0.042 - 0.7) * 2.8;
   h += Math.sin(x * 0.072 - 0.5) * Math.cos(z * 0.065 + 1.4) * 1.4;
@@ -350,25 +335,24 @@ function terrainNoise(x, z){
   return h;
 }
 
-function baseTerrain(x, z){
+function baseTerrain(x, z) {
   const dist = Math.sqrt(x*x + z*z);
   const flatBlend = smoothStep(Math.min(1, Math.max(0, (dist - 12) / 20)));
-  const raw = terrainNoise(x, z);
-  return raw * flatBlend;
+  return terrainNoise(x, z) * flatBlend;
 }
 
 const HIGHLANDS = [
-  {cx: 40,  cz: 10,  r: 18, h: 4.5,  blend: 12},
-  {cx: -38, cz: -20, r: 15, h: 3.2,  blend: 10},
-  {cx: 10,  cz: -55, r: 20, h: 5.8,  blend: 8},
-  {cx: -20, cz: 40,  r: 14, h: 2.8,  blend: 9},
+  { cx: 40,  cz: 10,  r: 18, h: 4.5, blend: 12 },
+  { cx: -38, cz: -20, r: 15, h: 3.2, blend: 10 },
+  { cx: 10,  cz: -55, r: 20, h: 5.8, blend: 8  },
+  { cx: -20, cz: 40,  r: 14, h: 2.8, blend: 9  },
 ];
 
-function getTerrainHeight(x, z){
+function getTerrainHeight(x, z) {
   let h = baseTerrain(x, z);
-  for(const hl of HIGHLANDS){
-    const d = Math.sqrt((x-hl.cx)**2 + (z-hl.cz)**2);
-    if(d < hl.r + hl.blend){
+  for (const hl of HIGHLANDS) {
+    const d = Math.sqrt((x - hl.cx) ** 2 + (z - hl.cz) ** 2);
+    if (d < hl.r + hl.blend) {
       const t = smoothStep(Math.max(0, 1 - Math.max(0, d - hl.r) / hl.blend));
       h += hl.h * t;
     }
@@ -376,44 +360,35 @@ function getTerrainHeight(x, z){
   return Math.max(0, h);
 }
 
-// ===================================================================
-// 地面メッシュ
-// ===================================================================
 const GROUND_SEGS = 120;
 const GROUND_SIZE = 360;
 const groundGeo = new THREE.PlaneGeometry(GROUND_SIZE, GROUND_SIZE, GROUND_SEGS, GROUND_SEGS);
-groundGeo.rotateX(-Math.PI/2);
-
+groundGeo.rotateX(-Math.PI / 2);
 const posAttr = groundGeo.attributes.position;
-for(let i = 0; i < posAttr.count; i++){
+for (let i = 0; i < posAttr.count; i++) {
   const vx = posAttr.getX(i);
   const vz = posAttr.getZ(i);
   posAttr.setY(i, getTerrainHeight(vx, vz));
 }
 groundGeo.computeVertexNormals();
 
-const groundMat = new THREE.MeshLambertMaterial({ color: 0x1a1a1e, vertexColors: false });
+const colors = [];
+for (let i = 0; i < posAttr.count; i++) {
+  const h = posAttr.getY(i);
+  const t = Math.min(1, h / 6);
+  colors.push(0.09 + t * 0.12, 0.08 + t * 0.10, 0.06 + t * 0.08);
+}
+groundGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+const groundMat = new THREE.MeshLambertMaterial({ color:0xffffff, vertexColors:true });
 const ground = new THREE.Mesh(groundGeo, groundMat);
 ground.receiveShadow = true;
 scene.add(ground);
 
-const colors = [];
-for(let i = 0; i < posAttr.count; i++){
-  const h = posAttr.getY(i);
-  const t = Math.min(1, h / 6);
-  colors.push(0.09 + t*0.12, 0.08 + t*0.10, 0.06 + t*0.08);
-}
-groundGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-groundMat.vertexColors = true;
-
-// ===================================================================
-// ライト
-// ===================================================================
 const ambLight = new THREE.AmbientLight(0x8080a0, 0.55);
 scene.add(ambLight);
 const hemi = new THREE.HemisphereLight(0x8d8fa7, 0x35353d, 0.40);
 scene.add(hemi);
-
 const moonLight = new THREE.DirectionalLight(0x9090c0, 0.18);
 moonLight.position.set(30, 60, -40);
 scene.add(moonLight);
@@ -428,448 +403,262 @@ scene.add(candleLight, candleLight.target);
 const footLight = new THREE.PointLight(0xff7a18, 2.0, 5.0);
 scene.add(footLight);
 
-// ===================================================================
-// UI 要素
-// ===================================================================
+const candlePercentEl = document.getElementById('candlePercent');
+const candleBarFill = document.getElementById('candleBarFill');
+const staminaPctEl = document.getElementById('staminaPct');
+const staminaBarFill = document.getElementById('staminaBarFill');
+const darkOverlay = document.getElementById('darknessOverlay');
+const dangerVeil = document.getElementById('dangerVeil');
+const alertIndicator = document.getElementById('alertIndicator');
+const statusMsg = document.getElementById('statusMsg');
+const errorMsg = document.getElementById('errorMsg');
+const promptMsg = document.getElementById('promptMsg');
+const gameOverScreen = document.getElementById('gameOverScreen');
+const joystickBase = document.getElementById('joystickBase');
+const joystickStick = document.getElementById('joystickStick');
+const dashBtnEl = document.getElementById('dashBtn');
+const jumpscareOverlay = document.getElementById('jumpscareOverlay');
+
 let candlePercent = 100;
 let lastTick = Date.now();
 const TICK_MS = 4000;
-const pctEl          = document.getElementById('candlePercent');
-const barFill        = document.getElementById('candleBarFill');
-const staminaPctEl   = document.getElementById('staminaPct');
-const staminaFill    = document.getElementById('staminaBarFill');
-const darkOverlay    = document.getElementById('darknessOverlay');
-const dangerVeil     = document.getElementById('dangerVeil');
-const alertIndicator = document.getElementById('alertIndicator');
-const statusMsg      = document.getElementById('statusMsg');
-const errorMsg       = document.getElementById('errorMsg');
-const promptMsg      = document.getElementById('promptMsg');
-const gameOverScreen = document.getElementById('gameOverScreen');
-const joystickBase   = document.getElementById('joystickBase');
-const joystickStick  = document.getElementById('joystickStick');
-const dashBtnEl      = document.getElementById('dashBtn');
 
-// ジャンプスケア関連DOM
-const jumpScareLayer  = document.getElementById('jumpScareLayer');
-const jsRedFlash      = document.getElementById('jsRedFlash');
-const jsFaceCanvas    = document.getElementById('jsFaceCanvas');
-const jsScreamText    = document.getElementById('jsScreamText');
-
-function updateCandleUI(){
+function updateCandleUI() {
   const v = Math.max(0, Math.ceil(candlePercent));
-  pctEl.textContent = v;
-  barFill.style.width = v+'%';
-  const r = Math.floor(180+75*(1-v/100)), g = Math.floor(190*(v/100));
-  barFill.style.background = `linear-gradient(90deg,rgb(${r},40,0),rgb(${r},${g},30))`;
+  candlePercentEl.textContent = v;
+  candleBarFill.style.width = v + '%';
+  const r = Math.floor(180 + 75 * (1 - v / 100));
+  const g = Math.floor(190 * (v / 100));
+  candleBarFill.style.background = `linear-gradient(90deg,rgb(${r},40,0),rgb(${r},${g},30))`;
 }
 
-// ===================================================================
-// スタミナシステム
-// ===================================================================
-let stamina       = 100;
-let isDashing     = false;
+let stamina = 100;
+let isDashing = false;
 let dashExhausted = false;
-const STAMINA_DRAIN   = 0.55;
+const STAMINA_DRAIN = 0.55;
 const STAMINA_RECOVER = 0.22;
-const SPEED_WALK  = 0.058;
-const SPEED_DASH  = 0.115;
+const SPEED_WALK = 0.058;
+const SPEED_DASH = 0.115;
 
-function updateStaminaUI(){
+function updateStaminaUI() {
   const v = Math.max(0, Math.round(stamina));
   staminaPctEl.textContent = v;
-  staminaFill.style.width  = v+'%';
-  const g1 = Math.floor(160*(v/100));
-  staminaFill.style.background = `linear-gradient(90deg,rgb(0,${g1},200),rgb(0,220,255))`;
-  if(dashExhausted){
+  staminaBarFill.style.width = v + '%';
+  const g1 = Math.floor(160 * (v / 100));
+  staminaBarFill.style.background = `linear-gradient(90deg,rgb(0,${g1},200),rgb(0,220,255))`;
+
+  if (dashExhausted) {
     dashBtnEl.classList.add('exhausted');
     dashBtnEl.classList.remove('pressing');
-  } else if(isDashing){
+  } else if (isDashing) {
     dashBtnEl.classList.add('pressing');
     dashBtnEl.classList.remove('exhausted');
   } else {
-    dashBtnEl.classList.remove('pressing','exhausted');
+    dashBtnEl.classList.remove('pressing', 'exhausted');
   }
 }
 
-// ===================================================================
-// ★ ジャンプスケア演出システム ★
-// ===================================================================
-let jumpScareFired = false;
+const game = {
+  state: 'playing', // playing | jumpscare | gameover
+  running: true,
+  scareStart: 0
+};
 
-/**
- * 八尺様の恐ろしいポリゴン顔をCanvasに描画
- */
-function drawScaryFace(cnv){
-  const W = window.innerWidth;
-  const H = window.innerHeight;
-  cnv.width  = W;
-  cnv.height = H;
-  const ctx = cnv.getContext('2d');
-
-  // 背景グラデ（深紅）
-  const bg = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, Math.max(W,H)*0.75);
-  bg.addColorStop(0, 'rgba(160,0,0,0.98)');
-  bg.addColorStop(0.6,'rgba(80,0,0,0.97)');
-  bg.addColorStop(1,  'rgba(10,0,0,1.0)');
-  ctx.fillStyle = bg;
-  ctx.fillRect(0,0,W,H);
-
-  // 顔の中心
-  const cx = W/2, cy = H/2;
-  const faceH = Math.min(H*0.85, W*1.1);
-  const faceW = faceH * 0.55;
-
-  // ── 顔（長大な楕円シルエット） ──
-  ctx.save();
-  ctx.fillStyle = '#0a0000';
-  ctx.shadowColor = '#ff0000';
-  ctx.shadowBlur = 40;
-  ctx.beginPath();
-  ctx.ellipse(cx, cy - faceH*0.04, faceW*0.5, faceH*0.54, 0, 0, Math.PI*2);
-  ctx.fill();
-  ctx.restore();
-
-  // ── 目（白い大きな楕円・縦長） ──
-  const eyeY  = cy - faceH*0.12;
-  const eyeOX = faceW*0.22;
-  const eyeRX = faceW*0.14;
-  const eyeRY = faceH*0.12;
-
-  // 左目
-  ctx.save();
-  ctx.shadowColor='#ff2200'; ctx.shadowBlur=30;
-  const leftGrad = ctx.createRadialGradient(cx-eyeOX-eyeRX*0.1, eyeY-eyeRY*0.1, 0, cx-eyeOX, eyeY, eyeRX*1.1);
-  leftGrad.addColorStop(0,'#ffffff');
-  leftGrad.addColorStop(0.3,'#ffeecc');
-  leftGrad.addColorStop(0.7,'#cc0000');
-  leftGrad.addColorStop(1,'#550000');
-  ctx.fillStyle = leftGrad;
-  ctx.beginPath();
-  ctx.ellipse(cx-eyeOX, eyeY, eyeRX, eyeRY, 0, 0, Math.PI*2);
-  ctx.fill();
-  ctx.restore();
-
-  // 右目
-  ctx.save();
-  ctx.shadowColor='#ff2200'; ctx.shadowBlur=30;
-  const rightGrad = ctx.createRadialGradient(cx+eyeOX+eyeRX*0.1, eyeY-eyeRY*0.1, 0, cx+eyeOX, eyeY, eyeRX*1.1);
-  rightGrad.addColorStop(0,'#ffffff');
-  rightGrad.addColorStop(0.3,'#ffeecc');
-  rightGrad.addColorStop(0.7,'#cc0000');
-  rightGrad.addColorStop(1,'#550000');
-  ctx.fillStyle = rightGrad;
-  ctx.beginPath();
-  ctx.ellipse(cx+eyeOX, eyeY, eyeRX, eyeRY, 0, 0, Math.PI*2);
-  ctx.fill();
-  ctx.restore();
-
-  // 瞳孔（黒い縦長ひし形）
-  for(const ex of [cx-eyeOX, cx+eyeOX]){
-    ctx.save();
-    ctx.fillStyle='#050000';
-    ctx.beginPath();
-    ctx.moveTo(ex, eyeY - eyeRY*0.65);
-    ctx.lineTo(ex + eyeRX*0.18, eyeY);
-    ctx.lineTo(ex, eyeY + eyeRY*0.65);
-    ctx.lineTo(ex - eyeRX*0.18, eyeY);
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
-  }
-
-  // ── 口（ギザギザのワイドスマイル） ──
-  const mouthY  = cy + faceH*0.18;
-  const mouthW  = faceW*0.5;
-  const toothH  = faceH*0.04;
-  const teethN  = 9;
-
-  ctx.save();
-  ctx.strokeStyle = '#cc0000';
-  ctx.lineWidth   = 3;
-  ctx.shadowColor = '#ff0000';
-  ctx.shadowBlur  = 15;
-
-  // 口のシルエット
-  ctx.fillStyle = '#0a0000';
-  ctx.beginPath();
-  ctx.arc(cx, mouthY, mouthW*0.5, 0, Math.PI);
-  ctx.fill();
-
-  // 歯（三角形のギザギザ）
-  ctx.fillStyle = '#e0ddd0';
-  ctx.shadowColor='#ffffff'; ctx.shadowBlur=8;
-  const tw = mouthW / teethN;
-  for(let i=0;i<teethN;i++){
-    const tx0 = cx - mouthW*0.5 + tw*i;
-    const tx1 = tx0 + tw;
-    const tmid = (tx0+tx1)/2;
-    ctx.beginPath();
-    ctx.moveTo(tx0, mouthY);
-    ctx.lineTo(tmid, mouthY + toothH*(i%2===0?1.0:0.6));
-    ctx.lineTo(tx1, mouthY);
-    ctx.fill();
-  }
-  ctx.restore();
-
-  // ── ノイズライン（血管・亀裂） ──
-  ctx.save();
-  ctx.strokeStyle='rgba(180,0,0,0.45)';
-  ctx.lineWidth=1.5;
-  for(let i=0;i<20;i++){
-    const sx = cx + (Math.random()-0.5)*faceW;
-    const sy = cy + (Math.random()-0.5)*faceH*0.9;
-    ctx.beginPath();
-    ctx.moveTo(sx,sy);
-    for(let j=0;j<6;j++){
-      ctx.lineTo(sx+(Math.random()-0.5)*60, sy+(Math.random()-0.5)*60);
+let audioCtx = null;
+function ensureAudioContext() {
+  try {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     }
-    ctx.stroke();
-  }
-  ctx.restore();
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume().catch(() => {});
+    }
+  } catch (_) {}
+}
+document.addEventListener('touchstart', ensureAudioContext, { passive:true });
+document.addEventListener('pointerdown', ensureAudioContext, { passive:true });
 
-  // ── 帽子（八尺様の特徴的な大きな帽子） ──
-  const hatBase = cy - faceH*0.5;
-  const hatW    = faceW*0.85;
-  const hatH    = faceH*0.38;
-  ctx.save();
-  ctx.fillStyle = '#050000';
-  ctx.shadowColor='#330000'; ctx.shadowBlur=20;
-  ctx.beginPath();
-  // つば
-  ctx.ellipse(cx, hatBase, hatW*0.6, hatH*0.06, 0, 0, Math.PI*2);
-  ctx.fill();
-  // クラウン
-  ctx.beginPath();
-  ctx.moveTo(cx - hatW*0.32, hatBase);
-  ctx.lineTo(cx - hatW*0.22, hatBase - hatH*0.88);
-  ctx.lineTo(cx + hatW*0.22, hatBase - hatH*0.88);
-  ctx.lineTo(cx + hatW*0.32, hatBase);
-  ctx.closePath();
-  ctx.fill();
-  ctx.restore();
+function playJumpNoise() {
+  try {
+    ensureAudioContext();
+    if (!audioCtx) return;
 
-  // ── 上部のテキスト ──
-  ctx.save();
-  ctx.fillStyle = 'rgba(255,200,200,0.85)';
-  ctx.shadowColor='#ff0000'; ctx.shadowBlur=20;
-  ctx.font = `bold ${Math.max(24,W*0.04)}px 'Hiragino Mincho ProN',serif`;
-  ctx.textAlign='center';
-  ctx.fillText('八尺様', cx, H*0.08);
-  ctx.restore();
+    const duration = 0.9;
+    const len = Math.floor(audioCtx.sampleRate * duration);
+    const buffer = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < len; i++) {
+      const fade = 1 - (i / len);
+      data[i] = (Math.random() * 2 - 1) * fade;
+    }
+
+    const src = audioCtx.createBufferSource();
+    src.buffer = buffer;
+
+    const hp = audioCtx.createBiquadFilter();
+    hp.type = 'highpass';
+    hp.frequency.value = 620;
+
+    const lp = audioCtx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 7200;
+
+    const comp = audioCtx.createDynamicsCompressor();
+    comp.threshold.value = -28;
+    comp.knee.value = 20;
+    comp.ratio.value = 20;
+    comp.attack.value = 0.001;
+    comp.release.value = 0.08;
+
+    const gain = audioCtx.createGain();
+    gain.gain.setValueAtTime(0.001, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(1.2, audioCtx.currentTime + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.7, audioCtx.currentTime + 0.08);
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+
+    src.connect(hp);
+    hp.connect(lp);
+    lp.connect(comp);
+    comp.connect(gain);
+    gain.connect(audioCtx.destination);
+    src.start();
+
+    if (navigator.vibrate) navigator.vibrate([80, 40, 80, 40, 180]);
+  } catch (_) {}
 }
 
-/**
- * Web Audio API でホラー音を生成・再生
- * ・ホワイトノイズバースト（0.6秒）
- * ・急激なハイピッチ音（サイン波 880Hz→低下）
- */
-function playJumpScareSound(){
-  try{
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if(!AudioCtx) return;
-    const actx = new AudioCtx();
-
-    // ── ホワイトノイズ ──
-    const bufLen = actx.sampleRate * 0.9;
-    const buf    = actx.createBuffer(1, bufLen, actx.sampleRate);
-    const data   = buf.getChannelData(0);
-    for(let i=0;i<bufLen;i++) data[i] = (Math.random()*2-1);
-    const noiseNode = actx.createBufferSource();
-    noiseNode.buffer = buf;
-
-    // エンベロープ（アタック即時、サスティン短め）
-    const noiseGain = actx.createGain();
-    noiseGain.gain.setValueAtTime(0, actx.currentTime);
-    noiseGain.gain.linearRampToValueAtTime(1.0, actx.currentTime + 0.01);
-    noiseGain.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + 0.9);
-
-    noiseNode.connect(noiseGain);
-    noiseGain.connect(actx.destination);
-    noiseNode.start(actx.currentTime);
-    noiseNode.stop(actx.currentTime + 0.9);
-
-    // ── ハイピッチ叫び声（サイン波 1200Hz→300Hz） ──
-    const osc = actx.createOscillator();
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(1100, actx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(200, actx.currentTime + 0.8);
-
-    const oscGain = actx.createGain();
-    oscGain.gain.setValueAtTime(0.0, actx.currentTime);
-    oscGain.gain.linearRampToValueAtTime(0.55, actx.currentTime + 0.02);
-    oscGain.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + 0.8);
-
-    osc.connect(oscGain);
-    oscGain.connect(actx.destination);
-    osc.start(actx.currentTime);
-    osc.stop(actx.currentTime + 0.8);
-
-    // ── 低音ドン（衝撃感） ──
-    const osc2 = actx.createOscillator();
-    osc2.type = 'sine';
-    osc2.frequency.setValueAtTime(80, actx.currentTime);
-    osc2.frequency.exponentialRampToValueAtTime(30, actx.currentTime + 0.4);
-    const gain2 = actx.createGain();
-    gain2.gain.setValueAtTime(1.2, actx.currentTime);
-    gain2.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + 0.4);
-    osc2.connect(gain2);
-    gain2.connect(actx.destination);
-    osc2.start(actx.currentTime);
-    osc2.stop(actx.currentTime + 0.4);
-
-  } catch(e){ console.warn('Audio error:', e); }
-}
-
-/**
- * カメラシェイク（激しいガタガタ振動）
- */
-let shakeActive = false;
-let shakeEndTime = 0;
-let shakeMag = 0;
-const shakeOffset = new THREE.Vector3();
-
-function startCameraShake(duration, magnitude){
-  shakeActive = true;
-  shakeEndTime = performance.now() + duration;
-  shakeMag = magnitude;
-}
-
-function applyCameraShake(){
-  if(!shakeActive) return;
-  const now = performance.now();
-  if(now > shakeEndTime){ shakeActive=false; shakeOffset.set(0,0,0); return; }
-  // 残り時間に応じて振幅を減衰
-  const t = (shakeEndTime - now) / (shakeEndTime - (shakeEndTime - 1200));
-  const mag = shakeMag * Math.max(0, t);
-  shakeOffset.set(
-    (Math.random()-0.5)*2 * mag,
-    (Math.random()-0.5)*2 * mag * 0.6,
-    (Math.random()-0.5)*2 * mag * 0.3
-  );
-  camera.position.add(shakeOffset);
-}
-
-/**
- * ★★★ ジャンプスケア本体 ★★★
- * 捕まった瞬間に呼び出す
- */
-function triggerJumpScare(){
-  if(jumpScareFired) return;
-  jumpScareFired = true;
-
-  // UI隠す
-  alertIndicator.style.display = 'none';
-  dangerVeil.style.background  = 'rgba(0,0,0,0)';
-  promptMsg.style.display      = 'none';
-
-  // ① 音を最初に鳴らす（タップ直後のコンテキスト内）
-  playJumpScareSound();
-
-  // ② ジャンプスケアレイヤー表示
-  jumpScareLayer.style.display = 'flex';
-
-  // 顔を描画
-  drawScaryFace(jsFaceCanvas);
-  jsFaceCanvas.classList.add('show');
-
-  // 赤フラッシュ
-  jsRedFlash.classList.add('flashing');
-
-  // テキスト
-  jsScreamText.classList.add('show');
-
-  // ③ カメラシェイク開始（1200ms、強烈）
-  startCameraShake(1200, 0.25);
-
-  // 八尺様を正面に瞬間移動させてドアップ感を演出
-  if(hachishaku){
-    const frontDir = new THREE.Vector3(0,0,-1).applyEuler(camera.rotation);
-    hachishaku.position.copy(camera.position).addScaledVector(frontDir, 0.8);
-    hachishaku.position.y = camera.position.y - 0.3;
-  }
-
-  // ④ 1.8秒後: フェードアウト → ゲームオーバー画面へ
-  setTimeout(()=>{
-    // フェードアウト
-    jumpScareLayer.style.transition = 'opacity 0.6s ease';
-    jumpScareLayer.style.opacity    = '0';
-    setTimeout(()=>{
-      jumpScareLayer.style.display = 'none';
-      jumpScareLayer.style.opacity = '1';
-      jumpScareLayer.style.transition = '';
-      showGameOverScreen();
-    }, 600);
-  }, 1800);
-}
-
-/**
- * ゲームオーバー画面表示
- */
-function showGameOverScreen(){
-  joystickBase.style.display  = 'none';
+function hideControls() {
+  joystickBase.style.display = 'none';
   joystickStick.style.display = 'none';
-  dashBtnEl.style.display     = 'none';
-  document.getElementById('candleUI').style.display  = 'none';
-  document.getElementById('candleBar').style.display = 'none';
-  document.getElementById('staminaUI').style.display = 'none';
-  document.getElementById('staminaBar').style.display= 'none';
+  dashBtnEl.style.display = 'none';
+}
+
+function showControls() {
+  joystickBase.style.display = 'block';
+  joystickStick.style.display = 'block';
+  dashBtnEl.style.display = 'flex';
+}
+
+function triggerGameOver() {
+  if (game.state === 'gameover') return;
+  game.state = 'gameover';
+  game.running = false;
+
+  jumpscareOverlay.classList.add('fadeOut');
+  setTimeout(() => {
+    jumpscareOverlay.style.display = 'none';
+  }, 220);
+
+  hideControls();
+  alertIndicator.style.display = 'none';
+  promptMsg.style.display = 'none';
   statusMsg.textContent = '';
-  errorMsg.style.display= 'none';
+  errorMsg.textContent = '';
+  dangerVeil.style.background = 'rgba(0,0,0,0)';
   gameOverScreen.classList.add('active');
 }
 
-// ===================================================================
-// ゲームオーバー
-// ===================================================================
-let gameOver = false;
-let animationRunning = true;
+function triggerJumpScare() {
+  if (game.state !== 'playing') return;
+  game.state = 'jumpscare';
+  game.scareStart = performance.now();
 
-function triggerGameOver(){
-  if(gameOver) return;
-  gameOver = true;
-  animationRunning = false; // ゲームループ止める
-  joyId=null; lookId=null; joyActive=false; joyDx=0; joyDy=0;
-  // ジャンプスケア発動
-  triggerJumpScare();
+  jumpscareOverlay.style.display = 'block';
+  jumpscareOverlay.classList.remove('fadeOut');
+  alertIndicator.style.display = 'none';
+  promptMsg.style.display = 'none';
+  statusMsg.textContent = '';
+  errorMsg.textContent = '';
+  dangerVeil.style.background = 'rgba(255,0,0,0.33)';
+  playJumpNoise();
+
+  setTimeout(() => {
+    if (game.state === 'jumpscare') triggerGameOver();
+  }, 1200);
 }
 
-// ===================================================================
-// 当たり判定システム
-// ===================================================================
-const obstacleMeshes  = [];
-const collisionBoxes  = [];
-
+const obstacleMeshes = [];
+const collisionBoxes = [];
 const PLAYER_BOX_HALF = 0.38;
 const playerBox = new THREE.Box3();
 
-function registerStaticBox(cx, cy, cz, hw, hh, hd){
+function registerStaticBox(cx, cy, cz, hw, hh, hd) {
   const box = new THREE.Box3(
-    new THREE.Vector3(cx-hw, cy-hh, cz-hd),
-    new THREE.Vector3(cx+hw, cy+hh, cz+hd)
+    new THREE.Vector3(cx - hw, cy - hh, cz - hd),
+    new THREE.Vector3(cx + hw, cy + hh, cz + hd)
   );
   collisionBoxes.push(box);
 }
 
-function checkPlayerCollision(newX, newZ, newY){
+function checkPlayerCollision(newX, newZ, newY) {
   playerBox.set(
     new THREE.Vector3(newX - PLAYER_BOX_HALF, newY - 1.0, newZ - PLAYER_BOX_HALF),
     new THREE.Vector3(newX + PLAYER_BOX_HALF, newY + 0.5, newZ + PLAYER_BOX_HALF)
   );
-  for(const box of collisionBoxes){
-    if(playerBox.intersectsBox(box)) return true;
+  for (const box of collisionBoxes) {
+    if (playerBox.intersectsBox(box)) return true;
   }
   return false;
 }
 
-// ===================================================================
-// 村マップ構築
-// ===================================================================
+function cloneUniqueMaterials(root) {
+  root.traverse(child => {
+    if (!child.isMesh) return;
+    if (child.material) {
+      if (Array.isArray(child.material)) {
+        child.material = child.material.map(m => m.clone());
+      } else {
+        child.material = child.material.clone();
+      }
+    }
+    child.castShadow = true;
+    child.receiveShadow = true;
+  });
+}
 
-// ── 道路 ──
-const roadMat = new THREE.MeshLambertMaterial({color:0x1e1e20});
-function addRoad(x, z, w, d){
+function placeTemplateOnGround(template, x, z, ry, targetHeight, darken = 1, yOffset = 0) {
+  const obj = template.clone(true);
+  cloneUniqueMaterials(obj);
+
+  obj.scale.setScalar(1);
+  obj.rotation.set(0, ry, 0);
+  obj.updateMatrixWorld(true);
+
+  const baseBox = new THREE.Box3().setFromObject(obj);
+  const baseSize = new THREE.Vector3();
+  baseBox.getSize(baseSize);
+
+  const sc = baseSize.y > 0.01 ? targetHeight / baseSize.y : 1;
+  obj.scale.setScalar(sc);
+  obj.rotation.set(0, ry, 0);
+  obj.updateMatrixWorld(true);
+
+  if (darken !== 1) {
+    obj.traverse(child => {
+      if (!child.isMesh || !child.material) return;
+      const mats = Array.isArray(child.material) ? child.material : [child.material];
+      mats.forEach(m => {
+        if (m.color) m.color.multiplyScalar(darken);
+      });
+    });
+  }
+
+  const box = new THREE.Box3().setFromObject(obj);
+  const y = getTerrainHeight(x, z) - box.min.y + yOffset;
+  obj.position.set(x, y, z);
+  obj.updateMatrixWorld(true);
+
+  return { obj, scale: sc, box: new THREE.Box3().setFromObject(obj) };
+}
+
+function facingTo(fromX, fromZ, toX, toZ) {
+  return Math.atan2(toX - fromX, toZ - fromZ);
+}
+
+const roadMat = new THREE.MeshLambertMaterial({ color:0x1e1e20 });
+function addRoad(x, z, w, d) {
   const geo = new THREE.PlaneGeometry(w, d, 4, 4);
-  geo.rotateX(-Math.PI/2);
+  geo.rotateX(-Math.PI / 2);
   const cy = getTerrainHeight(x, z) + 0.015;
   const m = new THREE.Mesh(geo, roadMat);
   m.position.set(x, cy, z);
@@ -879,276 +668,282 @@ function addRoad(x, z, w, d){
 addRoad(0, 0, 7, 200);
 addRoad(0, 0, 200, 7);
 addRoad(0, -45, 120, 5);
-addRoad(0,  45, 120, 5);
+addRoad(0, 45, 120, 5);
 const RING_R = 34;
-for(let i=0;i<8;i++){
-  const a=i*Math.PI/4, a2=(i+1)*Math.PI/4;
-  const cx=(Math.cos(a)+Math.cos(a2))/2*RING_R;
-  const cz=(Math.sin(a)+Math.sin(a2))/2*RING_R;
-  const len=RING_R*Math.tan(Math.PI/8)*2+1;
-  const seg=new THREE.Mesh(new THREE.PlaneGeometry(len,4.5), roadMat);
-  seg.rotation.x=-Math.PI/2;
-  seg.rotation.z=-a-Math.PI/8;
-  const ry=getTerrainHeight(cx,cz)+0.015;
-  seg.position.set(cx,ry,cz);
+for (let i = 0; i < 8; i++) {
+  const a = i * Math.PI / 4;
+  const a2 = (i + 1) * Math.PI / 4;
+  const cx = (Math.cos(a) + Math.cos(a2)) / 2 * RING_R;
+  const cz = (Math.sin(a) + Math.sin(a2)) / 2 * RING_R;
+  const len = RING_R * Math.tan(Math.PI / 8) * 2 + 1;
+  const seg = new THREE.Mesh(new THREE.PlaneGeometry(len, 4.5), roadMat);
+  seg.rotation.x = -Math.PI / 2;
+  seg.rotation.z = -a - Math.PI / 8;
+  const ry = getTerrainHeight(cx, cz) + 0.015;
+  seg.position.set(cx, ry, cz);
   scene.add(seg);
 }
 
-// ── 木造の柵 ──
-const fenceMat = new THREE.MeshLambertMaterial({color:0x3a2010});
-function addFence(x,z,w,d){
-  const fy = getTerrainHeight(x,z);
-  const m = new THREE.Mesh(new THREE.BoxGeometry(w,0.9,d), fenceMat);
-  m.position.set(x, fy+0.45, z);
+const fenceMat = new THREE.MeshLambertMaterial({ color:0x3a2010 });
+function addFence(x, z, w, d) {
+  const fy = getTerrainHeight(x, z);
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, 0.9, d), fenceMat);
+  m.position.set(x, fy + 0.45, z);
   m.castShadow = true;
   scene.add(m);
-  registerStaticBox(x, fy+0.45, z, w/2+0.05, 0.5, d/2+0.05);
-  if(Math.random() < 0.25) obstacleMeshes.push(m);
+  registerStaticBox(x, fy + 0.45, z, w/2 + 0.05, 0.5, d/2 + 0.05);
+  if (Math.random() < 0.25) obstacleMeshes.push(m);
 }
-for(let z=-80;z<80;z+=6){
-  addFence( 5.5+randRange(0,0.4), z, 0.18, 4.5+randRange(0,1));
-  addFence(-5.5-randRange(0,0.4), z, 0.18, 4.5+randRange(0,1));
+for (let z = -80; z < 80; z += 6) {
+  addFence( 5.5 + randRange(0,0.4), z, 0.18, 4.5 + randRange(0,1));
+  addFence(-5.5 - randRange(0,0.4), z, 0.18, 4.5 + randRange(0,1));
 }
-for(let x=-80;x<80;x+=6){
-  addFence(x, 5.5+randRange(0,0.4), 4.5+randRange(0,1), 0.18);
-  addFence(x,-5.5-randRange(0,0.4), 4.5+randRange(0,1), 0.18);
+for (let x = -80; x < 80; x += 6) {
+  addFence(x,  5.5 + randRange(0,0.4), 4.5 + randRange(0,1), 0.18);
+  addFence(x, -5.5 - randRange(0,0.4), 4.5 + randRange(0,1), 0.18);
 }
 
-// ── 鳥居 ──
-function addTorii(x,z,ry){
-  const mat = new THREE.MeshLambertMaterial({color:0x7e1111});
+function addTorii(x, z, ry) {
+  const mat = new THREE.MeshLambertMaterial({ color:0x7e1111 });
   const grp = new THREE.Group();
-  const gy  = getTerrainHeight(x,z);
-  [-1.6,1.6].forEach(ox=>{
-    const p = new THREE.Mesh(new THREE.CylinderGeometry(0.18,0.18,5.5,8),mat);
-    p.position.set(ox,2.75,0); p.castShadow=true; grp.add(p);
+  const gy = getTerrainHeight(x, z);
+
+  [-1.6, 1.6].forEach(ox => {
+    const p = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 5.5, 8), mat);
+    p.position.set(ox, 2.75, 0);
+    p.castShadow = true;
+    grp.add(p);
   });
-  const k1 = new THREE.Mesh(new THREE.BoxGeometry(4.4,0.35,0.35),mat);
-  k1.position.set(0,5.5,0); grp.add(k1);
-  const k2 = new THREE.Mesh(new THREE.BoxGeometry(3.8,0.25,0.25),mat);
-  k2.position.set(0,4.6,0); grp.add(k2);
+  const k1 = new THREE.Mesh(new THREE.BoxGeometry(4.4, 0.35, 0.35), mat);
+  k1.position.set(0, 5.5, 0); grp.add(k1);
+  const k2 = new THREE.Mesh(new THREE.BoxGeometry(3.8, 0.25, 0.25), mat);
+  k2.position.set(0, 4.6, 0); grp.add(k2);
+
   grp.position.set(x, gy, z);
-  grp.rotation.y = ry||0;
+  grp.rotation.y = ry || 0;
   scene.add(grp);
-  registerStaticBox(x + Math.cos(ry||0)*-1.6, gy+2.75, z + Math.sin(ry||0)*-1.6, 0.25, 2.8, 0.25);
-  registerStaticBox(x + Math.cos(ry||0)* 1.6, gy+2.75, z + Math.sin(ry||0)* 1.6, 0.25, 2.8, 0.25);
-  grp.children.slice(0,2).forEach(c=>obstacleMeshes.push(c));
-}
-addTorii(0,-14,0); addTorii(22,28,0.5); addTorii(-20,18,-0.3); addTorii(0,60,Math.PI);
 
-// ── 井戸 ──
-const stoneMat = new THREE.MeshLambertMaterial({color:0x3c3c3c});
-const woodMat2 = new THREE.MeshLambertMaterial({color:0x4a2c10});
-function addWell(x,z){
-  const wy = getTerrainHeight(x,z);
+  const yaw = ry || 0;
+  const c = Math.cos(yaw), s = Math.sin(yaw);
+  registerStaticBox(x + (c * -1.6), gy + 2.75, z + (s * -1.6), 0.25, 2.8, 0.25);
+  registerStaticBox(x + (c *  1.6), gy + 2.75, z + (s *  1.6), 0.25, 2.8, 0.25);
+  grp.children.slice(0, 2).forEach(c => obstacleMeshes.push(c));
+}
+addTorii(0,-14,0);
+addTorii(22,28,0.5);
+addTorii(-20,18,-0.3);
+addTorii(0,60,Math.PI);
+
+const stoneMat = new THREE.MeshLambertMaterial({ color:0x3c3c3c });
+const woodMat2 = new THREE.MeshLambertMaterial({ color:0x4a2c10 });
+function addWell(x, z) {
+  const wy = getTerrainHeight(x, z);
   const grp = new THREE.Group();
-  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.7,0.78,0.85,12),stoneMat);
-  base.position.y=0.425; grp.add(base);
-  const rim  = new THREE.Mesh(new THREE.CylinderGeometry(0.82,0.82,0.12,12,1,true),stoneMat);
-  rim.position.y=0.91; grp.add(rim);
-  const rL = new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,1.8,5),woodMat2);
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.78, 0.85, 12), stoneMat);
+  base.position.y = 0.425; grp.add(base);
+  const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.82, 0.82, 0.12, 12, 1, true), stoneMat);
+  rim.position.y = 0.91; grp.add(rim);
+  const rL = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1.8, 5), woodMat2);
   rL.position.set(-0.6,1.4,0); grp.add(rL);
-  const rR = new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,1.8,5),woodMat2);
+  const rR = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1.8, 5), woodMat2);
   rR.position.set(0.6,1.4,0); grp.add(rR);
-  const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,1.25,5),woodMat2);
-  bar.rotation.z=Math.PI/2; bar.position.set(0,2.2,0); grp.add(bar);
-  grp.position.set(x,wy,z);
+  const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.25, 5), woodMat2);
+  bar.rotation.z = Math.PI / 2; bar.position.set(0,2.2,0); grp.add(bar);
+  grp.position.set(x, wy, z);
   scene.add(grp);
-  registerStaticBox(x, wy+0.5, z, 0.85, 0.6, 0.85);
+  registerStaticBox(x, wy + 0.5, z, 0.85, 0.6, 0.85);
 }
-addWell(12,-12); addWell(-15,18); addWell(22,38); addWell(-20,-38); addWell(35,-10);
+addWell(12,-12);
+addWell(-15,18);
+addWell(22,38);
+addWell(-20,-38);
+addWell(35,-10);
 
-// ── お墓 ──
-function addGrave(x,z){
-  const mat = new THREE.MeshLambertMaterial({color:0x252525});
-  const gy  = getTerrainHeight(x,z);
+function addGrave(x, z) {
+  const mat = new THREE.MeshLambertMaterial({ color:0x252525 });
+  const gy = getTerrainHeight(x, z);
   const grp = new THREE.Group();
-  const body = new THREE.Mesh(new THREE.BoxGeometry(0.6,1.4,0.18),mat);
-  body.position.y=0.7; grp.add(body);
-  const top = new THREE.Mesh(new THREE.CylinderGeometry(0.32,0.32,0.18,8,1,false,0,Math.PI),mat);
-  top.rotation.x=Math.PI/2; top.position.set(0,1.5,0); grp.add(top);
-  grp.position.set(x,gy,z);
-  grp.rotation.y = Math.random()*0.5-0.25;
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1.4, 0.18), mat);
+  body.position.y = 0.7; grp.add(body);
+  const top = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.18, 8, 1, false, 0, Math.PI), mat);
+  top.rotation.x = Math.PI / 2; top.position.set(0, 1.5, 0); grp.add(top);
+  grp.position.set(x, gy, z);
+  grp.rotation.y = Math.random() * 0.5 - 0.25;
   grp.castShadow = true;
   scene.add(grp);
 }
-for(let i=0;i<30;i++){
-  let gx,gz;
-  do{ gx=(Math.random()-0.5)*110; gz=(Math.random()-0.5)*110; }
-  while(Math.sqrt(gx*gx+gz*gz)<8);
-  addGrave(gx,gz);
+for (let i = 0; i < 30; i++) {
+  let gx, gz;
+  do { gx = (Math.random() - 0.5) * 110; gz = (Math.random() - 0.5) * 110; }
+  while (Math.sqrt(gx*gx + gz*gz) < 8);
+  addGrave(gx, gz);
 }
 
-// ── 竹林 ──
-const bambooMat = new THREE.MeshLambertMaterial({color:0x1a2a0d});
-function addBambooCluster(cx,cz,count){
-  for(let i=0;i<count;i++){
-    const h = randRange(5,9);
-    const bx = cx+randRange(-1.4,1.4);
-    const bz = cz+randRange(-1.4,1.4);
-    const by = getTerrainHeight(bx,bz);
-    const b = new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.09,h,6),bambooMat);
-    b.position.set(bx, by+h/2, bz);
+const bambooMat = new THREE.MeshLambertMaterial({ color:0x1a2a0d });
+function addBambooCluster(cx, cz, count) {
+  for (let i = 0; i < count; i++) {
+    const h = randRange(5, 9);
+    const bx = cx + randRange(-1.4, 1.4);
+    const bz = cz + randRange(-1.4, 1.4);
+    const by = getTerrainHeight(bx, bz);
+    const b = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.09, h, 6), bambooMat);
+    b.position.set(bx, by + h/2, bz);
     b.castShadow = true;
     scene.add(b);
-    if(Math.random()<0.15) obstacleMeshes.push(b);
+    if (Math.random() < 0.15) obstacleMeshes.push(b);
   }
 }
-const BORDER=82, STEP=7;
-for(let v=-BORDER;v<=BORDER;v+=STEP){
-  addBambooCluster( BORDER, v, 5); addBambooCluster(-BORDER, v, 5);
-  addBambooCluster(v, BORDER, 5); addBambooCluster(v,-BORDER, 5);
+const BORDER = 82, STEP = 7;
+for (let v = -BORDER; v <= BORDER; v += STEP) {
+  addBambooCluster( BORDER, v, 5);
+  addBambooCluster(-BORDER, v, 5);
+  addBambooCluster(v, BORDER, 5);
+  addBambooCluster(v,-BORDER, 5);
 }
 
-// ── 祭壇 ──
-function buildAltar(){
-  const grp  = new THREE.Group();
-  const bMat = new THREE.MeshLambertMaterial({color:0x111114,emissive:0x050005,emissiveIntensity:0.3});
-  const base = new THREE.Mesh(new THREE.BoxGeometry(6,0.5,5),bMat);
-  base.position.y=0.25; grp.add(base);
-  const top  = new THREE.Mesh(new THREE.BoxGeometry(4.5,0.28,3.5),bMat);
-  top.position.y=0.64; grp.add(top);
-  for(const ox of[-1.5,0,1.5]){
-    const candle = new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08,0.4,8),
-      new THREE.MeshBasicMaterial({color:0xffcc44}));
-    candle.position.set(ox,0.98,0); grp.add(candle);
-    const pl = new THREE.PointLight(0xff6600,0.6,4,2);
-    pl.position.set(ox,1.15,0); grp.add(pl);
+function buildAltar() {
+  const grp = new THREE.Group();
+  const bMat = new THREE.MeshLambertMaterial({ color:0x111114, emissive:0x050005, emissiveIntensity:0.3 });
+  const base = new THREE.Mesh(new THREE.BoxGeometry(6, 0.5, 5), bMat);
+  base.position.y = 0.25; grp.add(base);
+  const top = new THREE.Mesh(new THREE.BoxGeometry(4.5, 0.28, 3.5), bMat);
+  top.position.y = 0.64; grp.add(top);
+
+  for (const ox of [-1.5, 0, 1.5]) {
+    const candle = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.4, 8), new THREE.MeshBasicMaterial({ color:0xffcc44 }));
+    candle.position.set(ox, 0.98, 0); grp.add(candle);
+    const pl = new THREE.PointLight(0xff6600, 0.6, 4, 2);
+    pl.position.set(ox, 1.15, 0); grp.add(pl);
   }
-  for(let i=0;i<4;i++){
-    const s = new THREE.Mesh(new THREE.BoxGeometry(0.5,0.9,0.5),
-      new THREE.MeshLambertMaterial({color:0x2a2a2a}));
-    s.position.set((i<2?-2.4:2.4),0.45,(i%2===0?-2:2)); grp.add(s);
+  for (let i = 0; i < 4; i++) {
+    const s = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.9, 0.5), new THREE.MeshLambertMaterial({ color:0x2a2a2a }));
+    s.position.set((i<2 ? -2.4 : 2.4), 0.45, (i%2===0 ? -2 : 2)); grp.add(s);
   }
-  const altY = getTerrainHeight(0,-62);
+
+  const altY = getTerrainHeight(0, -62);
   grp.position.set(0, altY, -62);
   scene.add(grp);
-  addTorii(0,-55,0); addTorii(-8,-65,0.15); addTorii(8,-65,-0.15);
-  const altarGlow = new THREE.PointLight(0x880000,1.8,18,1.5);
-  altarGlow.position.set(0,altY+2,-62);
+
+  addTorii(0,-55,0);
+  addTorii(-8,-65,0.15);
+  addTorii(8,-65,-0.15);
+
+  const altarGlow = new THREE.PointLight(0x880000, 1.8, 18, 1.5);
+  altarGlow.position.set(0, altY + 2, -62);
   scene.add(altarGlow);
 }
 buildAltar();
 
-// ===================================================================
-// 地蔵の結界
-// ===================================================================
 const jizoList = [];
 const JIZO_COUNT = 3, JIZO_SAFE_RADIUS = 4.0, JIZO_PROMPT_RADIUS = 3.0;
 
-function createJizo(x,z){
+function createJizo(x, z) {
   const grp = new THREE.Group();
-  const bMat = new THREE.MeshLambertMaterial({color:0xf0f0f0,emissive:0x101010,emissiveIntensity:0.18});
-  const body = new THREE.Mesh(new THREE.BoxGeometry(0.8,1.5,0.8),bMat);
-  body.position.y=0.75; body.castShadow=true; grp.add(body);
-  const halo = new THREE.Mesh(new THREE.SphereGeometry(0.24,12,12),
-    new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0.12}));
-  halo.position.y=1.45; grp.add(halo);
-  const light = new THREE.PointLight(0xff9800,0,7,2);
-  light.position.y=1.55; grp.add(light);
-  const jy = getTerrainHeight(x,z);
-  grp.position.set(x,jy,z);
+  const bMat = new THREE.MeshLambertMaterial({ color:0xf0f0f0, emissive:0x101010, emissiveIntensity:0.18 });
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.5, 0.8), bMat);
+  body.position.y = 0.75; body.castShadow = true; grp.add(body);
+  const halo = new THREE.Mesh(new THREE.SphereGeometry(0.24, 12, 12), new THREE.MeshBasicMaterial({ color:0xffffff, transparent:true, opacity:0.12 }));
+  halo.position.y = 1.45; grp.add(halo);
+  const light = new THREE.PointLight(0xff9800, 0, 7, 2);
+  light.position.y = 1.55; grp.add(light);
+  const jy = getTerrainHeight(x, z);
+  grp.position.set(x, jy, z);
   scene.add(grp);
-  const j={group:grp,light,lit:false,x,z};
+  const j = { group:grp, light, lit:false, x, z };
   jizoList.push(j);
   return j;
 }
-function placeJizoRandomly(){
-  for(let i=0;i<JIZO_COUNT;i++){
-    let p,tries=0;
-    do{ p=randomPointInRange(65); tries++; }
-    while((Math.abs(p.x)<10&&Math.abs(p.z)<10)&&tries<200);
-    createJizo(p.x,p.z);
+function placeJizoRandomly() {
+  for (let i = 0; i < JIZO_COUNT; i++) {
+    let p, tries = 0;
+    do { p = randomPointInRange(65); tries++; }
+    while ((Math.abs(p.x) < 10 && Math.abs(p.z) < 10) && tries < 200);
+    createJizo(p.x, p.z);
   }
 }
 placeJizoRandomly();
 
-const playerPos = new THREE.Vector3(0, getTerrainHeight(0,0)+1.65, 0);
+const playerPos = new THREE.Vector3(0, getTerrainHeight(0,0) + 1.65, 0);
 
-function getNearestJizoInPromptRange(){
-  let best=null, bestDist=Infinity;
-  for(const j of jizoList){
-    if(j.lit) continue;
-    const d = dist2D(playerPos.x,playerPos.z,j.x,j.z);
-    if(d<=JIZO_PROMPT_RADIUS&&d<bestDist){best=j;bestDist=d;}
+function getNearestJizoInPromptRange() {
+  let best = null, bestDist = Infinity;
+  for (const j of jizoList) {
+    if (j.lit) continue;
+    const d = dist2D(playerPos.x, playerPos.z, j.x, j.z);
+    if (d <= JIZO_PROMPT_RADIUS && d < bestDist) { best = j; bestDist = d; }
   }
   return best;
 }
-function igniteJizo(jizo){
-  if(!jizo||jizo.lit) return;
-  jizo.lit=true; jizo.light.intensity=1.8; jizo.light.color.setHex(0xffa040);
-  const hm=jizo.group.children.find(c=>c.isMesh&&c.geometry&&c.geometry.type==='SphereGeometry');
-  if(hm&&hm.material) hm.material.opacity=0.26;
+function igniteJizo(jizo) {
+  if (!jizo || jizo.lit) return;
+  jizo.lit = true;
+  jizo.light.intensity = 1.8;
+  jizo.light.color.setHex(0xffa040);
+  const hm = jizo.group.children.find(c => c.isMesh && c.geometry && c.geometry.type === 'SphereGeometry');
+  if (hm && hm.material) hm.material.opacity = 0.26;
 }
-function updateJizoPrompt(){
+function updateJizoPrompt() {
   const n = getNearestJizoInPromptRange();
-  if(n&&!gameOver) promptMsg.style.display='block';
-  else promptMsg.style.display='none';
+  if (n && game.state === 'playing') promptMsg.style.display = 'block';
+  else promptMsg.style.display = 'none';
 }
-function getLitJizoRepulsion(pos){
-  let px=0, pz=0;
-  for(const j of jizoList){
-    if(!j.lit) continue;
-    const dx=pos.x-j.x, dz=pos.z-j.z;
-    const d=Math.sqrt(dx*dx+dz*dz);
-    if(d<JIZO_SAFE_RADIUS){
-      const sd=Math.max(d,0.0001), ov=JIZO_SAFE_RADIUS-sd+0.15;
-      px+=(dx/sd)*ov; pz+=(dz/sd)*ov;
+function getLitJizoRepulsion(pos) {
+  let px = 0, pz = 0;
+  for (const j of jizoList) {
+    if (!j.lit) continue;
+    const dx = pos.x - j.x, dz = pos.z - j.z;
+    const d = Math.sqrt(dx*dx + dz*dz);
+    if (d < JIZO_SAFE_RADIUS) {
+      const sd = Math.max(d, 0.0001), ov = JIZO_SAFE_RADIUS - sd + 0.15;
+      px += (dx / sd) * ov;
+      pz += (dz / sd) * ov;
     }
   }
-  return {x:px,z:pz};
+  return { x:px, z:pz };
 }
-function isPointInsideAnySafeZone(x,z){
-  for(const j of jizoList){
-    if(!j.lit) continue;
-    if(dist2D(x,z,j.x,j.z)<=JIZO_SAFE_RADIUS) return true;
+function isPointInsideAnySafeZone(x, z) {
+  for (const j of jizoList) {
+    if (!j.lit) continue;
+    if (dist2D(x, z, j.x, j.z) <= JIZO_SAFE_RADIUS) return true;
   }
   return false;
 }
 
-// ===================================================================
-// 八尺様 ＋ ステルスAI
-// ===================================================================
 let hachishaku = null;
 let enemyTarget = null;
-
-const ENEMY_SPEED        = 0.05 * 1.2;
-const ENEMY_WANDER_SPEED = 0.016 * 1.2;
-
 let enemyState = 'wander';
-let losTimer   = 0;
+let losTimer = 0;
 const LOS_LOSE_TIME = 3000;
 let lastKnownPlayerPos = null;
-
 const raycaster = new THREE.Raycaster();
 const ENEMY_VISUAL_YAW_OFFSET = -Math.PI / 2;
+const ENEMY_SPEED = 0.05 * 1.2;
+const ENEMY_WANDER_SPEED = 0.016 * 1.2;
+const DETECT_RADIUS = 30;
 
-function buildFallbackEnemy(){
+function buildFallbackEnemy() {
   const grp = new THREE.Group();
-  const mat = new THREE.MeshLambertMaterial({color:0x1a1111,emissive:0x050000,emissiveIntensity:0.2});
-  const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.45,0.55,2.8,8),mat);
-  torso.position.y=2.0; grp.add(torso);
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.85,14,14),mat);
-  head.position.y=4.0; grp.add(head);
-  const aGeo = new THREE.CylinderGeometry(0.12,0.14,1.9,6);
-  const aL = new THREE.Mesh(aGeo,mat); aL.position.set(-0.95,2.6,0); aL.rotation.z=0.7; grp.add(aL);
-  const aR = new THREE.Mesh(aGeo,mat); aR.position.set( 0.95,2.6,0); aR.rotation.z=-0.7; grp.add(aR);
-  const lGeo = new THREE.CylinderGeometry(0.15,0.18,1.7,6);
-  const lL = new THREE.Mesh(lGeo,mat); lL.position.set(-0.26,0.9,0); grp.add(lL);
-  const lR = new THREE.Mesh(lGeo,mat); lR.position.set( 0.26,0.9,0); grp.add(lR);
+  const mat = new THREE.MeshLambertMaterial({ color:0x1a1111, emissive:0x050000, emissiveIntensity:0.2 });
+  const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.55, 2.8, 8), mat);
+  torso.position.y = 2.0; grp.add(torso);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.85, 14, 14), mat);
+  head.position.y = 4.0; grp.add(head);
+  const aGeo = new THREE.CylinderGeometry(0.12, 0.14, 1.9, 6);
+  const aL = new THREE.Mesh(aGeo, mat); aL.position.set(-0.95,2.6,0); aL.rotation.z=0.7; grp.add(aL);
+  const aR = new THREE.Mesh(aGeo, mat); aR.position.set(0.95,2.6,0); aR.rotation.z=-0.7; grp.add(aR);
+  const lGeo = new THREE.CylinderGeometry(0.15, 0.18, 1.7, 6);
+  const lL = new THREE.Mesh(lGeo, mat); lL.position.set(-0.26,0.9,0); grp.add(lL);
+  const lR = new THREE.Mesh(lGeo, mat); lR.position.set(0.26,0.9,0); grp.add(lR);
   return grp;
 }
-
-function setEnemyTargetAvoidingSafeZone(){
-  let p, tries=0;
-  do{ p=randomPointInRange(130); tries++; }
-  while(isPointInsideAnySafeZone(p.x,p.z)&&tries<120);
-  enemyTarget=p;
+function setEnemyTargetAvoidingSafeZone() {
+  let p, tries = 0;
+  do { p = randomPointInRange(130); tries++; }
+  while (isPointInsideAnySafeZone(p.x, p.z) && tries < 120);
+  enemyTarget = p;
 }
-
-// ── LOS判定 ──
-function hasLineOfSight(enemyPos, playerPos3D){
-  if(obstacleMeshes.length===0) return true;
+function hasLineOfSight(enemyPos, playerPos3D) {
+  if (obstacleMeshes.length === 0) return true;
   const eyePos = enemyPos.clone(); eyePos.y += 2.2;
   const targetPos = playerPos3D.clone(); targetPos.y += 1.0;
   const dir = new THREE.Vector3().subVectors(targetPos, eyePos).normalize();
@@ -1158,104 +953,14 @@ function hasLineOfSight(enemyPos, playerPos3D){
   const hits = raycaster.intersectObjects(obstacleMeshes, true);
   return hits.length === 0;
 }
-
-function faceEnemyToward(tx, tz){
-  if(!hachishaku) return;
+function faceEnemyToward(tx, tz) {
+  if (!hachishaku) return;
   const dx = tx - hachishaku.position.x;
   const dz = tz - hachishaku.position.z;
   hachishaku.rotation.set(0, Math.atan2(dx, dz), 0);
 }
-
-// ── 敵AIメイン ──
-const DETECT_RADIUS = 30;
-
-function updateEnemyAI(deltaMs){
-  if(!hachishaku||gameOver) return;
-  const ex = hachishaku.position.x;
-  const ez = hachishaku.position.z;
-  const enemyPos3D = new THREE.Vector3(ex, 0, ez);
-  const distToPlayer = dist2D(ex, ez, playerPos.x, playerPos.z);
-  const canSee = (distToPlayer < DETECT_RADIUS) && hasLineOfSight(enemyPos3D, playerPos);
-
-  if(enemyState==='wander'){
-    if(canSee){ enemyState='chase'; losTimer=0; lastKnownPlayerPos=playerPos.clone(); }
-  } else if(enemyState==='chase'){
-    if(canSee){ losTimer=0; lastKnownPlayerPos=playerPos.clone(); }
-    else {
-      losTimer += deltaMs;
-      if(losTimer>=LOS_LOSE_TIME){ enemyState='wander'; losTimer=0; lastKnownPlayerPos=null; setEnemyTargetAvoidingSafeZone(); }
-    }
-  }
-
-  if(enemyState==='chase'){
-    alertIndicator.style.display='block';
-    const veilAlpha = Math.max(0,Math.min(0.22,(DETECT_RADIUS-distToPlayer)/DETECT_RADIUS*0.3));
-    dangerVeil.style.background = `rgba(180,0,0,${veilAlpha})`;
-  } else {
-    alertIndicator.style.display='none';
-    dangerVeil.style.background='rgba(0,0,0,0)';
-  }
-
-  const push = getLitJizoRepulsion(hachishaku.position);
-
-  if(enemyState==='chase'){
-    const chaseTarget = canSee
-      ? {x:playerPos.x,z:playerPos.z}
-      : (lastKnownPlayerPos?{x:lastKnownPlayerPos.x,z:lastKnownPlayerPos.z}:null);
-    if(chaseTarget){
-      faceEnemyToward(chaseTarget.x, chaseTarget.z);
-      const dx=chaseTarget.x-ex, dz=chaseTarget.z-ez;
-      const d=Math.sqrt(dx*dx+dz*dz);
-      if(d>0.01){
-        const nx=dx/d, nz=dz/d;
-        const nextX=ex+nx*ENEMY_SPEED-push.x;
-        const nextZ=ez+nz*ENEMY_SPEED-push.z;
-        if(!isPointInsideAnySafeZone(nextX,nextZ)){
-          hachishaku.position.x=nextX;
-          hachishaku.position.z=nextZ;
-        } else {
-          setEnemyTargetAvoidingSafeZone(); enemyState='wander'; losTimer=0;
-        }
-      }
-      if(!canSee&&lastKnownPlayerPos&&dist2D(ex,ez,lastKnownPlayerPos.x,lastKnownPlayerPos.z)<1.2){
-        setEnemyTargetAvoidingSafeZone();
-      }
-    }
-  } else {
-    if(!enemyTarget) setEnemyTargetAvoidingSafeZone();
-    const dx=enemyTarget.x-ex, dz=enemyTarget.z-ez;
-    const dist=Math.sqrt(dx*dx+dz*dz);
-    if(push.x!==0||push.z!==0){
-      hachishaku.position.x -= push.x;
-      hachishaku.position.z -= push.z;
-      setEnemyTargetAvoidingSafeZone();
-    } else if(dist<0.9){
-      setEnemyTargetAvoidingSafeZone();
-    } else {
-      const nx=dx/Math.max(dist,0.0001), nz=dz/Math.max(dist,0.0001);
-      const nextX=ex+nx*ENEMY_WANDER_SPEED, nextZ=ez+nz*ENEMY_WANDER_SPEED;
-      if(!isPointInsideAnySafeZone(nextX,nextZ)){
-        hachishaku.position.x=nextX;
-        hachishaku.position.z=nextZ;
-        faceEnemyToward(enemyTarget.x, enemyTarget.z);
-      } else {
-        setEnemyTargetAvoidingSafeZone();
-      }
-    }
-  }
-
-  hachishaku.position.y = getTerrainHeight(hachishaku.position.x, hachishaku.position.z)
-    + Math.sin(performance.now()*0.004)*0.015;
-
-  // 捕捉判定
-  if(hachishaku.position.distanceTo(camera.position) < 1.8) triggerGameOver();
-}
-
-// ===================================================================
-// フォールバック敵生成
-// ===================================================================
-function ensureHachishaku(){
-  if(hachishaku) return;
+function ensureHachishaku() {
+  if (hachishaku) return;
   hachishaku = new THREE.Group();
   const visualRoot = new THREE.Group();
   visualRoot.rotation.y = ENEMY_VISUAL_YAW_OFFSET;
@@ -1265,638 +970,764 @@ function ensureHachishaku(){
   scene.add(hachishaku);
   setEnemyTargetAvoidingSafeZone();
 }
+function updateEnemyAI(deltaMs) {
+  if (!hachishaku || game.state !== 'playing') return;
 
-// ===================================================================
-// スクリプトロードヘルパー
-// ===================================================================
-function loadScript(url,cb){
-  const s=document.createElement('script');
-  s.src=url; s.onload=()=>cb(null); s.onerror=()=>cb(new Error('failed:'+url));
-  document.head.appendChild(s);
+  const ex = hachishaku.position.x;
+  const ez = hachishaku.position.z;
+  const enemyPos3D = new THREE.Vector3(ex, 0, ez);
+  const distToPlayer = dist2D(ex, ez, playerPos.x, playerPos.z);
+  const canSee = (distToPlayer < DETECT_RADIUS) && hasLineOfSight(enemyPos3D, playerPos);
+
+  if (distToPlayer < 1.8) {
+    triggerJumpScare();
+    return;
+  }
+
+  if (enemyState === 'wander') {
+    if (canSee) {
+      enemyState = 'chase';
+      losTimer = 0;
+      lastKnownPlayerPos = playerPos.clone();
+    }
+  } else if (enemyState === 'chase') {
+    if (canSee) {
+      losTimer = 0;
+      lastKnownPlayerPos = playerPos.clone();
+    } else {
+      losTimer += deltaMs;
+      if (losTimer >= LOS_LOSE_TIME) {
+        enemyState = 'wander';
+        losTimer = 0;
+        lastKnownPlayerPos = null;
+        setEnemyTargetAvoidingSafeZone();
+      }
+    }
+  }
+
+  if (enemyState === 'chase') {
+    alertIndicator.style.display = 'block';
+    const veilAlpha = Math.max(0, Math.min(0.22, (DETECT_RADIUS - distToPlayer) / DETECT_RADIUS * 0.3));
+    dangerVeil.style.background = `rgba(180,0,0,${veilAlpha})`;
+  } else {
+    alertIndicator.style.display = 'none';
+    dangerVeil.style.background = 'rgba(0,0,0,0)';
+  }
+
+  const push = getLitJizoRepulsion(hachishaku.position);
+
+  if (enemyState === 'chase') {
+    const chaseTarget = canSee
+      ? { x:playerPos.x, z:playerPos.z }
+      : (lastKnownPlayerPos ? { x:lastKnownPlayerPos.x, z:lastKnownPlayerPos.z } : null);
+
+    if (chaseTarget) {
+      faceEnemyToward(chaseTarget.x, chaseTarget.z);
+      const dx = chaseTarget.x - ex, dz = chaseTarget.z - ez;
+      const d = Math.sqrt(dx*dx + dz*dz);
+      if (d > 0.01) {
+        const nx = dx / d, nz = dz / d;
+        const nextX = ex + nx * ENEMY_SPEED - push.x;
+        const nextZ = ez + nz * ENEMY_SPEED - push.z;
+        if (!isPointInsideAnySafeZone(nextX, nextZ)) {
+          hachishaku.position.x = nextX;
+          hachishaku.position.z = nextZ;
+        } else {
+          setEnemyTargetAvoidingSafeZone();
+          enemyState = 'wander';
+          losTimer = 0;
+        }
+      }
+      if (!canSee && lastKnownPlayerPos && dist2D(ex, ez, lastKnownPlayerPos.x, lastKnownPlayerPos.z) < 1.2) {
+        setEnemyTargetAvoidingSafeZone();
+      }
+    }
+  } else {
+    if (!enemyTarget) setEnemyTargetAvoidingSafeZone();
+    const dx = enemyTarget.x - ex, dz = enemyTarget.z - ez;
+    const dist = Math.sqrt(dx*dx + dz*dz);
+
+    if (push.x !== 0 || push.z !== 0) {
+      hachishaku.position.x -= push.x;
+      hachishaku.position.z -= push.z;
+      setEnemyTargetAvoidingSafeZone();
+    } else if (dist < 0.9) {
+      setEnemyTargetAvoidingSafeZone();
+    } else {
+      const nx = dx / Math.max(dist, 0.0001), nz = dz / Math.max(dist, 0.0001);
+      const nextX = ex + nx * ENEMY_WANDER_SPEED;
+      const nextZ = ez + nz * ENEMY_WANDER_SPEED;
+      if (!isPointInsideAnySafeZone(nextX, nextZ)) {
+        hachishaku.position.x = nextX;
+        hachishaku.position.z = nextZ;
+        faceEnemyToward(enemyTarget.x, enemyTarget.z);
+      } else {
+        setEnemyTargetAvoidingSafeZone();
+      }
+    }
+  }
+
+  hachishaku.position.y = getTerrainHeight(hachishaku.position.x, hachishaku.position.z) + Math.sin(performance.now() * 0.004) * 0.015;
 }
 
-// ===================================================================
-// ★ 家（ie.glb）配置 - Box3ベース最適化版
-// ===================================================================
-statusMsg.textContent = 'モデル読み込み中...';
-
-function placeHousesAlongRoads(template){
+function placeHousesAlongRoads(template) {
   const AUTOS = 32, MIN_DIST = 8;
   const slots = [];
 
-  for(let z=-75;z<75;z+=10){
-    if(Math.abs(z)<12) continue;
-    slots.push({x: 11+randRange(1,4), z: z+randRange(-2,2), ry: Math.PI/2*(Math.random()>0.5?1:-1)});
-    slots.push({x:-11-randRange(1,4), z: z+randRange(-2,2), ry: Math.PI/2*(Math.random()>0.5?1:-1)});
+  for (let z = -75; z < 75; z += 10) {
+    if (Math.abs(z) < 12) continue;
+    slots.push({ x: 11 + randRange(1,4), z: z + randRange(-2,2), ry: Math.PI / 2 * (Math.random() > 0.5 ? 1 : -1) });
+    slots.push({ x:-11 - randRange(1,4), z: z + randRange(-2,2), ry: Math.PI / 2 * (Math.random() > 0.5 ? 1 : -1) });
   }
-  for(let x=-75;x<75;x+=10){
-    if(Math.abs(x)<12) continue;
-    slots.push({x: x+randRange(-2,2), z: 11+randRange(1,4), ry: 0});
-    slots.push({x: x+randRange(-2,2), z:-11-randRange(1,4), ry: Math.PI});
+  for (let x = -75; x < 75; x += 10) {
+    if (Math.abs(x) < 12) continue;
+    slots.push({ x: x + randRange(-2,2), z: 11 + randRange(1,4), ry: 0 });
+    slots.push({ x: x + randRange(-2,2), z:-11 - randRange(1,4), ry: Math.PI });
   }
-  for(let i=0;i<14;i++){
-    const a=i*Math.PI/7;
-    const r=RING_R+randRange(7,12);
-    slots.push({x:Math.cos(a)*r, z:Math.sin(a)*r, ry:a+Math.PI/2});
+  for (let i = 0; i < 14; i++) {
+    const a = i * Math.PI / 7;
+    const r = RING_R + randRange(7,12);
+    slots.push({ x:Math.cos(a) * r, z:Math.sin(a) * r, ry:a + Math.PI/2 });
   }
 
   const bbox = new THREE.Box3().setFromObject(template);
-  const size = new THREE.Vector3(); bbox.getSize(size);
+  const size = new THREE.Vector3();
+  bbox.getSize(size);
   const TARGET_H = 5.0;
-  const autoScale = (size.y>0.01) ? TARGET_H/size.y : 1.0;
-  const bottomY = bbox.min.y * autoScale;
+  const autoScale = (size.y > 0.01) ? TARGET_H / size.y : 1.0;
 
   let placed = 0;
-  for(const slot of slots){
-    if(placed>=AUTOS) break;
-    const {x,z,ry} = slot;
-    if(Math.sqrt(x*x+z*z)<MIN_DIST) continue;
+  for (const slot of slots) {
+    if (placed >= AUTOS) break;
+    const { x, z, ry } = slot;
+    if (Math.sqrt(x*x + z*z) < MIN_DIST) continue;
 
-    const terrY = getTerrainHeight(x,z);
     const house = template.clone(true);
-    const sc = autoScale * (0.85 + Math.random()*0.30);
+    cloneUniqueMaterials(house);
+    const sc = autoScale * (0.85 + Math.random() * 0.30);
     house.scale.setScalar(sc);
-    house.rotation.y = ry + randRange(-0.2,0.2);
-    house.position.set(x, terrY - bottomY * (sc/autoScale), z);
+    house.rotation.y = ry + randRange(-0.2, 0.2);
+    house.updateMatrixWorld(true);
 
-    house.traverse(child=>{
-      if(child.isMesh && child.material){
-        child.castShadow = true;
-        child.receiveShadow = true;
-        const mats = Array.isArray(child.material)?child.material:[child.material];
-        mats.forEach(m=>{ if(m.color) m.color.multiplyScalar(0.55); });
+    const box = new THREE.Box3().setFromObject(house);
+    const y = getTerrainHeight(x, z) - box.min.y;
+    house.position.set(x, y, z);
+
+    house.traverse(child => {
+      if (child.isMesh && child.material) {
+        const mats = Array.isArray(child.material) ? child.material : [child.material];
+        mats.forEach(m => { if (m.color) m.color.multiplyScalar(0.55); });
       }
     });
 
     scene.add(house);
-
     const hbox = new THREE.Box3().setFromObject(house);
     hbox.expandByScalar(-0.15);
     collisionBoxes.push(hbox);
 
     const firstMesh = [];
-    house.traverse(c=>{ if(c.isMesh && firstMesh.length<1) firstMesh.push(c); });
-    if(firstMesh.length>0) obstacleMeshes.push(firstMesh[0]);
+    house.traverse(c => { if (c.isMesh && firstMesh.length < 1) firstMesh.push(c); });
+    if (firstMesh.length > 0) obstacleMeshes.push(firstMesh[0]);
 
     placed++;
   }
   return placed;
 }
 
-// ===================================================================
-// ★ 街灯（gaitou.glb）配置 - 完全接地・道沿い等間隔 ★
-// ===================================================================
-let gaitouTemplate = null;
+const LANTERN_POSITIONS = [];
+function buildLanternSlots() {
+  const step = 13;
+  const roadEdge = 8.8;
+  for (let z = -68; z <= 68; z += step) {
+    LANTERN_POSITIONS.push([ roadEdge, z, Math.PI ]);
+    LANTERN_POSITIONS.push([-roadEdge, z, 0 ]);
+  }
+  for (let x = -68; x <= 68; x += step) {
+    LANTERN_POSITIONS.push([x,  roadEdge, -Math.PI/2 ]);
+    LANTERN_POSITIONS.push([x, -roadEdge,  Math.PI/2 ]);
+  }
+  const ringCount = 12;
+  for (let i = 0; i < ringCount; i++) {
+    const a = i * Math.PI * 2 / ringCount;
+    const r = RING_R + 4.5;
+    const x = Math.cos(a) * r;
+    const z = Math.sin(a) * r;
+    const ry = facingTo(x, z, 0, 0);
+    LANTERN_POSITIONS.push([x, z, ry]);
+  }
+}
+buildLanternSlots();
 
-/**
- * 街灯配置座標 - 道路（X軸・Z軸・環状道路）の沿道に等間隔
- * 道路幅7mの外側±8〜9m位置に並べる
- */
-const LANTERN_POSITIONS = [
-  // メインZ軸道路（南北） 両側
-  [ 9,  -60], [ 9,  -45], [ 9,  -30], [ 9,  -15], [ 9,   0],
-  [ 9,   15], [ 9,   30], [ 9,   45], [ 9,   60],
-  [-9,  -60], [-9,  -45], [-9,  -30], [-9,  -15], [-9,   0],
-  [-9,   15], [-9,   30], [-9,   45], [-9,   60],
-  // メインX軸道路（東西） 両側
-  [-60,  9], [-45,  9], [-30,  9], [-15,  9],
-  [ 15,  9], [ 30,  9], [ 45,  9], [ 60,  9],
-  [-60, -9], [-45, -9], [-30, -9], [-15, -9],
-  [ 15, -9], [ 30, -9], [ 45, -9], [ 60, -9],
-  // 環状道路上（半径34m周辺）
-  [ 36,  -5], [ 36,   5], [-36,  -5], [-36,   5],
-  [  5,  36], [ -5,  36], [  5, -36], [ -5, -36],
-];
+function placeGaitouLights(template) {
+  const box = new THREE.Box3().setFromObject(template);
+  const size = new THREE.Vector3();
+  box.getSize(size);
+  const TARGET_H = 3.6;
+  const sc = (size.y > 0.01) ? TARGET_H / size.y : 1.0;
 
-function placeGaitouLights(){
-  if(!gaitouTemplate) return;
-
-  // ── BBoxからスケール自動計算 ──
-  const rawBox = new THREE.Box3().setFromObject(gaitouTemplate);
-  const rawSize = new THREE.Vector3();
-  rawBox.getSize(rawSize);
-
-  const TARGET_HEIGHT = 4.0;  // 街灯の目標高さ4m
-  const sc = (rawSize.y > 0.01) ? TARGET_HEIGHT / rawSize.y : 1.0;
-
-  // ── bottomY補正（接地させるためのオフセット） ──
-  // スケール後の底面Y座標（ローカル）
-  const bottomLocalY = rawBox.min.y * sc;
-  // スケール後の頂点Y座標（ランプの先端）
-  const topLocalY    = rawBox.max.y * sc;
-
-  for(const [lx, lz] of LANTERN_POSITIONS){
-    const terrainY = getTerrainHeight(lx, lz);
-
-    const clone = gaitouTemplate.clone(true);
+  for (const [lx, lz, ry] of LANTERN_POSITIONS) {
+    const clone = template.clone(true);
+    cloneUniqueMaterials(clone);
     clone.scale.setScalar(sc);
+    clone.rotation.y = ry;
+    clone.updateMatrixWorld(true);
 
-    // ★ 接地補正: position.y = terrainY - bottomLocalY
-    // これにより底面が地形の高さにぴったり合う
-    clone.position.set(lx, terrainY - bottomLocalY, lz);
+    const b = new THREE.Box3().setFromObject(clone);
+    const y = getTerrainHeight(lx, lz) - b.min.y;
+    clone.position.set(lx, y, lz);
 
-    // 少しランダムに向きを変える（不気味さ演出）
-    clone.rotation.y = (Math.random() - 0.5) * 0.3;
-
-    clone.traverse(c=>{
-      if(c.isMesh && c.material){
-        c.castShadow = true; c.receiveShadow = true;
+    clone.traverse(c => {
+      if (c.isMesh && c.material) {
         const mats = Array.isArray(c.material) ? c.material : [c.material];
-        mats.forEach(m=>{ if(m.color) m.color.multiplyScalar(0.50); });
+        mats.forEach(m => { if (m.color) m.color.multiplyScalar(0.55); });
       }
     });
+
     scene.add(clone);
 
-    // 街灯の先端（ランプ部分）にPointLight
-    const lampWorldY = terrainY - bottomLocalY + topLocalY * 0.92;
-    const pl = new THREE.PointLight(0xff8800, 1.6, 12, 2);
-    pl.position.set(lx, lampWorldY, lz);
+    const pl = new THREE.PointLight(0xff8800, 1.35, 10, 2);
+    pl.position.set(lx, y + (size.y * sc) * 0.98, lz);
     scene.add(pl);
 
-    // ポール部分のみBox3登録（細いので薄く）
-    registerStaticBox(lx, terrainY + TARGET_HEIGHT * 0.5, lz, 0.12, TARGET_HEIGHT * 0.52, 0.12);
+    registerStaticBox(lx, y + 1.5, lz, 0.18, 1.8, 0.18);
   }
 }
 
-// ===================================================================
-// ★ 階段（kaidan.glb）配置 - 斜面境界に完全接地 ★
-// ===================================================================
-let kaidanTemplate = null;
-
-/**
- * HIGHLANDS定義から、各高台エリアの「入口（blendゾーンの手前）」に
- * 階段を自動配置する。
- *
- * 各HIGHLANDに対して、高台中心から見て外側（低地側）に向かう方向に
- * 複数の階段入口を配置する。
- */
-function computeStairPlacements(){
-  const placements = [];
-
-  for(const hl of HIGHLANDS){
-    // 入口方向を4〜6方向に分けて試行
-    const DIR_COUNT = 4;
-    for(let d=0; d<DIR_COUNT; d++){
-      const angle = (d / DIR_COUNT) * Math.PI * 2;
-      // 階段を置く位置：高台の縁（r）から外側blendの途中
-      const stairRadius = hl.r + hl.blend * 0.35;
-      const sx = hl.cx + Math.cos(angle) * stairRadius;
-      const sz = hl.cz + Math.sin(angle) * stairRadius;
-
-      // 境界付近かどうか確認（高さの変化が大きい場所）
-      const hHere  = getTerrainHeight(sx, sz);
-      const hInner = getTerrainHeight(
-        hl.cx + Math.cos(angle) * (hl.r * 0.5),
-        hl.cz + Math.sin(angle) * (hl.r * 0.5)
-      );
-      const heightDiff = hInner - hHere;
-
-      // 高低差が0.8m以上ある場所にだけ配置
-      if(heightDiff < 0.8) continue;
-      // 境界範囲外（フィールド外）は配置しない
-      if(Math.abs(sx)>78 || Math.abs(sz)>78) continue;
-
-      // 階段の向き：低い側から高い側へ向かう方向（= 高台中心方向）
-      const ry = Math.atan2(hl.cx - sx, hl.cz - sz);
-
-      placements.push({ x: sx, z: sz, ry, heightDiff });
-    }
-  }
-  return placements;
-}
-
-function placeStairs(){
-  if(!kaidanTemplate) return;
-
-  // スケール計算
-  const rawBox  = new THREE.Box3().setFromObject(kaidanTemplate);
-  const rawSize = new THREE.Vector3();
-  rawBox.getSize(rawSize);
-
-  // 階段の高さを地形段差に合わせる（2.2〜3.0m）
-  const TARGET_H = 2.4;
-  const sc = (rawSize.y > 0.01) ? TARGET_H / rawSize.y : 1.0;
-  const bottomLocalY = rawBox.min.y * sc;
-
-  const stairPlacements = computeStairPlacements();
-
-  for(const sp of stairPlacements){
-    const terrainY = getTerrainHeight(sp.x, sp.z);
-
-    const clone = kaidanTemplate.clone(true);
-    clone.scale.setScalar(sc);
-    clone.rotation.y = sp.ry;
-
-    // ★ 完全接地補正
-    clone.position.set(sp.x, terrainY - bottomLocalY, sp.z);
-
-    clone.traverse(c=>{
-      if(c.isMesh && c.material){
-        c.castShadow = true; c.receiveShadow = true;
-        const mats = Array.isArray(c.material) ? c.material : [c.material];
-        mats.forEach(m=>{ if(m.color) m.color.multiplyScalar(0.62); });
-      }
-    });
-    scene.add(clone);
-
-    // 横方向のみ薄い衝突判定（乗り越えを許容するためY上限を低くする）
-    const stairBox = new THREE.Box3().setFromObject(clone);
-    stairBox.max.y = Math.min(stairBox.max.y, terrainY + 0.55);
-    stairBox.expandByScalar(-0.1);
-    collisionBoxes.push(stairBox);
-  }
-
-  return stairPlacements.length;
-}
-
-// ===================================================================
-// モデルロード連鎖
-// ===================================================================
-loadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js', function(err){
-  if(err || typeof THREE.GLTFLoader === 'undefined'){
-    appendError('GLTFLoader読み込み失敗');
-    tryLoadFBX();
-    return;
-  }
-  const loader = new THREE.GLTFLoader();
-
-  // ── 1) ie.glb（家）──
-  loader.load('./ie.glb',
-    function(gltf){
-      const template = gltf.scene;
-      let meshCount=0; template.traverse(c=>{ if(c.isMesh) meshCount++; });
-      if(meshCount===0){
-        appendError('ie.glb: メッシュ0個');
-      } else {
-        const placed = placeHousesAlongRoads(template);
-        appendStatus(`✅ ie.glb / 家:${placed}棟`);
-        setTimeout(()=>{ if(!gameOver) clearStatus(); }, 6000);
-      }
-      loadGaitou(loader);
-    },
-    prog=>{ if(prog.total>0) setStatus(`ie.glb ${Math.round(prog.loaded/prog.total*100)}%`); },
-    e=>{
-      appendError('ie.glb失敗:'+(e&&e.message?e.message:String(e)));
-      loadGaitou(loader);
-    }
-  );
-});
-
-function loadGaitou(loader){
-  loader.load('./gaitou.glb',
-    function(gltf){
-      gaitouTemplate = gltf.scene;
-      placeGaitouLights();
-      appendStatus('\n✅ gaitou.glb 成功');
-      setTimeout(()=>{ if(!gameOver) clearStatus(); }, 5000);
-      loadKaidan(loader);
-    },
-    null,
-    function(e){
-      appendError('gaitou.glb失敗→基本形状使用');
-      placeFallbackLanterns();
-      loadKaidan(loader);
-    }
-  );
-}
-
-function placeFallbackLanterns(){
-  for(const [lx,lz] of LANTERN_POSITIONS){
-    const ly = getTerrainHeight(lx,lz);
+function placeFallbackLanterns() {
+  for (const [lx, lz, ry] of LANTERN_POSITIONS) {
+    const ly = getTerrainHeight(lx, lz);
     const grp = new THREE.Group();
     const pole = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.06,0.08,3.8,6),
-      new THREE.MeshLambertMaterial({color:0x1a0e00})
+      new THREE.CylinderGeometry(0.06, 0.08, 3.2, 6),
+      new THREE.MeshLambertMaterial({ color:0x1a0e00 })
     );
-    pole.position.y=1.9; pole.castShadow=true; grp.add(pole);
+    pole.position.y = 1.6; pole.castShadow = true; grp.add(pole);
     const head = new THREE.Mesh(
-      new THREE.BoxGeometry(0.48,0.38,0.48),
-      new THREE.MeshBasicMaterial({color:0xffcc66})
+      new THREE.BoxGeometry(0.52, 0.42, 0.52),
+      new THREE.MeshBasicMaterial({ color:0xffcc66 })
     );
-    head.position.y=3.9; grp.add(head);
-    const pl = new THREE.PointLight(0xff8800,1.5,11,2);
-    pl.position.y=3.9; grp.add(pl);
-    grp.position.set(lx,ly,lz);
+    head.position.y = 3.35; grp.add(head);
+    const pl = new THREE.PointLight(0xff8800, 1.3, 9, 2);
+    pl.position.y = 3.35; grp.add(pl);
+    grp.position.set(lx, ly, lz);
+    grp.rotation.y = ry;
     scene.add(grp);
-    registerStaticBox(lx,ly+2.0,lz,0.12,2.0,0.12);
+    registerStaticBox(lx, ly + 1.6, lz, 0.15, 1.8, 0.15);
   }
 }
 
-function loadKaidan(loader){
-  loader.load('./kaidan.glb',
-    function(gltf){
-      kaidanTemplate = gltf.scene;
-      const count = placeStairs();
-      appendStatus(`\n✅ kaidan.glb / 階段:${count}箇所`);
-      setTimeout(()=>{ if(!gameOver) clearStatus(); }, 5000);
-      tryLoadFBX();
-    },
-    null,
-    function(e){
-      appendError('kaidan.glb失敗→基本階段使用');
-      placeFallbackStairs();
-      tryLoadFBX();
-    }
-  );
+function addApproxStairColliders(x, z, ry, groundY, size, scale, stepCount = 6) {
+  const dirX = Math.sin(ry);
+  const dirZ = Math.cos(ry);
+  const width = Math.max(1.3, size.x * scale * 0.85);
+  const depth = Math.max(2.2, size.z * scale * 0.95);
+  const height = Math.max(1.8, size.y * scale * 0.95);
+  const stepDepth = depth / stepCount;
+  const stepRise = height / stepCount;
+
+  for (let i = 0; i < stepCount; i++) {
+    const t = (i + 0.5) / stepCount - 0.5;
+    const cx = x + dirX * depth * t * 0.95;
+    const cz = z + dirZ * depth * t * 0.95;
+    const cy = groundY + stepRise * (i + 0.5);
+    registerStaticBox(cx, cy, cz, width * 0.45, stepRise * 0.55, stepDepth * 0.48);
+  }
 }
 
-function placeFallbackStairs(){
-  const mat = new THREE.MeshLambertMaterial({color:0x4a4338});
-  const stairPlacements = computeStairPlacements();
-  for(const sp of stairPlacements){
-    const sy = getTerrainHeight(sp.x, sp.z);
-    const STEPS=5, RISE=0.30, RUN=0.52;
-    for(let s=0;s<STEPS;s++){
-      const sx2 = sp.x + Math.sin(sp.ry)*s*RUN;
-      const sz2 = sp.z + Math.cos(sp.ry)*s*RUN;
-      const sh  = sy + s*RISE;
-      const step = new THREE.Mesh(new THREE.BoxGeometry(2.0,RISE,RUN), mat);
-      step.position.set(sx2, sh+RISE/2, sz2);
-      step.castShadow=true; step.receiveShadow=true;
+function gradientMagnitude(x, z, eps = 0.75) {
+  const hL = getTerrainHeight(x - eps, z);
+  const hR = getTerrainHeight(x + eps, z);
+  const hD = getTerrainHeight(x, z - eps);
+  const hU = getTerrainHeight(x, z + eps);
+  const dx = (hR - hL) / (2 * eps);
+  const dz = (hU - hD) / (2 * eps);
+  return Math.sqrt(dx*dx + dz*dz);
+}
+
+function findStairSites() {
+  const candidates = [];
+  for (const hl of HIGHLANDS) {
+    const searchR = hl.r + hl.blend + 1.4;
+    for (let deg = 0; deg < 360; deg += 4) {
+      const ang = deg * Math.PI / 180;
+      const ux = Math.cos(ang), uz = Math.sin(ang);
+
+      const outerX = hl.cx + ux * searchR;
+      const outerZ = hl.cz + uz * searchR;
+      const innerX = hl.cx + ux * (searchR - 2.6);
+      const innerZ = hl.cz + uz * (searchR - 2.6);
+
+      const hOut = getTerrainHeight(outerX, outerZ);
+      const hIn = getTerrainHeight(innerX, innerZ);
+      const diff = hIn - hOut;
+      const gm = gradientMagnitude((outerX + innerX) / 2, (outerZ + innerZ) / 2);
+
+      if (diff > 1.0 && gm > 0.12) {
+        candidates.push({
+          x: outerX,
+          z: outerZ,
+          ry: facingTo(outerX, outerZ, hl.cx, hl.cz),
+          score: diff + gm
+        });
+      }
+    }
+  }
+
+  candidates.sort((a, b) => b.score - a.score);
+  const chosen = [];
+  for (const c of candidates) {
+    if (chosen.every(p => dist2D(p.x, p.z, c.x, c.z) > 7.0)) chosen.push(c);
+    if (chosen.length >= 6) break;
+  }
+  return chosen;
+}
+
+function placeStairs(template) {
+  const sites = findStairSites();
+  const targetH = 2.75;
+
+  for (const s of sites) {
+    const clone = template.clone(true);
+    cloneUniqueMaterials(clone);
+    clone.scale.setScalar(1);
+    clone.rotation.y = s.ry;
+    clone.updateMatrixWorld(true);
+
+    const box0 = new THREE.Box3().setFromObject(clone);
+    const size0 = new THREE.Vector3();
+    box0.getSize(size0);
+    const sc = size0.y > 0.01 ? targetH / size0.y : 1.0;
+
+    clone.scale.setScalar(sc);
+    clone.rotation.y = s.ry;
+    clone.updateMatrixWorld(true);
+
+    const box = new THREE.Box3().setFromObject(clone);
+    const groundY = getTerrainHeight(s.x, s.z);
+    clone.position.set(s.x, groundY - box.min.y, s.z);
+    clone.updateMatrixWorld(true);
+
+    clone.traverse(c => {
+      if (c.isMesh && c.material) {
+        const mats = Array.isArray(c.material) ? c.material : [c.material];
+        mats.forEach(m => { if (m.color) m.color.multiplyScalar(0.68); });
+      }
+    });
+
+    scene.add(clone);
+
+    const finalBox = new THREE.Box3().setFromObject(clone);
+    const finalSize = new THREE.Vector3();
+    finalBox.getSize(finalSize);
+    addApproxStairColliders(s.x, s.z, s.ry, groundY, finalSize, 1, 6);
+  }
+}
+
+function placeFallbackStairs() {
+  const mat = new THREE.MeshLambertMaterial({ color:0x4a4338 });
+  const sites = findStairSites();
+  for (const s of sites) {
+    const sy = getTerrainHeight(s.x, s.z);
+    const steps = 6, rise = 0.35, run = 0.45;
+    for (let i = 0; i < steps; i++) {
+      const dx = Math.sin(s.ry) * i * run * 0.85;
+      const dz = Math.cos(s.ry) * i * run * 0.85;
+      const sh = sy + i * rise;
+      const step = new THREE.Mesh(new THREE.BoxGeometry(2.0, rise, run), mat);
+      step.position.set(s.x + dx, sh + rise/2, s.z + dz);
+      step.rotation.y = s.ry;
+      step.castShadow = true;
+      step.receiveShadow = true;
       scene.add(step);
-      registerStaticBox(sx2, sh+RISE/2, sz2, 1.05, RISE/2+0.05, RUN/2+0.05);
+      registerStaticBox(s.x + dx, sh + rise/2, s.z + dz, 1.05, rise/2 + 0.05, run/2 + 0.05);
     }
   }
 }
 
-// ===================================================================
-// ★ FBXLoader（popopo.fbx）
-// ===================================================================
-function tryLoadFBX(){
-  if(typeof THREE.FBXLoader === 'undefined'){
-    console.warn('FBXLoader未定義→フォールバック');
-    ensureHachishaku();
-    appendError('FBXLoader未定義→フォールバック使用');
-    setTimeout(()=>{ if(!gameOver) clearError(); }, 5000);
-    return;
-  }
+const playerEyeH = 1.65;
+const terrainLerpK = 0.22;
+let targetPlayerY = playerPos.y;
 
-  const fbxLoader = new THREE.FBXLoader();
-  fbxLoader.load('./popopo.fbx',
-    function(fbx){
-      const BASE_SCALE = 0.02;
-      fbx.scale.set(BASE_SCALE,BASE_SCALE,BASE_SCALE);
-      const box1 = new THREE.Box3().setFromObject(fbx);
-      const size = new THREE.Vector3(); box1.getSize(size);
-      const TARGET_HEIGHT = 4.5;
-      let finalScale = BASE_SCALE;
-      if(size.y>0.01){ finalScale=BASE_SCALE*(TARGET_HEIGHT/size.y); fbx.scale.set(finalScale,finalScale,finalScale); }
-      const box2 = new THREE.Box3().setFromObject(fbx);
-      fbx.position.y = -box2.min.y;
-      fbx.rotation.set(0,0,0);
-      fbx.traverse(child=>{
-        if(child.isMesh){
-          child.castShadow=true; child.receiveShadow=true;
-          if(child.material){
-            const mats=Array.isArray(child.material)?child.material:[child.material];
-            mats.forEach(m=>{
-              if(m.color) m.color.multiplyScalar(0.28);
-              if('emissive' in m && m.emissive) m.emissive.multiplyScalar(0.12);
-            });
-          }
-        }
-      });
-      hachishaku = new THREE.Group();
-      const visualRoot = new THREE.Group();
-      visualRoot.rotation.y = ENEMY_VISUAL_YAW_OFFSET;
-      visualRoot.add(fbx);
-      hachishaku.add(visualRoot);
-      hachishaku.position.set(18, getTerrainHeight(18,18), 18);
-      scene.add(hachishaku);
-      setEnemyTargetAvoidingSafeZone();
-      if(fbx.animations&&fbx.animations.length>0){
-        mixer = new THREE.AnimationMixer(fbx);
-        const action = mixer.clipAction(fbx.animations[0]);
-        action.reset(); action.enabled=true;
-        action.setLoop(THREE.LoopRepeat,Infinity);
-        action.clampWhenFinished=false; action.play();
-        appendStatus(`\n✅ popopo.fbx / アニメ:${fbx.animations.length}クリップ`);
-      } else {
-        appendStatus('\n✅ popopo.fbx / アニメなし');
-      }
-      setTimeout(()=>{ if(!gameOver) clearStatus(); }, 5000);
-    },
-    prog=>{
-      if(prog.total>0){
-        const pct=Math.round(prog.loaded/prog.total*100);
-        appendStatus(`\npopopo.fbx ${pct}%`);
-      }
-    },
-    e=>{
-      console.warn('popopo.fbx load error:', e);
-      mixer=null; ensureHachishaku();
-      appendError('popopo.fbx失敗→フォールバック\n'+(e&&e.message?e.message:String(e)));
-      setTimeout(()=>{ if(!gameOver) clearError(); }, 7000);
-    }
-  );
-}
-
-function appendStatus(msg){ statusMsg.textContent=(statusMsg.textContent||'')+msg; }
-function setStatus(msg)   { statusMsg.textContent=msg; }
-function clearStatus()    { statusMsg.textContent=''; }
-function appendError(msg) { errorMsg.textContent=(errorMsg.textContent?errorMsg.textContent+'\n':'')+msg; errorMsg.style.display='block'; }
-function clearError()     { errorMsg.style.display='none'; errorMsg.textContent=''; }
-
-// ===================================================================
-// タッチ操作
-// ===================================================================
-const JOY_R=60;
-let joyId=null, joyActive=false, joyDx=0, joyDy=0, joyStartX=0, joyStartY=0;
-let lookId=null, lookPrevX=0, lookPrevY=0;
-let yaw=0, pitch=0;
+let joyId = null, joyActive = false, joyDx = 0, joyDy = 0, joyStartX = 0, joyStartY = 0;
+let lookId = null, lookPrevX = 0, lookPrevY = 0;
+let yaw = 0, pitch = 0;
 const touchStartMeta = new Map();
-let dashBtnActive = false;
 
-dashBtnEl.addEventListener('touchstart',e=>{ e.stopPropagation(); if(gameOver||dashExhausted) return; dashBtnActive=true; isDashing=true; },{passive:true});
-dashBtnEl.addEventListener('touchend',  e=>{ e.stopPropagation(); dashBtnActive=false; isDashing=false; },{passive:true});
-dashBtnEl.addEventListener('touchcancel',e=>{ e.stopPropagation(); dashBtnActive=false; isDashing=false; },{passive:true});
+const JOY_R = 60;
 
-canvas.addEventListener('touchstart', onTS, {passive:false});
-canvas.addEventListener('touchmove',  onTM, {passive:false});
-canvas.addEventListener('touchend',   onTE, {passive:false});
-canvas.addEventListener('touchcancel',onTE, {passive:false});
+function setTouchUIVisible(v) {
+  const op = v ? '1' : '0';
+  joystickBase.style.opacity = op;
+  joystickStick.style.opacity = op;
+  dashBtnEl.style.opacity = op;
+}
+setTouchUIVisible(true);
 
-function onTS(e){
+dashBtnEl.addEventListener('touchstart', e => {
+  e.stopPropagation();
+  ensureAudioContext();
+  if (game.state !== 'playing' || dashExhausted) return;
+  isDashing = true;
+}, { passive:true });
+dashBtnEl.addEventListener('touchend', e => {
+  e.stopPropagation();
+  isDashing = false;
+}, { passive:true });
+dashBtnEl.addEventListener('touchcancel', e => {
+  e.stopPropagation();
+  isDashing = false;
+}, { passive:true });
+
+canvas.addEventListener('touchstart', onTS, { passive:false });
+canvas.addEventListener('touchmove', onTM, { passive:false });
+canvas.addEventListener('touchend', onTE, { passive:false });
+canvas.addEventListener('touchcancel', onTE, { passive:false });
+
+function onTS(e) {
   e.preventDefault();
-  if(gameOver) return;
-  for(const t of e.changedTouches){
-    touchStartMeta.set(t.identifier,{x:t.clientX,y:t.clientY,time:Date.now()});
-    const isLeft = t.clientX < window.innerWidth/2;
-    if(isLeft&&joyId===null){ joyId=t.identifier; joyActive=true; joyStartX=t.clientX; joyStartY=t.clientY; joyDx=0; joyDy=0; }
-    else if(!isLeft&&lookId===null){ lookId=t.identifier; lookPrevX=t.clientX; lookPrevY=t.clientY; }
+  ensureAudioContext();
+  if (game.state !== 'playing') return;
+
+  for (const t of e.changedTouches) {
+    touchStartMeta.set(t.identifier, { x:t.clientX, y:t.clientY, time:Date.now() });
+    const isLeft = t.clientX < window.innerWidth / 2;
+    if (isLeft && joyId === null) {
+      joyId = t.identifier; joyActive = true; joyStartX = t.clientX; joyStartY = t.clientY;
+      joyDx = 0; joyDy = 0;
+    } else if (!isLeft && lookId === null) {
+      lookId = t.identifier; lookPrevX = t.clientX; lookPrevY = t.clientY;
+    }
   }
 }
-function onTM(e){
+
+function onTM(e) {
   e.preventDefault();
-  if(gameOver) return;
-  for(const t of e.changedTouches){
-    if(t.identifier===joyId){
-      const dx=t.clientX-joyStartX, dy=t.clientY-joyStartY;
-      const len=Math.sqrt(dx*dx+dy*dy), cl=Math.min(len,JOY_R), a=Math.atan2(dy,dx);
-      joyDx=Math.cos(a)*cl/JOY_R; joyDy=Math.sin(a)*cl/JOY_R;
-      joystickStick.style.transform=`translate(${Math.cos(a)*cl}px,${Math.sin(a)*cl}px)`;
+  if (game.state !== 'playing') return;
+
+  for (const t of e.changedTouches) {
+    if (t.identifier === joyId) {
+      const dx = t.clientX - joyStartX;
+      const dy = t.clientY - joyStartY;
+      const len = Math.sqrt(dx*dx + dy*dy);
+      const cl = Math.min(len, JOY_R);
+      const a = Math.atan2(dy, dx);
+      joyDx = Math.cos(a) * cl / JOY_R;
+      joyDy = Math.sin(a) * cl / JOY_R;
+      joystickStick.style.transform = `translate(${Math.cos(a)*cl}px,${Math.sin(a)*cl}px)`;
     }
-    if(t.identifier===lookId){
-      const dx=t.clientX-lookPrevX, dy=t.clientY-lookPrevY;
-      yaw   -= dx*0.0030; pitch -= dy*0.0028;
-      pitch  = Math.max(-Math.PI/2.2, Math.min(Math.PI/2.2, pitch));
-      lookPrevX=t.clientX; lookPrevY=t.clientY;
+    if (t.identifier === lookId) {
+      const dx = t.clientX - lookPrevX;
+      const dy = t.clientY - lookPrevY;
+      yaw -= dx * 0.0030;
+      pitch -= dy * 0.0028;
+      pitch = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, pitch));
+      lookPrevX = t.clientX;
+      lookPrevY = t.clientY;
     }
   }
 }
-function tryIgniteJizoByTap(t){
-  if(gameOver) return;
+
+function tryIgniteJizoByTap(t) {
+  if (game.state !== 'playing') return;
   const meta = touchStartMeta.get(t.identifier);
-  if(!meta) return;
-  if(Date.now()-meta.time>350 || Math.hypot(t.clientX-meta.x,t.clientY-meta.y)>24) return;
+  if (!meta) return;
+  if (Date.now() - meta.time > 350 || Math.hypot(t.clientX - meta.x, t.clientY - meta.y) > 24) return;
   const n = getNearestJizoInPromptRange();
-  if(n){ igniteJizo(n); promptMsg.style.display='none'; }
+  if (n) {
+    igniteJizo(n);
+    promptMsg.style.display = 'none';
+  }
 }
-function onTE(e){
+
+function onTE(e) {
   e.preventDefault();
-  for(const t of e.changedTouches){
-    if(t.identifier===joyId){ joyId=null; joyActive=false; joyDx=0; joyDy=0; joystickStick.style.transform='translate(0,0)'; }
-    if(t.identifier===lookId) lookId=null;
+  for (const t of e.changedTouches) {
+    if (t.identifier === joyId) {
+      joyId = null; joyActive = false; joyDx = 0; joyDy = 0;
+      joystickStick.style.transform = 'translate(0,0)';
+    }
+    if (t.identifier === lookId) lookId = null;
     tryIgniteJizoByTap(t);
     touchStartMeta.delete(t.identifier);
   }
 }
 
-// ===================================================================
-// ★ プレイヤー移動（地形追従 + Box3衝突判定）
-// ===================================================================
-const PLAYER_EYE_H   = 1.65;
-const TERRAIN_LERP_K = 0.22;
-let targetPlayerY    = playerPos.y;
+function updateMove() {
+  if (game.state !== 'playing') return;
 
-function updateMove(){
-  if(gameOver) return;
-
-  // スタミナ
-  if(isDashing&&!dashExhausted){
-    stamina = Math.max(0, stamina-STAMINA_DRAIN);
-    if(stamina<=0){ stamina=0; dashExhausted=true; isDashing=false; }
+  if (isDashing && !dashExhausted) {
+    stamina = Math.max(0, stamina - STAMINA_DRAIN);
+    if (stamina <= 0) {
+      stamina = 0;
+      dashExhausted = true;
+      isDashing = false;
+    }
   } else {
-    if(dashExhausted){
-      stamina = Math.min(100, stamina+STAMINA_RECOVER*0.6);
-      if(stamina>=30) dashExhausted=false;
+    if (dashExhausted) {
+      stamina = Math.min(100, stamina + STAMINA_RECOVER * 0.6);
+      if (stamina >= 30) dashExhausted = false;
     } else {
-      stamina = Math.min(100, stamina+STAMINA_RECOVER);
+      stamina = Math.min(100, stamina + STAMINA_RECOVER);
     }
   }
   updateStaminaUI();
 
-  if(!joyActive) return;
+  if (!joyActive) return;
 
-  const spd = (isDashing&&!dashExhausted) ? SPEED_DASH : SPEED_WALK;
-  const fwd = new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw));
-  const rgt = new THREE.Vector3( Math.cos(yaw),0,-Math.sin(yaw));
+  const spd = (isDashing && !dashExhausted) ? SPEED_DASH : SPEED_WALK;
+  const fwd = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw));
+  const rgt = new THREE.Vector3( Math.cos(yaw), 0, -Math.sin(yaw));
 
-  let nx = playerPos.x - joyDy*spd*fwd.x + joyDx*spd*rgt.x;
-  let nz = playerPos.z - joyDy*spd*fwd.z + joyDx*spd*rgt.z;
+  let nx = playerPos.x - joyDy * spd * fwd.x + joyDx * spd * rgt.x;
+  let nz = playerPos.z - joyDy * spd * fwd.z + joyDx * spd * rgt.z;
 
   nx = Math.max(-81, Math.min(81, nx));
   nz = Math.max(-81, Math.min(81, nz));
 
   const th = getTerrainHeight(nx, nz);
-  const ny = th + PLAYER_EYE_H;
+  const ny = th + playerEyeH;
 
-  if(!checkPlayerCollision(nx, nz, ny)){
+  if (!checkPlayerCollision(nx, nz, ny)) {
     playerPos.x = nx;
     playerPos.z = nz;
   } else {
-    const only_nx = playerPos.x - joyDy*spd*fwd.x + joyDx*spd*rgt.x;
-    const only_nz = playerPos.z;
-    const th2 = getTerrainHeight(only_nx, only_nz);
-    if(!checkPlayerCollision(only_nx, only_nz, th2+PLAYER_EYE_H)){
-      playerPos.x = only_nx;
+    const onlyNx = playerPos.x - joyDy * spd * fwd.x + joyDx * spd * rgt.x;
+    const onlyNz = playerPos.z;
+    const th2 = getTerrainHeight(onlyNx, onlyNz);
+    if (!checkPlayerCollision(onlyNx, onlyNz, th2 + playerEyeH)) {
+      playerPos.x = onlyNx;
     } else {
-      const only_nx2 = playerPos.x;
-      const only_nz2 = playerPos.z - joyDy*spd*fwd.z + joyDx*spd*rgt.z;
-      const th3 = getTerrainHeight(only_nx2, only_nz2);
-      if(!checkPlayerCollision(only_nx2, only_nz2, th3+PLAYER_EYE_H)){
-        playerPos.z = only_nz2;
+      const onlyNx2 = playerPos.x;
+      const onlyNz2 = playerPos.z - joyDy * spd * fwd.z + joyDx * spd * rgt.z;
+      const th3 = getTerrainHeight(onlyNx2, onlyNz2);
+      if (!checkPlayerCollision(onlyNx2, onlyNz2, th3 + playerEyeH)) {
+        playerPos.z = onlyNz2;
       }
     }
   }
 
-  const newTerrainY = getTerrainHeight(playerPos.x, playerPos.z) + PLAYER_EYE_H;
+  const newTerrainY = getTerrainHeight(playerPos.x, playerPos.z) + playerEyeH;
   targetPlayerY = newTerrainY;
-  playerPos.y += (targetPlayerY - playerPos.y) * TERRAIN_LERP_K;
+  playerPos.y += (targetPlayerY - playerPos.y) * terrainLerpK;
 }
 
-// ===================================================================
-// ★ メインアニメーションループ
-// ===================================================================
 let frame = 0;
-
-function animate(){
+function animate() {
+  if (!game.running) return;
   requestAnimationFrame(animate);
+  frame++;
 
-  // ゲームオーバー後はジャンプスケア中のみカメラシェイクを継続
-  if(!animationRunning){
-    if(shakeActive){
-      // シェイク中はカメラ更新だけ継続
-      camera.position.copy(playerPos);
-      camera.rotation.order = 'YXZ';
-      camera.rotation.y = yaw;
-      camera.rotation.x = pitch;
-      applyCameraShake();
-      renderer.render(scene, camera);
-    }
-    return;
+  const delta = clock.getDelta();
+
+  if (game.state === 'playing') {
+    updateMove();
+    updateEnemyAI(delta * 1000);
+    updateJizoPrompt();
   }
 
-  frame++;
-  const delta = clock.getDelta();
-  if(mixer) mixer.update(delta);
-
-  updateMove();
-  updateEnemyAI(delta * 1000);
-  updateJizoPrompt();
-
-  // カメラ
   camera.position.copy(playerPos);
-  camera.rotation.order = 'YXZ';
+
+  if (game.state === 'jumpscare') {
+    const t = performance.now() - game.scareStart;
+    const life = Math.max(0, 1 - t / 1200);
+    const amp = 0.18 * life;
+    const sx = (Math.sin(performance.now() * 0.08) + (Math.random() - 0.5) * 1.4) * amp;
+    const sy = (Math.cos(performance.now() * 0.09) + (Math.random() - 0.5) * 1.2) * amp;
+    const sz = (Math.sin(performance.now() * 0.11) + (Math.random() - 0.5) * 1.2) * amp * 0.35;
+    camera.position.x += sx;
+    camera.position.y += sy;
+    camera.position.z += sz;
+    camera.rotation.z = Math.sin(performance.now() * 0.06) * amp * 0.45;
+  } else {
+    camera.rotation.z = 0;
+  }
+
   camera.rotation.y = yaw;
   camera.rotation.x = pitch;
 
-  // カメラシェイク適用
-  applyCameraShake();
-
-  // 蝋燭ライト
   const dir = new THREE.Vector3(0,0,-1).applyEuler(camera.rotation);
-  candleLight.position.copy(playerPos);
-  candleLight.target.position.copy(playerPos.clone().addScaledVector(dir,6));
+  candleLight.position.copy(camera.position);
+  candleLight.target.position.copy(camera.position.clone().addScaledVector(dir, 6));
   candleLight.target.updateMatrixWorld();
-  footLight.position.copy(playerPos);
+  footLight.position.copy(camera.position);
 
-  const flicker = 0.9+Math.sin(frame*0.23)*0.06+Math.sin(frame*0.71)*0.04+(Math.random()-0.5)*0.08;
-  if(candlePercent>0){
-    candleLight.intensity = 8.5*(candlePercent/100)*flicker;
-    candleLight.distance  = 12+8*(candlePercent/100)+Math.random()*0.8;
-    footLight.intensity   = 2.0*(candlePercent/100)*flicker;
+  const flicker = 0.9 + Math.sin(frame * 0.23) * 0.06 + Math.sin(frame * 0.71) * 0.04 + (Math.random() - 0.5) * 0.08;
+  if (candlePercent > 0) {
+    candleLight.intensity = 8.5 * (candlePercent / 100) * flicker;
+    candleLight.distance  = 12 + 8 * (candlePercent / 100) + Math.random() * 0.8;
+    footLight.intensity   = 2.0 * (candlePercent / 100) * flicker;
   } else {
-    candleLight.intensity=0; footLight.intensity=0;
+    candleLight.intensity = 0;
+    footLight.intensity = 0;
   }
 
-  // 蝋燭残量
   const now = Date.now();
-  if(!gameOver && now-lastTick>TICK_MS && candlePercent>0){
-    candlePercent--; lastTick=now; updateCandleUI();
-    if(candlePercent<=0){
-      candlePercent=0; darkOverlay.style.background='rgba(0,0,0,0.95)';
-    } else if(candlePercent<=20){
-      darkOverlay.style.background=`rgba(0,0,0,${0.35*(1-candlePercent/20)})`;
+  if (game.state === 'playing' && now - lastTick > TICK_MS && candlePercent > 0) {
+    candlePercent--;
+    lastTick = now;
+    updateCandleUI();
+    if (candlePercent <= 0) {
+      candlePercent = 0;
+      darkOverlay.style.background = 'rgba(0,0,0,0.95)';
+    } else if (candlePercent <= 20) {
+      darkOverlay.style.background = `rgba(0,0,0,${0.35 * (1 - candlePercent / 20)})`;
     }
   }
 
   renderer.render(scene, camera);
 }
 
+function appendStatus(msg) { statusMsg.textContent = (statusMsg.textContent || '') + msg; }
+function setStatus(msg) { statusMsg.textContent = msg; }
+function clearStatus() { statusMsg.textContent = ''; }
+function appendError(msg) {
+  errorMsg.textContent = (errorMsg.textContent ? errorMsg.textContent + '\n' : '') + msg;
+  errorMsg.style.display = 'block';
+}
+function clearError() {
+  errorMsg.style.display = 'none';
+  errorMsg.textContent = '';
+}
+
+const gltfLoader = new THREE.GLTFLoader();
+const fbxLoader = new THREE.FBXLoader();
+
+setStatus('モデル読み込み中...');
+
+gltfLoader.load('./ie.glb', gltf => {
+  const template = gltf.scene;
+  let meshCount = 0;
+  template.traverse(c => { if (c.isMesh) meshCount++; });
+
+  if (meshCount === 0) {
+    appendError('ie.glb: メッシュ0個');
+  } else {
+    const placed = placeHousesAlongRoads(template);
+    appendStatus(`✅ ie.glb 成功 / 家:${placed}棟`);
+    setTimeout(() => { if (game.state === 'playing') clearStatus(); }, 6000);
+  }
+
+  loadGaitou();
+}, prog => {
+  if (prog.total > 0) setStatus(`ie.glb ${Math.round(prog.loaded / prog.total * 100)}%`);
+}, e => {
+  appendError('ie.glb失敗: ' + (e && e.message ? e.message : String(e)));
+  loadGaitou();
+});
+
+let gaitouTemplate = null;
+function loadGaitou() {
+  gltfLoader.load('./gaitou.glb', gltf => {
+    gaitouTemplate = gltf.scene;
+    placeGaitouLights(gaitouTemplate);
+    appendStatus('\n✅ gaitou.glb 成功');
+    setTimeout(() => { if (game.state === 'playing') clearStatus(); }, 5000);
+    loadKaidan();
+  }, null, () => {
+    appendError('gaitou.glb失敗→基本形状使用');
+    placeFallbackLanterns();
+    loadKaidan();
+  });
+}
+
+let kaidanTemplate = null;
+function loadKaidan() {
+  gltfLoader.load('./kaidan.glb', gltf => {
+    kaidanTemplate = gltf.scene;
+    placeStairs(kaidanTemplate);
+    appendStatus('\n✅ kaidan.glb 成功');
+    setTimeout(() => { if (game.state === 'playing') clearStatus(); }, 5000);
+    tryLoadFBX();
+  }, null, () => {
+    appendError('kaidan.glb失敗→基本階段使用');
+    placeFallbackStairs();
+    tryLoadFBX();
+  });
+}
+
+function tryLoadFBX() {
+  if (typeof THREE.FBXLoader === 'undefined') {
+    ensureHachishaku();
+    appendError('FBXLoader未定義→フォールバック使用');
+    setTimeout(() => { clearError(); }, 5000);
+    return;
+  }
+
+  fbxLoader.load('./popopo.fbx', fbx => {
+    const BASE_SCALE = 0.02;
+    fbx.scale.set(BASE_SCALE, BASE_SCALE, BASE_SCALE);
+    fbx.updateMatrixWorld(true);
+
+    const box1 = new THREE.Box3().setFromObject(fbx);
+    const size = new THREE.Vector3();
+    box1.getSize(size);
+
+    const TARGET_HEIGHT = 4.5;
+    let finalScale = BASE_SCALE;
+    if (size.y > 0.01) {
+      finalScale = BASE_SCALE * (TARGET_HEIGHT / size.y);
+      fbx.scale.set(finalScale, finalScale, finalScale);
+      fbx.updateMatrixWorld(true);
+    }
+
+    const box2 = new THREE.Box3().setFromObject(fbx);
+    fbx.position.y = -box2.min.y;
+    fbx.rotation.set(0, 0, 0);
+
+    fbx.traverse(child => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+        if (child.material) {
+          const mats = Array.isArray(child.material) ? child.material : [child.material];
+          mats.forEach(m => {
+            if (m.color) m.color.multiplyScalar(0.28);
+            if ('emissive' in m && m.emissive) m.emissive.multiplyScalar(0.12);
+          });
+        }
+      }
+    });
+
+    hachishaku = new THREE.Group();
+    const visualRoot = new THREE.Group();
+    visualRoot.rotation.y = ENEMY_VISUAL_YAW_OFFSET;
+    visualRoot.add(fbx);
+    hachishaku.add(visualRoot);
+    hachishaku.position.set(18, getTerrainHeight(18,18), 18);
+    scene.add(hachishaku);
+    setEnemyTargetAvoidingSafeZone();
+
+    if (fbx.animations && fbx.animations.length > 0) {
+      const mixer = new THREE.AnimationMixer(fbx);
+      const action = mixer.clipAction(fbx.animations[0]);
+      action.reset();
+      action.enabled = true;
+      action.setLoop(THREE.LoopRepeat, Infinity);
+      action.clampWhenFinished = false;
+      action.play();
+      window._enemyMixer = mixer;
+      appendStatus(`\n✅ popopo.fbx / アニメ:${fbx.animations.length}クリップ`);
+    } else {
+      appendStatus('\n✅ popopo.fbx / アニメなし');
+    }
+
+    setTimeout(() => { if (game.state === 'playing') clearStatus(); }, 5000);
+  }, prog => {
+    if (prog.total > 0) {
+      const pct = Math.round(prog.loaded / prog.total * 100);
+      appendStatus(`\npopopo.fbx ${pct}%`);
+    }
+  }, e => {
+    ensureHachishaku();
+    appendError('popopo.fbx失敗→フォールバック\n' + (e && e.message ? e.message : String(e)));
+    setTimeout(() => { clearError(); }, 7000);
+  });
+}
+
 animate();
 updateCandleUI();
 updateStaminaUI();
+ensureHachishaku();
 
 })();
 </script>
