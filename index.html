@@ -33,7 +33,6 @@ html, body {
   pointer-events:none; z-index:9; transition:background 0.25s ease;
 }
 
-/* 蝋燭UI */
 #candleUI {
   position:fixed; top:20px; left:50%; transform:translateX(-50%);
   font-family:'Georgia','Hiragino Mincho ProN',serif;
@@ -54,7 +53,6 @@ html, body {
   box-shadow:0 0 6px rgba(255,180,0,0.7);
 }
 
-/* スタミナUI */
 #staminaUI {
   position:fixed; top:64px; left:50%; transform:translateX(-50%);
   font-family:'Georgia','Hiragino Mincho ProN',serif;
@@ -75,7 +73,6 @@ html, body {
   box-shadow:0 0 5px rgba(0,200,255,0.6);
 }
 
-/* 走るボタン */
 #dashBtn {
   position:fixed; bottom:60px; right:60px;
   width:80px; height:80px; border-radius:50%;
@@ -97,7 +94,6 @@ html, body {
 #dashBtn.pressing { background:rgba(0,200,255,0.42); box-shadow:0 0 22px rgba(0,220,255,0.65); }
 #dashBtn.exhausted { background:rgba(60,60,80,0.3); border-color:rgba(120,120,160,0.3); opacity:0.55; }
 
-/* 警告 */
 #alertIndicator {
   position:fixed; top:110px; left:50%; transform:translateX(-50%);
   font-family:'Hiragino Mincho ProN',serif;
@@ -132,7 +128,6 @@ html, body {
   text-align:center; white-space:pre-wrap;
 }
 
-/* ゲームオーバー */
 #gameOverScreen {
   position:fixed; inset:0; display:none;
   z-index:100; align-items:center; justify-content:center;
@@ -172,7 +167,6 @@ html, body {
 }
 @keyframes pulse { 0%,100%{opacity:0.7;} 50%{opacity:1.0;} }
 
-/* ジョイスティック */
 #joystickBase {
   position:fixed; bottom:60px; left:60px;
   width:120px; height:120px; border-radius:50%;
@@ -190,7 +184,6 @@ html, body {
   transition:transform 0.03s, opacity 0.25s;
 }
 
-/* ジャンプスケア */
 #jumpscareOverlay {
   position:fixed; inset:0; z-index:120; display:none; overflow:hidden;
   background:#000;
@@ -325,6 +318,7 @@ function dist2D(ax, az, bx, bz) { const dx = ax - bx, dz = az - bz; return Math.
 function randRange(a, b) { return a + Math.random() * (b - a); }
 function randomPointInRange(r) { return { x:(Math.random()-0.5)*r, z:(Math.random()-0.5)*r }; }
 function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+function smoothStep(t) { return t*t*(3-2*t); }
 
 function optimizeImportedRoot(root, opts = {}) {
   const {
@@ -351,12 +345,10 @@ function optimizeImportedRoot(root, opts = {}) {
       m.fog = true;
       m.depthTest = true;
       m.depthWrite = true;
-
       if (!allowTransparent && m.transparent && (m.opacity === undefined || m.opacity >= 0.999) && !m.alphaMap) {
         m.transparent = false;
         m.opacity = 1;
       }
-
       if (m.map) {
         m.map.anisotropy = Math.min(2, renderer.capabilities.getMaxAnisotropy());
         m.map.generateMipmaps = true;
@@ -381,6 +373,9 @@ function cloneUniqueMaterials(root) {
   });
 }
 
+function pointInRect(x, z, cx, cz, w, d) {
+  return Math.abs(x - cx) <= w * 0.5 && Math.abs(z - cz) <= d * 0.5;
+}
 function pointToSegmentData(x, z, ax, az, bx, bz) {
   const vx = bx - ax, vz = bz - az;
   const len2 = vx*vx + vz*vz;
@@ -391,12 +386,9 @@ function pointToSegmentData(x, z, ax, az, bx, bz) {
   const dist = Math.sqrt((x - px) ** 2 + (z - pz) ** 2);
   return { t, px, pz, dist, vx, vz, len2 };
 }
-function rectContains(x, z, cx, cz, w, d) {
-  return Math.abs(x - cx) <= w * 0.5 && Math.abs(z - cz) <= d * 0.5;
-}
 
 /* =========================================================
-   完全平面＋段差平台＋階段
+   平面＋段差プラットフォームだけ
 ========================================================= */
 const PLATFORM_SITES = [
   { name:'east',   cx: 40, cz: 10,  w: 14, d: 14, h: 4.5, openSide:'W' },
@@ -405,85 +397,79 @@ const PLATFORM_SITES = [
   { name:'nwest',  cx:-20, cz: 40,  w: 11, d: 11, h: 2.8, openSide:'S' },
 ];
 
-const STAIR_PLANS = PLATFORM_SITES.map(site => {
-  const length = 7.2;
-  const width = 2.8;
-  const steps = Math.max(8, Math.ceil(site.h / 0.28));
+function makeStairPlan(site) {
+  const stairWidth = clamp(Math.min(site.w, site.d) * 0.30, 2.8, 3.8);
+  const stairLength = clamp(6.0 + site.h * 1.1, 7.0, 10.0);
+  const steps = Math.max(7, Math.ceil(site.h / 0.34));
 
   let sx, sz, ex, ez;
   if (site.openSide === 'W') {
+    sx = site.cx - site.w * 0.5 - stairLength;
+    sz = site.cz;
     ex = site.cx - site.w * 0.5;
     ez = site.cz;
-    sx = ex - length;
-    sz = ez;
   } else if (site.openSide === 'E') {
+    sx = site.cx + site.w * 0.5 + stairLength;
+    sz = site.cz;
     ex = site.cx + site.w * 0.5;
     ez = site.cz;
-    sx = ex + length;
-    sz = ez;
   } else if (site.openSide === 'N') {
+    sx = site.cx;
+    sz = site.cz - site.d * 0.5 - stairLength;
     ex = site.cx;
     ez = site.cz - site.d * 0.5;
-    sx = ex;
-    sz = ez - length;
   } else {
+    sx = site.cx;
+    sz = site.cz + site.d * 0.5 + stairLength;
     ex = site.cx;
     ez = site.cz + site.d * 0.5;
-    sx = ex;
-    sz = ez + length;
   }
 
+  const ry = Math.atan2(ex - sx, ez - sz);
   return {
     siteName: site.name,
     sx, sz, ex, ez,
-    width,
-    length,
+    ry,
+    width: stairWidth,
+    length: stairLength,
     steps,
+    h0: 0,
     h1: site.h,
-    dirX: ex - sx,
-    dirZ: ez - sz,
-    ry: Math.atan2(ex - sx, ez - sz),
     site
   };
-});
+}
+const STAIR_PLANS = PLATFORM_SITES.map(makeStairPlan);
 
-function isPointOnAnyStair(x, z) {
-  for (const st of STAIR_PLANS) {
-    const seg = pointToSegmentData(x, z, st.sx, st.sz, st.ex, st.ez);
-    if (seg && seg.t >= 0 && seg.t <= 1 && seg.dist <= st.width * 0.5) return true;
-  }
-  return false;
-}
-function isPointReserved(x, z) {
-  if (Math.abs(x) < 10 && Math.abs(z) < 10) return true;
+function isInAnyPlatformTop(x, z) {
   for (const p of PLATFORM_SITES) {
-    if (rectContains(x, z, p.cx, p.cz, p.w, p.d)) return true;
+    if (pointInRect(x, z, p.cx, p.cz, p.w, p.d)) return true;
   }
-  if (isPointOnAnyStair(x, z)) return true;
   return false;
 }
+
 function getTerrainHeight(x, z) {
   for (const st of STAIR_PLANS) {
     const seg = pointToSegmentData(x, z, st.sx, st.sz, st.ex, st.ez);
     if (!seg) continue;
     if (seg.t < 0 || seg.t > 1 || seg.dist > st.width * 0.5) continue;
+    if (seg.t >= 0.999) return st.h1;
     const stepIndex = Math.max(0, Math.min(st.steps - 1, Math.floor(seg.t * st.steps)));
     return ((stepIndex + 1) / st.steps) * st.h1;
   }
+
   for (const p of PLATFORM_SITES) {
-    if (rectContains(x, z, p.cx, p.cz, p.w, p.d)) return p.h;
+    if (pointInRect(x, z, p.cx, p.cz, p.w - 0.1, p.d - 0.1)) return p.h;
   }
   return 0;
 }
 
 /* =========================================================
-   簡易地形視覚
+   ground / lights / roads
 ========================================================= */
-const ground = new THREE.Mesh(
-  new THREE.PlaneGeometry(360, 360, 1, 1),
-  new THREE.MeshLambertMaterial({ color:0x18181c })
-);
+const groundMat = new THREE.MeshLambertMaterial({ color:0x18181c });
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(360, 360, 1, 1), groundMat);
 ground.rotation.x = -Math.PI / 2;
+ground.receiveShadow = false;
 scene.add(ground);
 
 const ambLight = new THREE.AmbientLight(0x8080a0, 0.55);
@@ -528,7 +514,7 @@ for (let i = 0; i < 8; i++) {
 }
 
 /* =========================================================
-   コライダー
+   collisions / LOS
 ========================================================= */
 const collisionBoxes = [];
 const obstacleMeshes = [];
@@ -555,30 +541,27 @@ function checkPlayerCollision(newX, newZ, newY) {
 }
 
 /* =========================================================
-   プラットフォームと階段
+   platforms + stairs
 ========================================================= */
 function buildPlatformVisual(site) {
   const g = new THREE.Group();
-  const topTh = 0.12;
+  const topTh = 0.18;
+  const topMat = new THREE.MeshLambertMaterial({ color:0x2a2a30 });
+  const wallMat = new THREE.MeshLambertMaterial({ color:0x222226 });
 
-  // 床
-  const top = new THREE.Mesh(
-    new THREE.BoxGeometry(site.w, topTh, site.d),
-    new THREE.MeshLambertMaterial({ color:0x27272c })
-  );
+  const top = new THREE.Mesh(new THREE.BoxGeometry(site.w, topTh, site.d), topMat);
   top.position.y = site.h - topTh * 0.5;
   g.add(top);
 
-  // 側面だけ壁を作る。上面には当たり判定を置かない。
-  const wallMat = new THREE.MeshLambertMaterial({ color:0x222226 });
-  const wallH = Math.max(0.15, site.h - topTh);
-  const wallTh = 0.24;
+  registerStaticBox(site.cx, site.h - topTh * 0.5, site.cz, site.w * 0.5, topTh * 0.5, site.d * 0.5);
+  obstacleMeshes.push(top);
 
+  const wallH = Math.max(0.15, site.h - topTh);
   const wallSpecs = [
-    { side:'N', x:0, z:-site.d*0.5 + wallTh*0.5, w:site.w, d:wallTh },
-    { side:'S', x:0, z: site.d*0.5 - wallTh*0.5, w:site.w, d:wallTh },
-    { side:'W', x:-site.w*0.5 + wallTh*0.5, z:0, w:wallTh, d:site.d },
-    { side:'E', x: site.w*0.5 - wallTh*0.5, z:0, w:wallTh, d:site.d }
+    { side:'N', x:0, z:-site.d*0.5 + 0.12, w:site.w, d:0.24 },
+    { side:'S', x:0, z: site.d*0.5 - 0.12, w:site.w, d:0.24 },
+    { side:'W', x:-site.w*0.5 + 0.12, z:0, w:0.24, d:site.d },
+    { side:'E', x: site.w*0.5 - 0.12, z:0, w:0.24, d:site.d }
   ];
 
   for (const s of wallSpecs) {
@@ -586,6 +569,7 @@ function buildPlatformVisual(site) {
     const wall = new THREE.Mesh(new THREE.BoxGeometry(s.w, wallH, s.d), wallMat);
     wall.position.set(site.cx + s.x, wallH * 0.5, site.cz + s.z);
     g.add(wall);
+
     registerStaticBox(site.cx + s.x, wallH * 0.5, site.cz + s.z, s.w * 0.5, wallH * 0.5, s.d * 0.5);
     obstacleMeshes.push(wall);
   }
@@ -593,44 +577,105 @@ function buildPlatformVisual(site) {
   g.position.set(site.cx, 0, site.cz);
   scene.add(g);
 }
+function buildAllPlatforms() {
+  for (const site of PLATFORM_SITES) buildPlatformVisual(site);
+}
+buildAllPlatforms();
 
-function buildStairVisual(plan) {
-  const stepMat = new THREE.MeshLambertMaterial({ color:0x4f463b });
-  const steps = plan.steps;
-  const rise = plan.h1 / steps;
-  const run = plan.length / steps;
-  const dirX = plan.dirX / plan.length;
-  const dirZ = plan.dirZ / plan.length;
+function isPointReserved(x, z) {
+  if (Math.abs(x) < 10 && Math.abs(z) < 10) return true;
+  if (isInAnyPlatformTop(x, z)) return true;
+  for (const st of STAIR_PLANS) {
+    const seg = pointToSegmentData(x, z, st.sx, st.sz, st.ex, st.ez);
+    if (seg && seg.t >= 0 && seg.t <= 1 && seg.dist <= st.width * 0.5 + 0.35) return true;
+  }
+  return false;
+}
 
-  for (let i = 0; i < steps; i++) {
-    const cx = plan.sx + dirX * (i + 0.5) * run;
-    const cz = plan.sz + dirZ * (i + 0.5) * run;
-    const cy = (i + 0.5) * rise;
+function addApproxStairColliders(plan) {
+  const dirX = Math.sin(plan.ry);
+  const dirZ = Math.cos(plan.ry);
+  const stepDepth = plan.length / plan.steps;
+  const stepRise = plan.h1 / plan.steps;
+  const width = plan.width;
 
-    const step = new THREE.Mesh(
-      new THREE.BoxGeometry(plan.width, rise, run),
-      stepMat
-    );
-    if (Math.abs(plan.dirX) > Math.abs(plan.dirZ)) {
-      step.rotation.y = Math.PI / 2;
-    }
-    step.position.set(cx, cy, cz);
-    scene.add(step);
+  for (let i = 0; i < plan.steps; i++) {
+    const t = (i + 0.5) / plan.steps;
+    const cx = plan.sx + dirX * plan.length * t;
+    const cz = plan.sz + dirZ * plan.length * t;
+    const cy = stepRise * (i + 0.5);
+    registerStaticBox(cx, cy, cz, width * 0.5, stepRise * 0.5, stepDepth * 0.5);
   }
 }
 
-function buildAllPlatformsAndStairs() {
-  for (const site of PLATFORM_SITES) buildPlatformVisual(site);
-  for (const plan of STAIR_PLANS) buildStairVisual(plan);
+function placeStairs(template) {
+  if (!template) return;
+
+  for (const plan of STAIR_PLANS) {
+    const clone = template.clone(true);
+    cloneUniqueMaterials(clone);
+    clone.scale.setScalar(1);
+    clone.rotation.y = plan.ry;
+    clone.updateMatrixWorld(true);
+
+    const box0 = new THREE.Box3().setFromObject(clone);
+    const size0 = new THREE.Vector3();
+    box0.getSize(size0);
+    const TARGET_H = 2.75;
+    const sc = size0.y > 0.01 ? TARGET_H / size0.y : 1.0;
+
+    clone.scale.setScalar(sc);
+    clone.rotation.y = plan.ry;
+    clone.updateMatrixWorld(true);
+
+    optimizeImportedRoot(clone, {
+      darken: 0.68,
+      allowTransparent: true,
+      forceFrontSide: true
+    });
+
+    const box = new THREE.Box3().setFromObject(clone);
+    const startY = getTerrainHeight(plan.sx, plan.sz);
+    clone.position.set(plan.sx, startY - box.min.y, plan.sz);
+    clone.updateMatrixWorld(true);
+
+    scene.add(clone);
+
+    const finalBox = new THREE.Box3().setFromObject(clone);
+    const finalSize = new THREE.Vector3();
+    finalBox.getSize(finalSize);
+    addApproxStairColliders(plan);
+  }
 }
-buildAllPlatformsAndStairs();
+
+function placeFallbackStairs() {
+  const mat = new THREE.MeshLambertMaterial({ color:0x4a4338 });
+  for (const plan of STAIR_PLANS) {
+    const steps = plan.steps;
+    const rise = plan.h1 / steps;
+    const run = plan.length / steps;
+    const dirX = Math.sin(plan.ry);
+    const dirZ = Math.cos(plan.ry);
+
+    for (let i = 0; i < steps; i++) {
+      const cx = plan.sx + dirX * (i + 0.5) * run;
+      const cz = plan.sz + dirZ * (i + 0.5) * run;
+      const cy = (i + 0.5) * rise;
+      const step = new THREE.Mesh(new THREE.BoxGeometry(plan.width, rise, run), mat);
+      step.rotation.y = plan.ry;
+      step.position.set(cx, cy, cz);
+      scene.add(step);
+      registerStaticBox(cx, cy, cz, plan.width * 0.5, rise * 0.5, run * 0.5);
+      obstacleMeshes.push(step);
+    }
+  }
+}
 
 /* =========================================================
-   装飾
+   decorative props
 ========================================================= */
 const fenceMat = new THREE.MeshLambertMaterial({ color:0x3a2010 });
 function addFence(x, z, w, d) {
-  if (isPointReserved(x, z)) return;
   const fy = getTerrainHeight(x, z);
   const m = new THREE.Mesh(new THREE.BoxGeometry(w, 0.9, d), fenceMat);
   m.position.set(x, fy + 0.45, z);
@@ -676,7 +721,6 @@ function addTorii(x, z, ry) {
 const stoneMat = new THREE.MeshLambertMaterial({ color:0x3c3c3c });
 const woodMat2 = new THREE.MeshLambertMaterial({ color:0x4a2c10 });
 function addWell(x, z) {
-  if (isPointReserved(x, z)) return;
   const wy = getTerrainHeight(x, z);
   const grp = new THREE.Group();
   const base = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.78, 0.85, 12), stoneMat);
@@ -700,7 +744,6 @@ addWell(-20,-38);
 addWell(35,-10);
 
 function addGrave(x, z) {
-  if (isPointReserved(x, z)) return;
   const mat = new THREE.MeshLambertMaterial({ color:0x252525 });
   const gy = getTerrainHeight(x, z);
   const grp = new THREE.Group();
@@ -715,7 +758,7 @@ function addGrave(x, z) {
 for (let i = 0; i < 24; i++) {
   let gx, gz;
   do { gx = (Math.random() - 0.5) * 110; gz = (Math.random() - 0.5) * 110; }
-  while (Math.sqrt(gx*gx + gz*gz) < 8 || isPointReserved(gx, gz));
+  while (Math.sqrt(gx*gx + gz*gz) < 8);
   addGrave(gx, gz);
 }
 
@@ -725,7 +768,6 @@ function addBambooCluster(cx, cz, count) {
     const h = randRange(5, 9);
     const bx = cx + randRange(-1.4, 1.4);
     const bz = cz + randRange(-1.4, 1.4);
-    if (isPointReserved(bx, bz)) continue;
     const by = getTerrainHeight(bx, bz);
     const b = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.09, h, 6), bambooMat);
     b.position.set(bx, by + h/2, bz);
@@ -937,59 +979,6 @@ function triggerGameOver() {
   dangerVeil.style.background = 'rgba(0,0,0,0)';
   gameOverScreen.classList.add('active');
 }
-function hideControls() {
-  joystickBase.style.display = 'none';
-  joystickStick.style.display = 'none';
-  dashBtnEl.style.display = 'none';
-}
-function playJumpNoise() {
-  try {
-    ensureAudioContext();
-    if (!audioCtx) return;
-
-    const duration = 0.9;
-    const len = Math.floor(audioCtx.sampleRate * duration);
-    const buffer = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < len; i++) {
-      const fade = 1 - (i / len);
-      data[i] = (Math.random() * 2 - 1) * fade;
-    }
-
-    const src = audioCtx.createBufferSource();
-    src.buffer = buffer;
-
-    const hp = audioCtx.createBiquadFilter();
-    hp.type = 'highpass';
-    hp.frequency.value = 620;
-
-    const lp = audioCtx.createBiquadFilter();
-    lp.type = 'lowpass';
-    lp.frequency.value = 7200;
-
-    const comp = audioCtx.createDynamicsCompressor();
-    comp.threshold.value = -28;
-    comp.knee.value = 20;
-    comp.ratio.value = 20;
-    comp.attack.value = 0.001;
-    comp.release.value = 0.08;
-
-    const gain = audioCtx.createGain();
-    gain.gain.setValueAtTime(0.001, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(1.2, audioCtx.currentTime + 0.01);
-    gain.gain.exponentialRampToValueAtTime(0.7, audioCtx.currentTime + 0.08);
-    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
-
-    src.connect(hp);
-    hp.connect(lp);
-    lp.connect(comp);
-    comp.connect(gain);
-    gain.connect(audioCtx.destination);
-    src.start();
-
-    if (navigator.vibrate) navigator.vibrate([80, 40, 80, 40, 180]);
-  } catch (_) {}
-}
 function triggerJumpScare() {
   if (game.state !== 'playing') return;
   game.state = 'jumpscare';
@@ -1109,7 +1098,7 @@ function updateEnemyAI(deltaMs) {
 }
 
 /* =========================================================
-   配置
+   GLB / FBX placement
 ========================================================= */
 function placeHousesAlongRoads(template) {
   const AUTOS = 20;
@@ -1157,7 +1146,6 @@ function placeHousesAlongRoads(template) {
     });
 
     scene.add(house);
-
     const hbox = new THREE.Box3().setFromObject(house);
     hbox.expandByScalar(-0.12);
     collisionBoxes.push(hbox);
@@ -1197,8 +1185,6 @@ function placeGaitouLights(template) {
   const LIGHT_EVERY = 5;
 
   for (const [lx, lz, ry] of LANTERN_POSITIONS) {
-    if (isPointReserved(lx, lz)) continue;
-
     const clone = template.clone(true);
     cloneUniqueMaterials(clone);
     clone.scale.setScalar(sc);
@@ -1233,7 +1219,6 @@ function placeFallbackLanterns() {
   const LIGHT_EVERY = 5;
 
   for (const [lx, lz, ry] of LANTERN_POSITIONS) {
-    if (isPointReserved(lx, lz)) continue;
     const ly = getTerrainHeight(lx, lz);
     const grp = new THREE.Group();
     const pole = new THREE.Mesh(
@@ -1260,261 +1245,73 @@ function placeFallbackLanterns() {
   }
 }
 
-/* =========================================================
-   階段は見た目だけでなく高さ関数と完全一致
-========================================================= */
-function buildStairVisual(plan) {
-  const stepMat = new THREE.MeshLambertMaterial({ color:0x4f463b });
-  const steps = plan.steps;
-  const rise = plan.h1 / steps;
-  const run = plan.length / steps;
-  const dirX = (plan.ex - plan.sx) / plan.length;
-  const dirZ = (plan.ez - plan.sz) / plan.length;
-
-  for (let i = 0; i < steps; i++) {
-    const cx = plan.sx + dirX * (i + 0.5) * run;
-    const cz = plan.sz + dirZ * (i + 0.5) * run;
-    const cy = (i + 0.5) * rise;
-    const step = new THREE.Mesh(new THREE.BoxGeometry(plan.width, rise, run), stepMat);
-    if (Math.abs(plan.ex - plan.sx) > Math.abs(plan.ez - plan.sz)) {
-      step.rotation.y = Math.PI / 2;
-    }
-    step.position.set(cx, cy, cz);
-    scene.add(step);
-  }
+function placeFallbackEnemy() {
+  ensureHachishaku();
 }
 
 /* =========================================================
-   モデル読み込み
+   UI / audio / jump scare
 ========================================================= */
-const gltfLoader = new THREE.GLTFLoader();
-const fbxLoader = new THREE.FBXLoader();
+const candlePercentEl = document.getElementById('candlePercent');
+const candleBarFill = document.getElementById('candleBarFill');
+const staminaPctEl = document.getElementById('staminaPct');
+const staminaBarFill = document.getElementById('staminaBarFill');
+const darkOverlay = document.getElementById('darknessOverlay');
+const dangerVeil = document.getElementById('dangerVeil');
+const alertIndicator = document.getElementById('alertIndicator');
+const statusMsg = document.getElementById('statusMsg');
+const errorMsg = document.getElementById('errorMsg');
+const promptMsg = document.getElementById('promptMsg');
+const gameOverScreen = document.getElementById('gameOverScreen');
+const joystickBase = document.getElementById('joystickBase');
+const joystickStick = document.getElementById('joystickStick');
+const dashBtnEl = document.getElementById('dashBtn');
+const jumpscareOverlay = document.getElementById('jumpscareOverlay');
 
-function appendStatus(msg) { statusMsg.textContent = (statusMsg.textContent || '') + msg; }
-function setStatus(msg) { statusMsg.textContent = msg; }
-function clearStatus() { statusMsg.textContent = ''; }
-function appendError(msg) {
-  errorMsg.textContent = (errorMsg.textContent ? errorMsg.textContent + '\n' : '') + msg;
-  errorMsg.style.display = 'block';
-}
-function clearError() {
-  errorMsg.style.display = 'none';
-  errorMsg.textContent = '';
-}
+let candlePercent = 100;
+let lastTick = Date.now();
+const TICK_MS = 4000;
 
-setStatus('モデル読み込み中...');
-
-gltfLoader.load('./ie.glb', gltf => {
-  const template = gltf.scene;
-  optimizeImportedRoot(template, {
-    darken: 0.55,
-    allowTransparent: true,
-    forceFrontSide: true
-  });
-
-  let meshCount = 0;
-  template.traverse(c => { if (c.isMesh) meshCount++; });
-
-  if (meshCount === 0) {
-    appendError('ie.glb: メッシュ0個');
-  } else {
-    const placed = placeHousesAlongRoads(template);
-    appendStatus(`✅ ie.glb 成功 / 家:${placed}棟`);
-    setTimeout(() => { if (game.state === 'playing') clearStatus(); }, 6000);
-  }
-
-  loadGaitou();
-}, prog => {
-  if (prog.total > 0) setStatus(`ie.glb ${Math.round(prog.loaded / prog.total * 100)}%`);
-}, e => {
-  appendError('ie.glb失敗: ' + (e && e.message ? e.message : String(e)));
-  loadGaitou();
-});
-
-function loadGaitou() {
-  gltfLoader.load('./gaitou.glb', gltf => {
-    placeGaitouLights(gltf.scene);
-    appendStatus('\n✅ gaitou.glb 成功');
-    setTimeout(() => { if (game.state === 'playing') clearStatus(); }, 5000);
-    loadKaidan();
-  }, null, () => {
-    appendError('gaitou.glb失敗→基本形状使用');
-    placeFallbackLanterns();
-    loadKaidan();
-  });
+function updateCandleUI() {
+  const v = Math.max(0, Math.ceil(candlePercent));
+  candlePercentEl.textContent = v;
+  candleBarFill.style.width = v + '%';
+  const r = Math.floor(180 + 75 * (1 - v / 100));
+  const g = Math.floor(190 * (v / 100));
+  candleBarFill.style.background = `linear-gradient(90deg,rgb(${r},40,0),rgb(${r},${g},30))`;
 }
 
-function loadKaidan() {
-  gltfLoader.load('./kaidan.glb', gltf => {
-    placeStairs(gltf.scene);
-    appendStatus('\n✅ kaidan.glb 成功');
-    setTimeout(() => { if (game.state === 'playing') clearStatus(); }, 5000);
-    tryLoadFBX();
-  }, null, () => {
-    appendError('kaidan.glb失敗→基本階段使用');
-    placeFallbackStairs();
-    tryLoadFBX();
-  });
-}
-
-function placeStairs(template) {
-  for (const plan of STAIR_PLANS) {
-    const clone = template.clone(true);
-    cloneUniqueMaterials(clone);
-    clone.scale.setScalar(1);
-    clone.rotation.y = plan.ry;
-    clone.updateMatrixWorld(true);
-
-    const box0 = new THREE.Box3().setFromObject(clone);
-    const size0 = new THREE.Vector3();
-    box0.getSize(size0);
-    const TARGET_H = 2.75;
-    const sc = size0.y > 0.01 ? TARGET_H / size0.y : 1.0;
-
-    clone.scale.setScalar(sc);
-    clone.rotation.y = plan.ry;
-    clone.updateMatrixWorld(true);
-
-    optimizeImportedRoot(clone, {
-      darken: 0.68,
-      allowTransparent: true,
-      forceFrontSide: true
-    });
-
-    const box = new THREE.Box3().setFromObject(clone);
-    const startY = getTerrainHeight(plan.sx, plan.sz);
-    clone.position.set(plan.sx, startY - box.min.y, plan.sz);
-    clone.updateMatrixWorld(true);
-
-    scene.add(clone);
-  }
-}
-
-function placeFallbackStairs() {
-  const mat = new THREE.MeshLambertMaterial({ color:0x4a4338 });
-  for (const plan of STAIR_PLANS) {
-    const steps = plan.steps;
-    const rise = plan.h1 / steps;
-    const run = plan.length / steps;
-    const dirX = (plan.ex - plan.sx) / plan.length;
-    const dirZ = (plan.ez - plan.sz) / plan.length;
-
-    for (let i = 0; i < steps; i++) {
-      const cx = plan.sx + dirX * (i + 0.5) * run;
-      const cz = plan.sz + dirZ * (i + 0.5) * run;
-      const cy = (i + 0.5) * rise;
-      const step = new THREE.Mesh(new THREE.BoxGeometry(plan.width, rise, run), mat);
-      if (Math.abs(plan.ex - plan.sx) > Math.abs(plan.ez - plan.sz)) {
-        step.rotation.y = Math.PI / 2;
-      }
-      step.position.set(cx, cy, cz);
-      scene.add(step);
-    }
-  }
-}
-
-function tryLoadFBX() {
-  if (typeof THREE.FBXLoader === 'undefined') {
-    ensureHachishaku();
-    appendError('FBXLoader未定義→フォールバック使用');
-    setTimeout(() => { clearError(); }, 5000);
-    return;
-  }
-
-  fbxLoader.load('./popopo.fbx', fbx => {
-    const BASE_SCALE = 0.02;
-    fbx.scale.set(BASE_SCALE, BASE_SCALE, BASE_SCALE);
-    fbx.updateMatrixWorld(true);
-
-    const box1 = new THREE.Box3().setFromObject(fbx);
-    const size = new THREE.Vector3();
-    box1.getSize(size);
-
-    const TARGET_HEIGHT = 4.5;
-    let finalScale = BASE_SCALE;
-    if (size.y > 0.01) {
-      finalScale = BASE_SCALE * (TARGET_HEIGHT / size.y);
-      fbx.scale.set(finalScale, finalScale, finalScale);
-      fbx.updateMatrixWorld(true);
-    }
-
-    const box2 = new THREE.Box3().setFromObject(fbx);
-    fbx.position.y = -box2.min.y;
-    fbx.rotation.set(0, 0, 0);
-
-    fbx.traverse(child => {
-      if (child.isMesh) {
-        child.castShadow = false;
-        child.receiveShadow = false;
-        child.frustumCulled = true;
-        if (child.material) {
-          const mats = Array.isArray(child.material) ? child.material : [child.material];
-          mats.forEach(m => {
-            if (m.color) m.color.multiplyScalar(0.28);
-            if ('emissive' in m && m.emissive) m.emissive.multiplyScalar(0.12);
-            m.fog = true;
-            m.depthTest = true;
-            m.depthWrite = true;
-            m.side = THREE.FrontSide;
-            m.needsUpdate = true;
-          });
-        }
-      }
-    });
-
-    hachishaku = new THREE.Group();
-    const visualRoot = new THREE.Group();
-    visualRoot.rotation.y = ENEMY_VISUAL_YAW_OFFSET;
-    visualRoot.add(fbx);
-    hachishaku.add(visualRoot);
-    hachishaku.position.set(18, getTerrainHeight(18,18), 18);
-    scene.add(hachishaku);
-    setEnemyTargetAvoidingSafeZone();
-
-    if (fbx.animations && fbx.animations.length > 0) {
-      enemyMixer = new THREE.AnimationMixer(fbx);
-      const action = enemyMixer.clipAction(fbx.animations[0]);
-      action.reset();
-      action.enabled = true;
-      action.setLoop(THREE.LoopRepeat, Infinity);
-      action.clampWhenFinished = false;
-      action.play();
-      appendStatus(`\n✅ popopo.fbx / アニメ:${fbx.animations.length}クリップ`);
-    } else {
-      appendStatus('\n✅ popopo.fbx / アニメなし');
-    }
-
-    setTimeout(() => { if (game.state === 'playing') clearStatus(); }, 5000);
-  }, prog => {
-    if (prog.total > 0) {
-      const pct = Math.round(prog.loaded / prog.total * 100);
-      appendStatus(`\npopopo.fbx ${pct}%`);
-    }
-  }, e => {
-    ensureHachishaku();
-    appendError('popopo.fbx失敗→フォールバック\n' + (e && e.message ? e.message : String(e)));
-    setTimeout(() => { clearError(); }, 7000);
-  });
-}
-
-/* =========================================================
-   タッチ操作
-========================================================= */
-let joyId = null, joyActive = false, joyDx = 0, joyDy = 0, joyStartX = 0, joyStartY = 0;
-let lookId = null, lookPrevX = 0, lookPrevY = 0;
-let yaw = 0, pitch = 0;
-const touchStartMeta = new Map();
-const JOY_R = 60;
-let dashExhausted = false;
+let stamina = 100;
 let isDashing = false;
+let dashExhausted = false;
+const STAMINA_DRAIN = 0.55;
+const STAMINA_RECOVER = 0.22;
+const SPEED_WALK = 0.058;
+const SPEED_DASH = 0.115;
 
-function setTouchUIVisible(v) {
-  const op = v ? '1' : '0';
-  joystickBase.style.opacity = op;
-  joystickStick.style.opacity = op;
-  dashBtnEl.style.opacity = op;
+function updateStaminaUI() {
+  const v = Math.max(0, Math.round(stamina));
+  staminaPctEl.textContent = v;
+  staminaBarFill.style.width = v + '%';
+  const g1 = Math.floor(160 * (v / 100));
+  staminaBarFill.style.background = `linear-gradient(90deg,rgb(0,${g1},200),rgb(0,220,255))`;
+
+  if (dashExhausted) {
+    dashBtnEl.classList.add('exhausted');
+    dashBtnEl.classList.remove('pressing');
+  } else if (isDashing) {
+    dashBtnEl.classList.add('pressing');
+    dashBtnEl.classList.remove('exhausted');
+  } else {
+    dashBtnEl.classList.remove('pressing', 'exhausted');
+  }
 }
-setTouchUIVisible(true);
+
+const game = {
+  state: 'playing',
+  running: true,
+  scareStart: 0
+};
 
 let audioCtx = null;
 function ensureAudioContext() {
@@ -1529,6 +1326,115 @@ function ensureAudioContext() {
 }
 document.addEventListener('touchstart', ensureAudioContext, { passive:true });
 document.addEventListener('pointerdown', ensureAudioContext, { passive:true });
+
+function playJumpNoise() {
+  try {
+    ensureAudioContext();
+    if (!audioCtx) return;
+
+    const duration = 0.9;
+    const len = Math.floor(audioCtx.sampleRate * duration);
+    const buffer = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < len; i++) {
+      const fade = 1 - (i / len);
+      data[i] = (Math.random() * 2 - 1) * fade;
+    }
+
+    const src = audioCtx.createBufferSource();
+    src.buffer = buffer;
+
+    const hp = audioCtx.createBiquadFilter();
+    hp.type = 'highpass';
+    hp.frequency.value = 620;
+
+    const lp = audioCtx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 7200;
+
+    const comp = audioCtx.createDynamicsCompressor();
+    comp.threshold.value = -28;
+    comp.knee.value = 20;
+    comp.ratio.value = 20;
+    comp.attack.value = 0.001;
+    comp.release.value = 0.08;
+
+    const gain = audioCtx.createGain();
+    gain.gain.setValueAtTime(0.001, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(1.2, audioCtx.currentTime + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.7, audioCtx.currentTime + 0.08);
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+
+    src.connect(hp);
+    hp.connect(lp);
+    lp.connect(comp);
+    comp.connect(gain);
+    gain.connect(audioCtx.destination);
+    src.start();
+
+    if (navigator.vibrate) navigator.vibrate([80, 40, 80, 40, 180]);
+  } catch (_) {}
+}
+
+function hideControls() {
+  joystickBase.style.display = 'none';
+  joystickStick.style.display = 'none';
+  dashBtnEl.style.display = 'none';
+}
+function setTouchUIVisible(v) {
+  const op = v ? '1' : '0';
+  joystickBase.style.opacity = op;
+  joystickStick.style.opacity = op;
+  dashBtnEl.style.opacity = op;
+}
+setTouchUIVisible(true);
+
+function triggerGameOver() {
+  if (game.state === 'gameover') return;
+  game.state = 'gameover';
+  game.running = false;
+
+  jumpscareOverlay.classList.add('fadeOut');
+  setTimeout(() => {
+    jumpscareOverlay.style.display = 'none';
+  }, 220);
+
+  hideControls();
+  alertIndicator.style.display = 'none';
+  promptMsg.style.display = 'none';
+  statusMsg.textContent = '';
+  errorMsg.textContent = '';
+  dangerVeil.style.background = 'rgba(0,0,0,0)';
+  gameOverScreen.classList.add('active');
+}
+
+function triggerJumpScare() {
+  if (game.state !== 'playing') return;
+  game.state = 'jumpscare';
+  game.scareStart = performance.now();
+
+  jumpscareOverlay.style.display = 'block';
+  jumpscareOverlay.classList.remove('fadeOut');
+  alertIndicator.style.display = 'none';
+  promptMsg.style.display = 'none';
+  statusMsg.textContent = '';
+  errorMsg.textContent = '';
+  dangerVeil.style.background = 'rgba(255,0,0,0.33)';
+  playJumpNoise();
+
+  setTimeout(() => {
+    if (game.state === 'jumpscare') triggerGameOver();
+  }, 1200);
+}
+
+/* =========================================================
+   Touch controls
+========================================================= */
+let joyId = null, joyActive = false, joyDx = 0, joyDy = 0, joyStartX = 0, joyStartY = 0;
+let lookId = null, lookPrevX = 0, lookPrevY = 0;
+let yaw = 0, pitch = 0;
+const touchStartMeta = new Map();
+const JOY_R = 60;
 
 dashBtnEl.addEventListener('touchstart', e => {
   e.stopPropagation();
@@ -1625,36 +1531,11 @@ function onTE(e) {
 }
 
 /* =========================================================
-   プレイヤー移動
+   player movement
 ========================================================= */
 const playerEyeH = 1.65;
 const terrainLerpK = 0.22;
 let targetPlayerY = playerPos.y;
-
-const STAMINA_DRAIN = 0.55;
-const STAMINA_RECOVER = 0.22;
-const SPEED_WALK = 0.058;
-const SPEED_DASH = 0.115;
-
-let stamina = 100;
-function updateStaminaUI() {
-  const v = Math.max(0, Math.round(stamina));
-  document.getElementById('staminaPct').textContent = v;
-  const fill = document.getElementById('staminaBarFill');
-  fill.style.width = v + '%';
-  const g1 = Math.floor(160 * (v / 100));
-  fill.style.background = `linear-gradient(90deg,rgb(0,${g1},200),rgb(0,220,255))`;
-
-  if (dashExhausted) {
-    dashBtnEl.classList.add('exhausted');
-    dashBtnEl.classList.remove('pressing');
-  } else if (isDashing) {
-    dashBtnEl.classList.add('pressing');
-    dashBtnEl.classList.remove('exhausted');
-  } else {
-    dashBtnEl.classList.remove('pressing', 'exhausted');
-  }
-}
 
 function updateMove() {
   if (game.state !== 'playing') return;
@@ -1716,35 +1597,7 @@ function updateMove() {
 }
 
 /* =========================================================
-   ジャンプスケア
-========================================================= */
-const game = {
-  state: 'playing',
-  running: true,
-  scareStart: 0
-};
-
-function triggerJumpScare() {
-  if (game.state !== 'playing') return;
-  game.state = 'jumpscare';
-  game.scareStart = performance.now();
-
-  jumpscareOverlay.style.display = 'block';
-  jumpscareOverlay.classList.remove('fadeOut');
-  alertIndicator.style.display = 'none';
-  promptMsg.style.display = 'none';
-  statusMsg.textContent = '';
-  errorMsg.textContent = '';
-  dangerVeil.style.background = 'rgba(255,0,0,0.33)';
-  playJumpNoise();
-
-  setTimeout(() => {
-    if (game.state === 'jumpscare') triggerGameOver();
-  }, 1200);
-}
-
-/* =========================================================
-   メインループ
+   render loop
 ========================================================= */
 let frame = 0;
 function animate() {
@@ -1814,12 +1667,173 @@ function animate() {
 }
 
 /* =========================================================
-   初期化
+   loaders
 ========================================================= */
+function appendStatus(msg) { statusMsg.textContent = (statusMsg.textContent || '') + msg; }
+function setStatus(msg) { statusMsg.textContent = msg; }
+function clearStatus() { statusMsg.textContent = ''; }
+function appendError(msg) {
+  errorMsg.textContent = (errorMsg.textContent ? errorMsg.textContent + '\n' : '') + msg;
+  errorMsg.style.display = 'block';
+}
+function clearError() {
+  errorMsg.style.display = 'none';
+  errorMsg.textContent = '';
+}
+
+const gltfLoader = new THREE.GLTFLoader();
+const fbxLoader = new THREE.FBXLoader();
+
+setStatus('モデル読み込み中...');
+
+gltfLoader.load('./ie.glb', gltf => {
+  const template = gltf.scene;
+  optimizeImportedRoot(template, {
+    darken: 0.55,
+    allowTransparent: true,
+    forceFrontSide: true
+  });
+
+  let meshCount = 0;
+  template.traverse(c => { if (c.isMesh) meshCount++; });
+
+  if (meshCount === 0) {
+    appendError('ie.glb: メッシュ0個');
+  } else {
+    const placed = placeHousesAlongRoads(template);
+    appendStatus(`✅ ie.glb 成功 / 家:${placed}棟`);
+    setTimeout(() => { if (game.state === 'playing') clearStatus(); }, 6000);
+  }
+
+  loadGaitou();
+}, prog => {
+  if (prog.total > 0) setStatus(`ie.glb ${Math.round(prog.loaded / prog.total * 100)}%`);
+}, e => {
+  appendError('ie.glb失敗: ' + (e && e.message ? e.message : String(e)));
+  loadGaitou();
+});
+
+let gaitouTemplate = null;
+function loadGaitou() {
+  gltfLoader.load('./gaitou.glb', gltf => {
+    gaitouTemplate = gltf.scene;
+    placeGaitouLights(gaitouTemplate);
+    appendStatus('\n✅ gaitou.glb 成功');
+    setTimeout(() => { if (game.state === 'playing') clearStatus(); }, 5000);
+    loadKaidan();
+  }, null, () => {
+    appendError('gaitou.glb失敗→基本形状使用');
+    placeFallbackLanterns();
+    loadKaidan();
+  });
+}
+
+let kaidanTemplate = null;
+function loadKaidan() {
+  gltfLoader.load('./kaidan.glb', gltf => {
+    kaidanTemplate = gltf.scene;
+    placeStairs(kaidanTemplate);
+    appendStatus('\n✅ kaidan.glb 成功');
+    setTimeout(() => { if (game.state === 'playing') clearStatus(); }, 5000);
+    tryLoadFBX();
+  }, null, () => {
+    appendError('kaidan.glb失敗→基本階段使用');
+    placeFallbackStairs();
+    tryLoadFBX();
+  });
+}
+
+function tryLoadFBX() {
+  if (typeof THREE.FBXLoader === 'undefined') {
+    ensureHachishaku();
+    appendError('FBXLoader未定義→フォールバック使用');
+    setTimeout(() => { clearError(); }, 5000);
+    return;
+  }
+
+  fbxLoader.load('./popopo.fbx', fbx => {
+    const BASE_SCALE = 0.02;
+    fbx.scale.set(BASE_SCALE, BASE_SCALE, BASE_SCALE);
+    fbx.updateMatrixWorld(true);
+
+    const box1 = new THREE.Box3().setFromObject(fbx);
+    const size = new THREE.Vector3();
+    box1.getSize(size);
+
+    const TARGET_HEIGHT = 4.5;
+    let finalScale = BASE_SCALE;
+    if (size.y > 0.01) {
+      finalScale = BASE_SCALE * (TARGET_HEIGHT / size.y);
+      fbx.scale.set(finalScale, finalScale, finalScale);
+      fbx.updateMatrixWorld(true);
+    }
+
+    const box2 = new THREE.Box3().setFromObject(fbx);
+    fbx.position.y = -box2.min.y;
+    fbx.rotation.set(0, 0, 0);
+
+    fbx.traverse(child => {
+      if (child.isMesh) {
+        child.castShadow = false;
+        child.receiveShadow = false;
+        child.frustumCulled = true;
+        if (child.material) {
+          const mats = Array.isArray(child.material) ? child.material : [child.material];
+          mats.forEach(m => {
+            if (m.color) m.color.multiplyScalar(0.28);
+            if ('emissive' in m && m.emissive) m.emissive.multiplyScalar(0.12);
+            m.fog = true;
+            m.depthTest = true;
+            m.depthWrite = true;
+            m.side = THREE.FrontSide;
+            m.needsUpdate = true;
+          });
+        }
+      }
+    });
+
+    hachishaku = new THREE.Group();
+    const visualRoot = new THREE.Group();
+    visualRoot.rotation.y = ENEMY_VISUAL_YAW_OFFSET;
+    visualRoot.add(fbx);
+    hachishaku.add(visualRoot);
+    hachishaku.position.set(18, getTerrainHeight(18,18), 18);
+    scene.add(hachishaku);
+    setEnemyTargetAvoidingSafeZone();
+
+    if (fbx.animations && fbx.animations.length > 0) {
+      enemyMixer = new THREE.AnimationMixer(fbx);
+      const action = enemyMixer.clipAction(fbx.animations[0]);
+      action.reset();
+      action.enabled = true;
+      action.setLoop(THREE.LoopRepeat, Infinity);
+      action.clampWhenFinished = false;
+      action.play();
+      appendStatus(`\n✅ popopo.fbx / アニメ:${fbx.animations.length}クリップ`);
+    } else {
+      appendStatus('\n✅ popopo.fbx / アニメなし');
+    }
+
+    setTimeout(() => { if (game.state === 'playing') clearStatus(); }, 5000);
+  }, prog => {
+    if (prog.total > 0) {
+      const pct = Math.round(prog.loaded / prog.total * 100);
+      appendStatus(`\npopopo.fbx ${pct}%`);
+    }
+  }, e => {
+    ensureHachishaku();
+    appendError('popopo.fbx失敗→フォールバック\n' + (e && e.message ? e.message : String(e)));
+    setTimeout(() => { clearError(); }, 7000);
+  });
+}
+
+/* =========================================================
+   start
+========================================================= */
+animate();
 updateCandleUI();
 updateStaminaUI();
 ensureHachishaku();
-animate();
 
 })();
 </script>
