@@ -118,40 +118,136 @@ html, body {
   text-align:center; white-space:pre-wrap;
 }
 
+/* ================================================================
+   ジャンプスケア レイヤー
+   ================================================================ */
+#jumpScareOverlay {
+  position:fixed; inset:0; z-index:200;
+  display:none; align-items:center; justify-content:center;
+  background:#000; overflow:hidden;
+}
+#jumpScareOverlay.active { display:flex; }
+
+/* カメラシェイク */
+@keyframes cameraShake {
+  0%  { transform:translate(0,0) rotate(0deg); }
+  5%  { transform:translate(-14px,-9px) rotate(-1.2deg); }
+  10% { transform:translate(18px,12px) rotate(1.5deg); }
+  15% { transform:translate(-22px,6px) rotate(-2deg); }
+  20% { transform:translate(20px,-14px) rotate(1.8deg); }
+  25% { transform:translate(-16px,18px) rotate(-1.5deg); }
+  30% { transform:translate(24px,-10px) rotate(2.2deg); }
+  35% { transform:translate(-20px,14px) rotate(-1.8deg); }
+  40% { transform:translate(16px,-18px) rotate(1.2deg); }
+  45% { transform:translate(-12px,12px) rotate(-0.8deg); }
+  50% { transform:translate(10px,-8px) rotate(0.6deg); }
+  60% { transform:translate(-6px,6px) rotate(-0.4deg); }
+  70% { transform:translate(4px,-4px) rotate(0.3deg); }
+  85% { transform:translate(-2px,2px) rotate(-0.1deg); }
+  100%{ transform:translate(0,0) rotate(0deg); }
+}
+#jumpScareOverlay.active {
+  animation: cameraShake 1.1s cubic-bezier(0.36,0.07,0.19,0.97) both;
+}
+
+/* 背景の赤フラッシュ */
+@keyframes redFlash {
+  0%   { background:rgba(200,0,0,0); }
+  8%   { background:rgba(220,0,0,1); }
+  20%  { background:rgba(180,0,0,0.95); }
+  40%  { background:rgba(160,0,0,0.90); }
+  70%  { background:rgba(120,0,0,0.85); }
+  90%  { background:rgba(80,0,0,0.88); }
+  100% { background:rgba(60,0,0,0.92); }
+}
+#jumpScareBg {
+  position:absolute; inset:0;
+  animation: redFlash 1.2s forwards;
+  z-index:1;
+}
+
+/* 八尺様シルエット（SVGポリゴン顔） */
+#jumpScareFace {
+  position:absolute;
+  z-index:3;
+  width:min(95vw,700px);
+  display:flex; align-items:center; justify-content:center;
+  animation: faceZoom 1.0s cubic-bezier(0.16,1,0.3,1) both;
+  filter: drop-shadow(0 0 40px #ff0000) drop-shadow(0 0 80px #800000);
+}
+@keyframes faceZoom {
+  0%   { transform:scale(3.5); opacity:0; }
+  12%  { transform:scale(1.05); opacity:1; }
+  100% { transform:scale(1.0); opacity:1; }
+}
+
+/* ジャンプスケアテキスト */
+#jumpScareText {
+  position:absolute;
+  bottom:8%; left:50%; transform:translateX(-50%);
+  font-family:'Hiragino Mincho ProN','Georgia',serif;
+  font-size:clamp(22px,5vw,48px);
+  color:#ff1111;
+  letter-spacing:6px;
+  text-shadow:0 0 20px #ff0000, 0 0 40px #ff0000, 0 0 6px #000,
+              3px 3px 0 #330000, -1px -1px 0 #220000;
+  z-index:4;
+  white-space:nowrap;
+  animation: textPulse 0.4s ease-in-out infinite alternate;
+}
+@keyframes textPulse { 0%{opacity:0.7;} 100%{opacity:1.0;} }
+
+/* 血のしみエフェクト */
+#bloodEffect {
+  position:absolute; inset:0; z-index:2; pointer-events:none;
+  background: radial-gradient(ellipse at 30% 20%, rgba(160,0,0,0.55) 0%, transparent 55%),
+              radial-gradient(ellipse at 70% 80%, rgba(140,0,0,0.5) 0%, transparent 50%),
+              radial-gradient(ellipse at 60% 30%, rgba(180,0,0,0.4) 0%, transparent 40%);
+}
+
 /* ── ゲームオーバー ── */
 #gameOverScreen {
   position:fixed; inset:0; display:none;
-  z-index:100; align-items:center; justify-content:center;
-  text-align:center; background:rgba(255,0,0,0); pointer-events:none;
+  z-index:150; align-items:center; justify-content:center;
+  text-align:center;
+  background:rgba(40,0,0,0.92);
+  pointer-events:none;
 }
-#gameOverScreen.active {
-  display:flex; animation:gameOverFlash 0.5s forwards;
-}
-@keyframes gameOverFlash {
-  0%   { background:rgba(255,0,0,0); }
-  15%  { background:rgba(255,0,0,0.92); }
-  35%  { background:rgba(255,0,0,0.85); }
-  60%  { background:rgba(160,0,0,0.78); }
-  100% { background:rgba(100,0,0,0.88); }
-}
+#gameOverScreen.active { display:flex; }
 #gameOverInner {
-  display:flex; flex-direction:column; align-items:center; gap:18px;
-  animation:gameOverTextIn 0.6s 0.25s both;
+  display:flex; flex-direction:column; align-items:center; gap:22px;
+  animation:gameOverTextIn 0.8s 0.2s both;
 }
-@keyframes gameOverTextIn { 0%{opacity:0;transform:scale(1.4);} 100%{opacity:1;transform:scale(1.0);} }
+@keyframes gameOverTextIn { 0%{opacity:0;transform:translateY(30px);} 100%{opacity:1;transform:translateY(0);} }
+
+/* 血が垂れる文字エフェクト */
 #gameOverTitle {
   font-family:'Hiragino Mincho ProN','Georgia',serif;
-  font-size:clamp(36px,10vw,68px); color:#fff0f0;
-  font-weight:900; letter-spacing:4px; line-height:1.3;
-  text-shadow:0 0 10px #ff0000,0 0 25px #ff0000,0 0 50px rgba(255,0,0,0.7),3px 3px 0 #330000,-3px -3px 0 #220000;
+  font-size:clamp(28px,8vw,58px); color:#ff2222;
+  font-weight:900; letter-spacing:3px; line-height:1.4;
+  text-shadow:0 0 12px #ff0000,0 0 30px #880000,0 0 60px rgba(200,0,0,0.5),
+              4px 4px 0 #330000,-2px -2px 0 #220000;
+  position:relative;
 }
+/* 血垂れ疑似要素 */
+#gameOverTitle::after {
+  content:'';
+  position:absolute; top:100%; left:50%; transform:translateX(-50%);
+  width:3px; height:0;
+  background:linear-gradient(to bottom,#cc0000,rgba(100,0,0,0));
+  border-radius:0 0 3px 3px;
+  animation: bloodDrip 1.5s 0.5s forwards;
+  box-shadow:0 0 6px rgba(200,0,0,0.8);
+}
+@keyframes bloodDrip { 0%{height:0;} 100%{height:clamp(30px,6vh,60px);} }
+
 #gameOverSub {
   font-family:'Hiragino Mincho ProN','Georgia',serif;
-  font-size:clamp(18px,4vw,28px); color:#ffaaaa; letter-spacing:6px;
-  text-shadow:0 0 12px rgba(255,0,0,0.8),0 0 4px #000;
-  animation:pulse 1.2s ease-in-out infinite;
+  font-size:clamp(14px,3.5vw,22px); color:#ffaaaa; letter-spacing:8px;
+  text-shadow:0 0 14px rgba(255,0,0,0.8),0 0 4px #000;
+  animation:pulse 1.4s ease-in-out infinite;
 }
-@keyframes pulse { 0%,100%{opacity:0.7;} 50%{opacity:1.0;} }
+@keyframes pulse { 0%,100%{opacity:0.6;} 50%{opacity:1.0;} }
 
 /* ── ジョイスティック ── */
 #joystickBase {
@@ -200,10 +296,85 @@ html, body {
 <div id="promptMsg">【画面をタップ】して地蔵に火を灯す</div>
 <div id="errorMsg"></div>
 
+<!-- ジャンプスケアレイヤー -->
+<div id="jumpScareOverlay">
+  <div id="jumpScareBg"></div>
+  <div id="bloodEffect"></div>
+  <div id="jumpScareFace">
+    <!-- 八尺様ポリゴン顔 SVG -->
+    <svg viewBox="0 0 400 560" xmlns="http://www.w3.org/2000/svg" width="100%">
+      <!-- 影グロー -->
+      <defs>
+        <filter id="glow"><feGaussianBlur stdDeviation="6" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        <filter id="redglow"><feGaussianBlur stdDeviation="12" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        <radialGradient id="skinGrad" cx="50%" cy="45%" r="52%">
+          <stop offset="0%" stop-color="#2a1a1a"/>
+          <stop offset="60%" stop-color="#1a0808"/>
+          <stop offset="100%" stop-color="#0d0303"/>
+        </radialGradient>
+      </defs>
+      <!-- 巨大な帽子（八尺様の特徴） -->
+      <ellipse cx="200" cy="95" rx="165" ry="28" fill="#0a0505" opacity="0.9"/>
+      <polygon points="200,5 60,108 340,108" fill="#0f0606" stroke="#2a0a0a" stroke-width="2"/>
+      <ellipse cx="200" cy="108" rx="148" ry="22" fill="#0a0404"/>
+      <!-- 顔の輪郭（歪んだ楕円） -->
+      <path d="M120,130 Q90,170 88,240 Q86,320 100,380 Q120,430 200,440 Q280,430 300,380 Q314,320 312,240 Q310,170 280,130 Q250,105 200,108 Q150,105 120,130Z"
+            fill="url(#skinGrad)" stroke="#3a0a0a" stroke-width="1.5"/>
+      <!-- 目（赤く光る） -->
+      <ellipse cx="155" cy="230" rx="28" ry="16" fill="#000" filter="url(#glow)"/>
+      <ellipse cx="155" cy="230" rx="18" ry="10" fill="#880000"/>
+      <ellipse cx="155" cy="230" rx="9"  ry="5"  fill="#ff1111" filter="url(#redglow)"/>
+      <ellipse cx="152" cy="228" rx="3"  ry="3"  fill="#ff6666" opacity="0.8"/>
+      <ellipse cx="245" cy="230" rx="28" ry="16" fill="#000" filter="url(#glow)"/>
+      <ellipse cx="245" cy="230" rx="18" ry="10" fill="#880000"/>
+      <ellipse cx="245" cy="230" rx="9"  ry="5"  fill="#ff1111" filter="url(#redglow)"/>
+      <ellipse cx="242" cy="228" rx="3"  ry="3"  fill="#ff6666" opacity="0.8"/>
+      <!-- まぶた上（影） -->
+      <path d="M127,222 Q155,212 183,222" fill="none" stroke="#1a0505" stroke-width="4" stroke-linecap="round"/>
+      <path d="M217,222 Q245,212 273,222" fill="none" stroke="#1a0505" stroke-width="4" stroke-linecap="round"/>
+      <!-- 鼻（歪んだ） -->
+      <path d="M192,275 Q185,300 178,315 Q188,322 200,320 Q212,322 222,315 Q215,300 208,275Z"
+            fill="#160808" stroke="#2a0808" stroke-width="1"/>
+      <!-- 裂けた口 -->
+      <path d="M130,355 Q160,340 200,345 Q240,340 270,355 Q255,390 230,395 Q215,398 200,396 Q185,398 170,395 Q145,390 130,355Z"
+            fill="#080000" stroke="#3a0505" stroke-width="1.5"/>
+      <!-- 歯（不揃いで鋭い） -->
+      <polygon points="152,356 158,356 155,380" fill="#d4c8c0" opacity="0.85"/>
+      <polygon points="165,353 173,353 170,382" fill="#d0c4bc" opacity="0.85"/>
+      <polygon points="178,351 187,351 184,386" fill="#ccc0b8" opacity="0.85"/>
+      <polygon points="192,350 201,350 198,388" fill="#cac0b6" opacity="0.85"/>
+      <polygon points="206,350 215,350 213,388" fill="#ccc0b8" opacity="0.85"/>
+      <polygon points="220,351 228,351 226,384" fill="#cec4bc" opacity="0.85"/>
+      <polygon points="233,353 241,353 238,380" fill="#d0c8c0" opacity="0.85"/>
+      <polygon points="247,356 253,356 250,378" fill="#d4ccc4" opacity="0.85"/>
+      <!-- 血 -->
+      <path d="M185,390 Q188,410 186,430" stroke="#cc0000" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.9"/>
+      <path d="M215,388 Q218,408 220,425" stroke="#aa0000" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.8"/>
+      <path d="M200,392 Q202,415 199,440" stroke="#dd0000" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.95"/>
+      <!-- 白目（充血） -->
+      <path d="M127,222 Q155,240 183,222 Q155,248 127,222Z" fill="rgba(180,60,60,0.15)"/>
+      <path d="M217,222 Q245,240 273,222 Q245,248 217,222Z" fill="rgba(180,60,60,0.15)"/>
+      <!-- しわ・傷 -->
+      <path d="M108,190 Q130,210 118,230" fill="none" stroke="#2a0808" stroke-width="2" opacity="0.7"/>
+      <path d="M292,190 Q270,210 282,230" fill="none" stroke="#2a0808" stroke-width="2" opacity="0.7"/>
+      <path d="M155,165 Q175,175 165,195" fill="none" stroke="#1a0606" stroke-width="1.5" opacity="0.6"/>
+      <!-- 帽子の飾り -->
+      <line x1="80" y1="108" x2="320" y2="108" stroke="#1a0808" stroke-width="3" opacity="0.6"/>
+      <!-- 首 -->
+      <rect x="178" y="438" width="44" height="60" rx="8" fill="#130606"/>
+      <!-- 肩シルエット -->
+      <path d="M60,498 Q120,465 178,498 L178,560 L60,560Z" fill="#0a0303"/>
+      <path d="M340,498 Q280,465 222,498 L222,560 L340,560Z" fill="#0a0303"/>
+    </svg>
+  </div>
+  <div id="jumpScareText">八尺様に……魂を喰われた</div>
+</div>
+
+<!-- ゲームオーバー画面 -->
 <div id="gameOverScreen">
   <div id="gameOverInner">
-    <div id="gameOverTitle">八尺様に捕まった…</div>
-    <div id="gameOverSub">GAME OVER</div>
+    <div id="gameOverTitle">生贄に捧げられた…</div>
+    <div id="gameOverSub">G A M E &nbsp; O V E R</div>
   </div>
 </div>
 
@@ -226,8 +397,6 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.setClearColor(0x0b0b10, 1);
-
-// フラスタムカリング強化
 renderer.sortObjects = true;
 
 const scene = new THREE.Scene();
@@ -257,9 +426,7 @@ function smoothStep(t){ return t*t*(3-2*t); }
 // ===================================================================
 // 高低差地形システム
 // ===================================================================
-// パーリンノイズ風の高さ関数（sinを重ねた擬似ノイズ）
 function terrainNoise(x, z){
-  // 複数の周波数を重ねてなだらかな丘地形を作る
   let h = 0;
   h += Math.sin(x * 0.038 + 1.2) * Math.cos(z * 0.042 - 0.7) * 2.8;
   h += Math.sin(x * 0.072 - 0.5) * Math.cos(z * 0.065 + 1.4) * 1.4;
@@ -267,27 +434,22 @@ function terrainNoise(x, z){
   return h;
 }
 
-// 村の中心（0,0）付近は平坦にするための補正
 function baseTerrain(x, z){
   const dist = Math.sqrt(x*x + z*z);
-  // 中心半径12以内は平坦（神社境内）
   const flatBlend = smoothStep(Math.min(1, Math.max(0, (dist - 12) / 20)));
   const raw = terrainNoise(x, z);
-  // 中心から遠ざかるほど地形の起伏が大きくなる
   return raw * flatBlend;
 }
 
-// 特定のランドマーク的高台（崖エリア）を追加
 const HIGHLANDS = [
-  {cx: 40,  cz: 10,  r: 18, h: 4.5,  blend: 12},  // 東の崖上エリア
-  {cx: -38, cz: -20, r: 15, h: 3.2,  blend: 10},  // 西南の丘
-  {cx: 10,  cz: -55, r: 20, h: 5.8,  blend: 8},   // 南の神社奥（高台祭壇）
-  {cx: -20, cz: 40,  r: 14, h: 2.8,  blend: 9},   // 北西の小高い丘
+  {cx: 40,  cz: 10,  r: 18, h: 4.5,  blend: 12},
+  {cx: -38, cz: -20, r: 15, h: 3.2,  blend: 10},
+  {cx: 10,  cz: -55, r: 20, h: 5.8,  blend: 8},
+  {cx: -20, cz: 40,  r: 14, h: 2.8,  blend: 9},
 ];
 
 function getTerrainHeight(x, z){
   let h = baseTerrain(x, z);
-  // 高台エリアを加算
   for(const hl of HIGHLANDS){
     const d = Math.sqrt((x-hl.cx)**2 + (z-hl.cz)**2);
     if(d < hl.r + hl.blend){
@@ -295,7 +457,6 @@ function getTerrainHeight(x, z){
       h += hl.h * t;
     }
   }
-  // 最低地面を0以上に
   return Math.max(0, h);
 }
 
@@ -307,7 +468,6 @@ const GROUND_SIZE = 360;
 const groundGeo = new THREE.PlaneGeometry(GROUND_SIZE, GROUND_SIZE, GROUND_SEGS, GROUND_SEGS);
 groundGeo.rotateX(-Math.PI/2);
 
-// 頂点のY座標を地形関数で変位
 const posAttr = groundGeo.attributes.position;
 for(let i = 0; i < posAttr.count; i++){
   const vx = posAttr.getX(i);
@@ -316,18 +476,15 @@ for(let i = 0; i < posAttr.count; i++){
 }
 groundGeo.computeVertexNormals();
 
-// 地面マテリアル（複数の色帯でテクスチャっぽく）
 const groundMat = new THREE.MeshLambertMaterial({ color: 0x1a1a1e, vertexColors: false });
 const ground = new THREE.Mesh(groundGeo, groundMat);
 ground.receiveShadow = true;
 scene.add(ground);
 
-// 地面の色を高さに応じて変化させる
 const colors = [];
 for(let i = 0; i < posAttr.count; i++){
   const h = posAttr.getY(i);
   const t = Math.min(1, h / 6);
-  // 低い場所は暗い土色、高い場所は少し明るい岩色
   colors.push(0.09 + t*0.12, 0.08 + t*0.10, 0.06 + t*0.08);
 }
 groundGeo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
@@ -341,15 +498,13 @@ scene.add(ambLight);
 const hemi = new THREE.HemisphereLight(0x8d8fa7, 0x35353d, 0.40);
 scene.add(hemi);
 
-// 月光（弱い方向光）
 const moonLight = new THREE.DirectionalLight(0x9090c0, 0.18);
 moonLight.position.set(30, 60, -40);
 scene.add(moonLight);
 
-// プレイヤー蝋燭ライト
 const candleLight = new THREE.SpotLight(0xffb15a, 8.5, 18, Math.PI/6, 0.45, 1.8);
 candleLight.castShadow = true;
-candleLight.shadow.mapSize.set(256, 256); // 影マップ縮小で最適化
+candleLight.shadow.mapSize.set(256, 256);
 candleLight.shadow.camera.near = 0.1;
 candleLight.shadow.camera.far = 18;
 scene.add(candleLight, candleLight.target);
@@ -377,6 +532,7 @@ const gameOverScreen = document.getElementById('gameOverScreen');
 const joystickBase   = document.getElementById('joystickBase');
 const joystickStick  = document.getElementById('joystickStick');
 const dashBtnEl      = document.getElementById('dashBtn');
+const jumpScareOverlay = document.getElementById('jumpScareOverlay');
 
 function updateCandleUI(){
   const v = Math.max(0, Math.ceil(candlePercent));
@@ -415,7 +571,161 @@ function updateStaminaUI(){
 }
 
 // ===================================================================
-// ゲームオーバー
+// ★ Web Audio API — ホラーサウンド生成
+// ===================================================================
+let audioCtx = null;
+
+function ensureAudioCtx(){
+  if(!audioCtx){
+    try{ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }
+    catch(e){ audioCtx=null; }
+  }
+  if(audioCtx && audioCtx.state==='suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+/**
+ * ジャンプスケア用 — 不快なホワイトノイズ + うなり音を最大音量で一瞬鳴らす
+ * durationSec: 再生秒数
+ */
+function playJumpScareSound(durationSec){
+  const ctx = ensureAudioCtx();
+  if(!ctx) return;
+
+  const now = ctx.currentTime;
+  const dur = durationSec || 1.4;
+
+  // ── ①  ホワイトノイズ（鼓膜を破るザーーー音） ──
+  const bufLen = Math.ceil(ctx.sampleRate * dur);
+  const buffer = ctx.createBuffer(2, bufLen, ctx.sampleRate);
+  for(let ch=0; ch<2; ch++){
+    const data = buffer.getChannelData(ch);
+    for(let i=0; i<bufLen; i++) data[i] = (Math.random()*2-1);
+  }
+  const noiseSource = ctx.createBufferSource();
+  noiseSource.buffer = buffer;
+
+  // ローパスフィルタで少し曇らせ不気味に
+  const noiseFilter = ctx.createBiquadFilter();
+  noiseFilter.type = 'lowpass';
+  noiseFilter.frequency.setValueAtTime(3200, now);
+  noiseFilter.frequency.exponentialRampToValueAtTime(800, now + dur);
+
+  const noiseGain = ctx.createGain();
+  noiseGain.gain.setValueAtTime(0, now);
+  noiseGain.gain.linearRampToValueAtTime(1.2, now + 0.04);   // 即座に最大音量
+  noiseGain.gain.setValueAtTime(1.2, now + dur * 0.6);
+  noiseGain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+  noiseSource.connect(noiseFilter);
+  noiseFilter.connect(noiseGain);
+  noiseGain.connect(ctx.destination);
+  noiseSource.start(now);
+  noiseSource.stop(now + dur);
+
+  // ── ② うなり音（不気味な低音オシレータ） ──
+  const osc1 = ctx.createOscillator();
+  const osc2 = ctx.createOscillator();
+  osc1.type = 'sawtooth';
+  osc2.type = 'triangle';
+  osc1.frequency.setValueAtTime(55, now);
+  osc1.frequency.linearRampToValueAtTime(35, now + dur);
+  osc2.frequency.setValueAtTime(110, now);
+  osc2.frequency.linearRampToValueAtTime(65, now + dur);
+
+  const oscGain = ctx.createGain();
+  oscGain.gain.setValueAtTime(0, now);
+  oscGain.gain.linearRampToValueAtTime(0.85, now + 0.06);
+  oscGain.gain.setValueAtTime(0.85, now + dur * 0.5);
+  oscGain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+
+  const distort = ctx.createWaveShaper();
+  const curve = new Float32Array(256);
+  for(let i=0;i<256;i++){
+    const x = i*2/255-1;
+    curve[i] = Math.tanh(x*4);
+  }
+  distort.curve = curve;
+  distort.oversample = '4x';
+
+  osc1.connect(distort); osc2.connect(distort);
+  distort.connect(oscGain);
+  oscGain.connect(ctx.destination);
+  osc1.start(now); osc2.start(now);
+  osc1.stop(now + dur); osc2.stop(now + dur);
+
+  // ── ③ 叫び声っぽい高音オシレータ ──
+  const scream = ctx.createOscillator();
+  scream.type = 'sine';
+  scream.frequency.setValueAtTime(800, now);
+  scream.frequency.linearRampToValueAtTime(220, now + dur * 0.3);
+  scream.frequency.linearRampToValueAtTime(150, now + dur);
+
+  const screamGain = ctx.createGain();
+  screamGain.gain.setValueAtTime(0, now);
+  screamGain.gain.linearRampToValueAtTime(0.6, now + 0.03);
+  screamGain.gain.exponentialRampToValueAtTime(0.001, now + dur * 0.5);
+
+  scream.connect(screamGain);
+  screamGain.connect(ctx.destination);
+  scream.start(now); scream.stop(now + dur * 0.5);
+}
+
+// ===================================================================
+// ★ ジャンプスケア演出
+// ===================================================================
+let jumpScareActive = false;
+
+function triggerJumpScare(){
+  if(jumpScareActive) return;
+  jumpScareActive = true;
+
+  // 操作を即座に無効化
+  joyId=null; lookId=null; joyActive=false; joyDx=0; joyDy=0;
+  alertIndicator.style.display='none';
+  promptMsg.style.display='none';
+  dangerVeil.style.background='rgba(0,0,0,0)';
+
+  // 最大音量ホラーサウンド即時再生
+  playJumpScareSound(1.5);
+
+  // ジャンプスケアオーバーレイを即時表示
+  jumpScareOverlay.style.display='flex';
+  // reflow後にactiveクラスを付与してアニメを走らせる
+  void jumpScareOverlay.offsetWidth;
+  jumpScareOverlay.classList.add('active');
+
+  // 1.8秒後にゲームオーバー画面へ移行
+  setTimeout(()=>{
+    jumpScareOverlay.style.transition='opacity 0.7s ease';
+    jumpScareOverlay.style.opacity='0';
+
+    setTimeout(()=>{
+      jumpScareOverlay.style.display='none';
+      jumpScareOverlay.style.opacity='1';
+      jumpScareOverlay.classList.remove('active');
+
+      // UIを完全消去
+      joystickBase.style.display  = 'none';
+      joystickStick.style.display = 'none';
+      dashBtnEl.style.display     = 'none';
+      document.getElementById('candleUI').style.display   = 'none';
+      document.getElementById('candleBar').style.display  = 'none';
+      document.getElementById('staminaUI').style.display  = 'none';
+      document.getElementById('staminaBar').style.display = 'none';
+
+      // ゲームオーバー画面表示
+      gameOverScreen.classList.add('active');
+      gameOverScreen.style.pointerEvents = 'none';
+
+      // ループ停止
+      animationRunning = false;
+    }, 700);
+  }, 1800);
+}
+
+// ===================================================================
+// ★ ゲームオーバー（内部フラグ管理のみ。演出はtriggerJumpScareが担う）
 // ===================================================================
 let gameOver = false;
 let animationRunning = true;
@@ -423,48 +733,23 @@ let animationRunning = true;
 function triggerGameOver(){
   if(gameOver) return;
   gameOver = true;
-  animationRunning = false;
-  joystickBase.style.opacity  = '0';
-  joystickStick.style.opacity = '0';
-  dashBtnEl.style.opacity     = '0';
-  alertIndicator.style.display = 'none';
-  gameOverScreen.classList.add('active');
-  joyId=null; lookId=null; joyActive=false; joyDx=0; joyDy=0;
-  promptMsg.style.display='none';
-  statusMsg.textContent='';
-  errorMsg.textContent='';
-  dangerVeil.style.background='rgba(0,0,0,0)';
+  triggerJumpScare();
 }
 
 // ===================================================================
-// ★ 最適化済み当たり判定システム
-// - obstacleMeshes: LOSレイキャスト用（視線判定のみ）
-// - collisionBoxes: プレイヤー移動制限用Box3（毎フレーム更新なし）
+// ★ 当たり判定システム（Box3ベース）
 // ===================================================================
-const obstacleMeshes  = [];  // レイキャスト用（間引き済みメッシュ）
-const collisionBoxes  = [];  // Box3ベースのプレイヤー衝突判定
-
-const PLAYER_BOX_HALF = 0.38; // プレイヤーカプセルの半径
-
-// プレイヤー用一時Box3（毎フレーム再利用）
+const obstacleMeshes  = [];
+const collisionBoxes  = [];
+const PLAYER_BOX_HALF = 0.38;
 const playerBox = new THREE.Box3();
-const tmpBox    = new THREE.Box3();
 
-/**
- * モデルGroupを受け取り、そのBounding Box3を生成してcollisionBoxesに登録。
- * 実際のメッシュへの参照は持たない → 毎フレームの再計算ゼロ。
- */
 function registerCollisionBox(object3D, margin){
   const box = new THREE.Box3().setFromObject(object3D);
-  if(margin){
-    box.expandByScalar(margin);
-  }
+  if(margin) box.expandByScalar(margin);
   collisionBoxes.push(box);
 }
 
-/**
- * シンプルな箱形状を指定してBBox直接登録（geometry不要）
- */
 function registerStaticBox(cx, cy, cz, hw, hh, hd){
   const box = new THREE.Box3(
     new THREE.Vector3(cx-hw, cy-hh, cz-hd),
@@ -473,11 +758,6 @@ function registerStaticBox(cx, cy, cz, hw, hh, hd){
   collisionBoxes.push(box);
 }
 
-/**
- * プレイヤー位置に基づくBox3を生成し、壁衝突をチェック。
- * 衝突した場合、移動をキャンセルして直前位置に戻す。
- * @returns {boolean} 衝突があったか
- */
 function checkPlayerCollision(newX, newZ, newY){
   playerBox.set(
     new THREE.Vector3(newX - PLAYER_BOX_HALF, newY - 1.0, newZ - PLAYER_BOX_HALF),
@@ -492,13 +772,10 @@ function checkPlayerCollision(newX, newZ, newY){
 // ===================================================================
 // 村マップ構築
 // ===================================================================
-
-// ── 道路（地形に沿わせる） ──
 const roadMat = new THREE.MeshLambertMaterial({color:0x1e1e20});
 function addRoad(x, z, w, d){
   const geo = new THREE.PlaneGeometry(w, d, 4, 4);
   geo.rotateX(-Math.PI/2);
-  // 中心高さに合わせる
   const cy = getTerrainHeight(x, z) + 0.015;
   const m = new THREE.Mesh(geo, roadMat);
   m.position.set(x, cy, z);
@@ -523,7 +800,6 @@ for(let i=0;i<8;i++){
   scene.add(seg);
 }
 
-// ── 木造の柵（ラグ軽減：Box3で登録） ──
 const fenceMat = new THREE.MeshLambertMaterial({color:0x3a2010});
 function addFence(x,z,w,d){
   const fy = getTerrainHeight(x,z);
@@ -531,9 +807,7 @@ function addFence(x,z,w,d){
   m.position.set(x, fy+0.45, z);
   m.castShadow = true;
   scene.add(m);
-  // 柵はBox3で軽量登録
   registerStaticBox(x, fy+0.45, z, w/2+0.05, 0.5, d/2+0.05);
-  // LOSのみ：低密度でobstacleMeshesへ
   if(Math.random() < 0.25) obstacleMeshes.push(m);
 }
 for(let z=-80;z<80;z+=6){
@@ -545,7 +819,9 @@ for(let x=-80;x<80;x+=6){
   addFence(x,-5.5-randRange(0,0.4), 4.5+randRange(0,1), 0.18);
 }
 
-// ── 鳥居 ──
+const stoneMat = new THREE.MeshLambertMaterial({color:0x3c3c3c});
+const woodMat2 = new THREE.MeshLambertMaterial({color:0x4a2c10});
+
 function addTorii(x,z,ry){
   const mat = new THREE.MeshLambertMaterial({color:0x7e1111});
   const grp = new THREE.Group();
@@ -561,17 +837,12 @@ function addTorii(x,z,ry){
   grp.position.set(x, gy, z);
   grp.rotation.y = ry||0;
   scene.add(grp);
-  // 鳥居の柱2本をBox3登録
-  registerStaticBox(x + (Math.cos(ry||0)*-1.6 - Math.sin(ry||0)*0), gy+2.75, z + (Math.sin(ry||0)*-1.6 + Math.cos(ry||0)*0), 0.25, 2.8, 0.25);
-  registerStaticBox(x + (Math.cos(ry||0)* 1.6 - Math.sin(ry||0)*0), gy+2.75, z + (Math.sin(ry||0)* 1.6 + Math.cos(ry||0)*0), 0.25, 2.8, 0.25);
-  // LOS用にgrpの一部だけ登録
+  registerStaticBox(x + (Math.cos(ry||0)*-1.6), gy+2.75, z + (Math.sin(ry||0)*-1.6), 0.25, 2.8, 0.25);
+  registerStaticBox(x + (Math.cos(ry||0)* 1.6), gy+2.75, z + (Math.sin(ry||0)* 1.6), 0.25, 2.8, 0.25);
   grp.children.slice(0,2).forEach(c=>obstacleMeshes.push(c));
 }
 addTorii(0,-14,0); addTorii(22,28,0.5); addTorii(-20,18,-0.3); addTorii(0,60,Math.PI);
 
-// ── 井戸 ──
-const stoneMat = new THREE.MeshLambertMaterial({color:0x3c3c3c});
-const woodMat2 = new THREE.MeshLambertMaterial({color:0x4a2c10});
 function addWell(x,z){
   const wy = getTerrainHeight(x,z);
   const grp = new THREE.Group();
@@ -591,7 +862,6 @@ function addWell(x,z){
 }
 addWell(12,-12); addWell(-15,18); addWell(22,38); addWell(-20,-38); addWell(35,-10);
 
-// ── お墓 ──
 function addGrave(x,z){
   const mat = new THREE.MeshLambertMaterial({color:0x252525});
   const gy  = getTerrainHeight(x,z);
@@ -612,7 +882,6 @@ for(let i=0;i<30;i++){
   addGrave(gx,gz);
 }
 
-// ── 竹林（境界） ──
 const bambooMat = new THREE.MeshLambertMaterial({color:0x1a2a0d});
 function addBambooCluster(cx,cz,count){
   for(let i=0;i<count;i++){
@@ -624,7 +893,7 @@ function addBambooCluster(cx,cz,count){
     b.position.set(bx, by+h/2, bz);
     b.castShadow = true;
     scene.add(b);
-    if(Math.random()<0.15) obstacleMeshes.push(b); // LOS間引き
+    if(Math.random()<0.15) obstacleMeshes.push(b);
   }
 }
 const BORDER=82, STEP=7;
@@ -633,7 +902,6 @@ for(let v=-BORDER;v<=BORDER;v+=STEP){
   addBambooCluster(v, BORDER, 5); addBambooCluster(v,-BORDER, 5);
 }
 
-// ── 不気味な祭壇（高台） ──
 function buildAltar(){
   const grp  = new THREE.Group();
   const bMat = new THREE.MeshLambertMaterial({color:0x111114,emissive:0x050005,emissiveIntensity:0.3});
@@ -740,7 +1008,7 @@ function isPointInsideAnySafeZone(x,z){
 }
 
 // ===================================================================
-// 八尺様（hachishaku）本体 ＋ ステルスAI
+// 八尺様AI
 // ===================================================================
 let hachishaku = null;
 let enemyTarget = null;
@@ -754,7 +1022,6 @@ const LOS_LOSE_TIME = 3000;
 let lastKnownPlayerPos = null;
 
 const raycaster = new THREE.Raycaster();
-
 const ENEMY_VISUAL_YAW_OFFSET = -Math.PI / 2;
 
 function buildFallbackEnemy(){
@@ -780,9 +1047,6 @@ function setEnemyTargetAvoidingSafeZone(){
   enemyTarget=p;
 }
 
-// ===================================================================
-// 視線（LOS）判定
-// ===================================================================
 function hasLineOfSight(enemyPos, playerPos3D){
   if(obstacleMeshes.length===0) return true;
   const eyePos = enemyPos.clone(); eyePos.y += 2.2;
@@ -802,9 +1066,6 @@ function faceEnemyToward(tx, tz){
   hachishaku.rotation.set(0, Math.atan2(dx, dz), 0);
 }
 
-// ===================================================================
-// 敵AIメイン更新
-// ===================================================================
 const DETECT_RADIUS = 30;
 
 function updateEnemyAI(deltaMs){
@@ -882,11 +1143,9 @@ function updateEnemyAI(deltaMs){
     }
   }
 
-  // 地形追従
   hachishaku.position.y = getTerrainHeight(hachishaku.position.x, hachishaku.position.z)
     + Math.sin(performance.now()*0.004)*0.015;
 
-  // 即死判定
   if(hachishaku.position.distanceTo(camera.position) < 1.8) triggerGameOver();
 }
 
@@ -915,52 +1174,10 @@ function loadScript(url,cb){
 }
 
 // ===================================================================
-// ★ モデル配置共通関数：Box3ベース当たり判定 + LOS間引き登録
+// ★★★ GLBモデル配置 — 完全修正版
 // ===================================================================
-/**
- * glbモデルを配置し、軽量なBox3衝突判定を登録する。
- * @param {Object3D} scene3D  - クローン済みのシーン
- * @param {number} tx,ty,tz  - 配置座標
- * @param {number} ry        - Y回転
- * @param {number} scale     - スケール
- * @param {number} darken    - 暗化係数 (0~1)
- * @param {boolean} doLOS    - LOS用メッシュ登録するか
- * @param {number} margin    - BBoxマージン
- */
-function placeGLBModel(scene3D, tx, ty, tz, ry, scale, darken, doLOS, margin){
-  scene3D.scale.setScalar(scale);
-  scene3D.rotation.y = ry;
-  scene3D.position.set(tx, ty, tz);
 
-  scene3D.traverse(child=>{
-    if(child.isMesh){
-      child.castShadow = true;
-      child.receiveShadow = true;
-      if(child.material && darken !== 1){
-        const mats = Array.isArray(child.material)?child.material:[child.material];
-        mats.forEach(m=>{
-          if(m.color) m.color.multiplyScalar(darken);
-        });
-      }
-      if(doLOS && Math.random()<0.35){
-        obstacleMeshes.push(child); // 35%間引きでLOS登録
-      }
-    }
-  });
-
-  scene.add(scene3D);
-
-  // ★ Box3当たり判定（一回だけ計算して固定登録）
-  const box = new THREE.Box3().setFromObject(scene3D);
-  if(margin) box.expandByScalar(margin);
-  collisionBoxes.push(box);
-}
-
-// ===================================================================
-// ★ 家（ie.glb）配置 - Box3ベース最適化版
-// ===================================================================
-statusMsg.textContent = 'モデル読み込み中...';
-
+// ---------- 家（ie.glb） ----------
 function placeHousesAlongRoads(template){
   const AUTOS = 32, MIN_DIST = 8;
   const slots = [];
@@ -981,12 +1198,11 @@ function placeHousesAlongRoads(template){
     slots.push({x:Math.cos(a)*r, z:Math.sin(a)*r, ry:a+Math.PI/2});
   }
 
-  // スケール計算（一度だけ）
   const bbox = new THREE.Box3().setFromObject(template);
   const size = new THREE.Vector3(); bbox.getSize(size);
   const TARGET_H = 5.0;
   const autoScale = (size.y>0.01) ? TARGET_H/size.y : 1.0;
-  const bottomY = bbox.min.y * autoScale;
+  const bottomOffset = bbox.min.y * autoScale; // 底面オフセット（必ず地面に接地させる）
 
   let placed = 0;
   for(const slot of slots){
@@ -999,9 +1215,10 @@ function placeHousesAlongRoads(template){
     const sc = autoScale * (0.85 + Math.random()*0.30);
     house.scale.setScalar(sc);
     house.rotation.y = ry + randRange(-0.2,0.2);
-    house.position.set(x, terrY - bottomY * (sc/autoScale), z);
+    // ★ 底面が地面Y座標ちょうどになるよう補正
+    const scaledBottom = bottomOffset * (sc / autoScale);
+    house.position.set(x, terrY - scaledBottom, z);
 
-    // 暗化
     house.traverse(child=>{
       if(child.isMesh && child.material){
         child.castShadow = true;
@@ -1013,12 +1230,10 @@ function placeHousesAlongRoads(template){
 
     scene.add(house);
 
-    // ★ Box3当たり判定のみ登録（メッシュはobstacleMeshesに入れない）
     const hbox = new THREE.Box3().setFromObject(house);
-    hbox.expandByScalar(-0.15); // 少し内側に絞ってギリギリ感を回避
+    hbox.expandByScalar(-0.15);
     collisionBoxes.push(hbox);
 
-    // LOSのみ: 各家から代表メッシュ1枚だけ取り出す（負荷最小化）
     const firstMesh = [];
     house.traverse(c=>{ if(c.isMesh && firstMesh.length<1) firstMesh.push(c); });
     if(firstMesh.length>0) obstacleMeshes.push(firstMesh[0]);
@@ -1029,97 +1244,139 @@ function placeHousesAlongRoads(template){
 }
 
 // ===================================================================
-// ★ 街灯（gaitou.glb）配置
+// ★★★ 街灯（gaitou.glb）— 完全修正版
+// 道の分岐点・交差点・曲がり角に等間隔で配置
+// 読み込み時にBBoxを計算して底面を地形に完全接地
 // ===================================================================
 let gaitouTemplate = null;
+
+// 道沿いの街灯配置座標（メインロード沿い＋分岐点）
 const LANTERN_POSITIONS = [
-  [8,-8],[8,8],[-8,-8],[-8,8],
-  [8,-45],[8,45],[-8,-45],[-8,45],
-  [34,0],[-34,0],[20,-22],[-20,22],
-  [15,40],[-15,-40]
+  // 南北メインロード（x=0,z方向）— 等間隔20ずつ
+  [ 3.5,  20], [-3.5,  20],
+  [ 3.5, -20], [-3.5, -20],
+  [ 3.5,  40], [-3.5,  40],
+  [ 3.5, -40], [-3.5, -40],
+  // 東西メインロード（z=0,x方向）— 等間隔20ずつ
+  [ 20,  3.5], [ 20, -3.5],
+  [-20,  3.5], [-20, -3.5],
+  // リング道路の分岐点
+  [ RING_R+2,  0], [-RING_R-2,  0],
+  [ 0,  RING_R+2], [ 0, -RING_R-2],
 ];
 
 function placeGaitouLights(){
   if(!gaitouTemplate) return;
+
+  // ★ BBox取得 → 底面オフセット・先端高さを正確に計算
   const box = new THREE.Box3().setFromObject(gaitouTemplate);
   const size = new THREE.Vector3(); box.getSize(size);
-  const TARGET_H = 3.5;
-  const sc = (size.y>0.01) ? TARGET_H/size.y : 1.0;
-  const topY = box.max.y * sc; // 先端のY（ローカル）
+  const bottomLocal = box.min.y; // ローカル座標での底面Y
+  const topLocal    = box.max.y; // ローカル座標での先端Y
 
-  for(const [lx,lz] of LANTERN_POSITIONS){
-    const ly = getTerrainHeight(lx,lz);
+  // 人間サイズ（高さ3.5m）に統一スケール
+  const TARGET_H = 3.5;
+  const sc = (size.y > 0.01) ? TARGET_H / size.y : 1.0;
+
+  // スケール後の底面オフセット・先端高さ（ワールド座標換算）
+  const scaledBottom = bottomLocal * sc; // 負なら地面より下に埋まる量
+  const scaledTop    = topLocal    * sc; // 先端の高さ（地面からの高さ）
+
+  for(const [lx, lz] of LANTERN_POSITIONS){
+    const terrainY = getTerrainHeight(lx, lz);
     const clone = gaitouTemplate.clone(true);
     clone.scale.setScalar(sc);
-    clone.position.set(lx, ly, lz);
+    // ★ 底面が地面に完全接地するよう補正
+    clone.position.set(lx, terrainY - scaledBottom, lz);
+
     clone.traverse(c=>{
-      if(c.isMesh&&c.material){
-        const mats=Array.isArray(c.material)?c.material:[c.material];
+      if(c.isMesh && c.material){
+        c.castShadow = true;
+        const mats = Array.isArray(c.material) ? c.material : [c.material];
         mats.forEach(m=>{ if(m.color) m.color.multiplyScalar(0.55); });
       }
     });
     scene.add(clone);
 
-    // 街灯先端からオレンジPointLight
+    // ★ 先端（灯部）の世界座標Y位置にPointLightを配置
+    const lightY = terrainY + scaledTop - scaledBottom;
     const pl = new THREE.PointLight(0xff8800, 1.4, 10, 2);
-    pl.position.set(lx, ly + topY, lz);
+    pl.position.set(lx, lightY, lz);
     scene.add(pl);
 
-    // Box3当たり判定（ポール部分のみ）
-    registerStaticBox(lx, ly+1.5, lz, 0.15, 1.8, 0.15);
+    // ポール部分のBox3当たり判定（細い柱のみ）
+    registerStaticBox(lx, terrainY + 1.5, lz, 0.15, 1.8, 0.15);
   }
 }
 
 // ===================================================================
-// ★ 階段（kaidan.glb）配置 - 地形の段差箇所に自動配置
+// ★★★ 階段（kaidan.glb）— 完全修正版
+// 高台エリアの境界（斜面上）に自動接地配置
+// スケールは「高さ2.5〜3m相当」に自動計算
 // ===================================================================
 let kaidanTemplate = null;
 
-// 高台エリアへの入り口に階段を置く候補リスト
+/**
+ * 各高台エリアについて、境界線付近の低い側から斜面に沿って
+ * 階段を配置する。
+ * 境界検出: 高台エリアの中心から外側に向かって最初に
+ * 「地形高さが急に下がる点（段差の始まり）」を見つけ、
+ * そこに階段オブジェクトを接地配置する。
+ */
 const STAIR_PLACEMENTS = [
-  // 東の崖上（高台40,10 h=4.5）
-  {x: 32, z:  5, ry:  Math.PI,      label:'東崖'},
-  {x: 32, z: 15, ry:  Math.PI,      label:'東崖2'},
-  // 西南の丘（-38,-20 h=3.2）
-  {x:-32, z:-15, ry:  0,            label:'西南丘'},
-  // 南の神社高台（10,-55 h=5.8）
-  {x:  5, z:-48, ry:  Math.PI/2,    label:'南神社'},
-  {x: -5, z:-48, ry: -Math.PI/2,    label:'南神社2'},
-  // 北西の丘（-20,40 h=2.8）
-  {x:-15, z: 35, ry:  Math.PI*0.75, label:'北西丘'},
+  // 東の崖（HIGHLANDS[0]: cx=40, cz=10, h=4.5, r=18）
+  // 斜面境界は cx - r = 22 付近
+  {x: 24,  z:  8,  ry: Math.PI * 0.0,  targetHL: 0},
+  {x: 24,  z: 14,  ry: Math.PI * 0.0,  targetHL: 0},
+  // 西南の丘（HIGHLANDS[1]: cx=-38, cz=-20, h=3.2, r=15）
+  // 境界は cx + r = -23 付近
+  {x:-26,  z:-18,  ry: Math.PI * 1.0,  targetHL: 1},
+  {x:-26,  z:-24,  ry: Math.PI * 1.0,  targetHL: 1},
+  // 南の神社高台（HIGHLANDS[2]: cx=10, cz=-55, h=5.8, r=20）
+  // 境界は cz + r = -35 付近
+  {x:  8,  z:-37,  ry: Math.PI * 0.5,  targetHL: 2},
+  {x: 14,  z:-37,  ry: Math.PI * 0.5,  targetHL: 2},
+  // 北西の丘（HIGHLANDS[3]: cx=-20, cz=40, h=2.8, r=14）
+  // 境界は cz - r = 26 付近
+  {x:-18,  z: 28,  ry: Math.PI * 0.5,  targetHL: 3},
 ];
 
 function placeStairs(){
   if(!kaidanTemplate) return;
+
+  // ★ BBox計算 → 人間が昇れるサイズに均一スケール（高さ2.5m固定）
   const box = new THREE.Box3().setFromObject(kaidanTemplate);
   const size = new THREE.Vector3(); box.getSize(size);
-  // 階段の高さを地形の段差（約2.5〜3m）に合わせる
-  const TARGET_H = 2.8;
-  const sc = (size.y>0.01) ? TARGET_H/size.y : 1.0;
+
+  const TARGET_STAIR_H = 2.5; // 階段高さ固定（2.5m）
+  const sc = (size.y > 0.01) ? TARGET_STAIR_H / size.y : 1.0;
+  const bottomLocal = box.min.y; // ローカル底面Y
+  const scaledBottom = bottomLocal * sc;
 
   for(const sp of STAIR_PLACEMENTS){
-    const sy = getTerrainHeight(sp.x, sp.z);
+    // ★ 配置座標の地形高さを正確に取得
+    const terrainY = getTerrainHeight(sp.x, sp.z);
+
     const clone = kaidanTemplate.clone(true);
-    clone.scale.setScalar(sc);
+    clone.scale.set(sc, sc, sc); // 均一スケール
     clone.rotation.y = sp.ry;
-    clone.position.set(sp.x, sy, sp.z);
+    // ★ 底面を地形Yに完全接地
+    clone.position.set(sp.x, terrainY - scaledBottom, sp.z);
 
     clone.traverse(c=>{
       if(c.isMesh && c.material){
-        c.castShadow = true; c.receiveShadow = true;
-        const mats=Array.isArray(c.material)?c.material:[c.material];
-        mats.forEach(m=>{ if(m.color) m.color.multiplyScalar(0.68); });
+        c.castShadow = true;
+        c.receiveShadow = true;
+        const mats = Array.isArray(c.material) ? c.material : [c.material];
+        mats.forEach(m=>{ if(m.color) m.color.multiplyScalar(0.70); });
       }
     });
 
     scene.add(clone);
 
-    // 階段のBox3当たり判定（壁として機能させず、乗り越え可能にするため登録しない）
-    // プレイヤーは地形高さ関数で自然に階段を昇降する
-    // ただし横方向のブロックは必要なのでY範囲を絞った薄いBBoxを登録
+    // 横方向のみ衝突（Y上限を地形+0.5mで抑制して乗り越え可能に）
     const stairBox = new THREE.Box3().setFromObject(clone);
-    // 横方向のみ制限（Y上限を低くして乗り越えられるように）
-    stairBox.max.y = Math.min(stairBox.max.y, sy + 0.6);
+    stairBox.max.y = Math.min(stairBox.max.y, terrainY + 0.55);
     collisionBoxes.push(stairBox);
   }
 }
@@ -1135,7 +1392,6 @@ loadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFL
   }
   const loader = new THREE.GLTFLoader();
 
-  // ── 1) ie.glb（家）──
   loader.load('./ie.glb',
     function(gltf){
       const template = gltf.scene;
@@ -1147,7 +1403,6 @@ loadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFL
         appendStatus(`✅ ie.glb 成功 / 家:${placed}棟`);
         setTimeout(()=>{ if(!gameOver) clearStatus(); }, 6000);
       }
-      // 2) gaitou.glb
       loadGaitou(loader);
     },
     prog=>{
@@ -1172,7 +1427,6 @@ function loadGaitou(loader){
     null,
     function(e){
       appendError('gaitou.glb失敗→基本形状使用');
-      // フォールバック：基本形状の灯籠
       placeFallbackLanterns();
       loadKaidan(loader);
     }
@@ -1220,17 +1474,18 @@ function loadKaidan(loader){
 }
 
 function placeFallbackStairs(){
-  // フォールバック：段差箇所にシンプルな階段ジオメトリ
   const mat = new THREE.MeshLambertMaterial({color:0x4a4338});
   for(const sp of STAIR_PLACEMENTS){
-    const sy = getTerrainHeight(sp.x,sp.z);
-    const STEPS=5, RISE=0.32, RUN=0.5;
+    const STEPS=6, RISE=0.32, RUN=0.52;
+    // 斜面方向ベクトル
+    const sinR = Math.sin(sp.ry), cosR = Math.cos(sp.ry);
     for(let s=0;s<STEPS;s++){
-      const sx = sp.x + Math.sin(sp.ry)*s*RUN*0.8;
-      const sz = sp.z + Math.cos(sp.ry)*s*RUN*0.8;
-      const sh = sy + s*RISE;
+      // 階段が斜面を昇る方向に沿ってオフセット
+      const sx = sp.x + sinR * s * RUN;
+      const sz = sp.z + cosR * s * RUN;
+      const sh = getTerrainHeight(sx, sz);
       const step = new THREE.Mesh(new THREE.BoxGeometry(2.0,RISE,RUN), mat);
-      step.position.set(sx, sh+RISE/2, sz);
+      step.position.set(sx, sh + RISE/2, sz);
       step.castShadow=true; step.receiveShadow=true;
       scene.add(step);
       registerStaticBox(sx, sh+RISE/2, sz, 1.05, RISE/2+0.05, RUN/2+0.05);
@@ -1239,11 +1494,10 @@ function placeFallbackStairs(){
 }
 
 // ===================================================================
-// ★ FBXLoader（popopo.fbx）
+// FBXLoader（popopo.fbx）
 // ===================================================================
 function tryLoadFBX(){
   if(typeof THREE.FBXLoader === 'undefined'){
-    console.warn('FBXLoader未定義→フォールバック');
     ensureHachishaku();
     appendError('FBXLoader未定義→フォールバック使用');
     setTimeout(()=>{ if(!gameOver) clearError(); }, 5000);
@@ -1302,7 +1556,6 @@ function tryLoadFBX(){
       }
     },
     e=>{
-      console.warn('popopo.fbx load error:', e);
       mixer=null; ensureHachishaku();
       appendError('popopo.fbx失敗→フォールバック\n'+(e&&e.message?e.message:String(e)));
       setTimeout(()=>{ if(!gameOver) clearError(); }, 7000);
@@ -1326,7 +1579,18 @@ let yaw=0, pitch=0;
 const touchStartMeta = new Map();
 let dashBtnActive = false;
 
-dashBtnEl.addEventListener('touchstart',e=>{ e.stopPropagation(); if(gameOver||dashExhausted) return; dashBtnActive=true; isDashing=true; },{passive:true});
+// AudioContextのアンロック（タッチ時に一度だけ）
+let audioUnlocked = false;
+function unlockAudio(){
+  if(audioUnlocked) return;
+  audioUnlocked = true;
+  ensureAudioCtx();
+}
+
+dashBtnEl.addEventListener('touchstart',e=>{
+  e.stopPropagation(); unlockAudio();
+  if(gameOver||dashExhausted) return; dashBtnActive=true; isDashing=true;
+},{passive:true});
 dashBtnEl.addEventListener('touchend',  e=>{ e.stopPropagation(); dashBtnActive=false; isDashing=false; },{passive:true});
 dashBtnEl.addEventListener('touchcancel',e=>{ e.stopPropagation(); dashBtnActive=false; isDashing=false; },{passive:true});
 
@@ -1335,8 +1599,11 @@ canvas.addEventListener('touchmove',  onTM, {passive:false});
 canvas.addEventListener('touchend',   onTE, {passive:false});
 canvas.addEventListener('touchcancel',onTE, {passive:false});
 
+// マウスクリックでもAudio解除（デスクトップ確認用）
+canvas.addEventListener('pointerdown', unlockAudio, {once:true, passive:true});
+
 function onTS(e){
-  e.preventDefault();
+  e.preventDefault(); unlockAudio();
   if(gameOver) return;
   for(const t of e.changedTouches){
     touchStartMeta.set(t.identifier,{x:t.clientX,y:t.clientY,time:Date.now()});
@@ -1382,16 +1649,15 @@ function onTE(e){
 }
 
 // ===================================================================
-// ★ プレイヤー移動（地形追従 + Box3衝突判定）
+// プレイヤー移動（地形追従 + Box3衝突判定）
 // ===================================================================
-const PLAYER_EYE_H   = 1.65;    // 目の高さ
-const TERRAIN_LERP_K = 0.22;    // 地形追従の補間係数（緩やかに）
+const PLAYER_EYE_H   = 1.65;
+const TERRAIN_LERP_K = 0.22;
 let targetPlayerY    = playerPos.y;
 
 function updateMove(){
   if(gameOver) return;
 
-  // スタミナ
   if(isDashing&&!dashExhausted){
     stamina = Math.max(0, stamina-STAMINA_DRAIN);
     if(stamina<=0){ stamina=0; dashExhausted=true; isDashing=false; }
@@ -1411,31 +1677,25 @@ function updateMove(){
   const fwd = new THREE.Vector3(-Math.sin(yaw),0,-Math.cos(yaw));
   const rgt = new THREE.Vector3( Math.cos(yaw),0,-Math.sin(yaw));
 
-  // 試行移動
   let nx = playerPos.x - joyDy*spd*fwd.x + joyDx*spd*rgt.x;
   let nz = playerPos.z - joyDy*spd*fwd.z + joyDx*spd*rgt.z;
 
-  // 境界クランプ
   nx = Math.max(-81, Math.min(81, nx));
   nz = Math.max(-81, Math.min(81, nz));
 
-  // 地形高さ
   const th = getTerrainHeight(nx, nz);
   const ny = th + PLAYER_EYE_H;
 
-  // ★ Box3衝突判定 – 壁として機能する箱のみチェック
   if(!checkPlayerCollision(nx, nz, ny)){
     playerPos.x = nx;
     playerPos.z = nz;
   } else {
-    // スライディング：X方向だけ試みる
     const only_nx = playerPos.x - joyDy*spd*fwd.x + joyDx*spd*rgt.x;
     const only_nz = playerPos.z;
     const th2 = getTerrainHeight(only_nx, only_nz);
     if(!checkPlayerCollision(only_nx, only_nz, th2+PLAYER_EYE_H)){
       playerPos.x = only_nx;
     } else {
-      // Z方向だけ試みる
       const only_nx2 = playerPos.x;
       const only_nz2 = playerPos.z - joyDy*spd*fwd.z + joyDx*spd*rgt.z;
       const th3 = getTerrainHeight(only_nx2, only_nz2);
@@ -1445,14 +1705,13 @@ function updateMove(){
     }
   }
 
-  // 地形追従Y（スムーズ補間で段差を緩和）
   const newTerrainY = getTerrainHeight(playerPos.x, playerPos.z) + PLAYER_EYE_H;
   targetPlayerY = newTerrainY;
   playerPos.y += (targetPlayerY - playerPos.y) * TERRAIN_LERP_K;
 }
 
 // ===================================================================
-// ★ メインアニメーションループ
+// メインアニメーションループ
 // ===================================================================
 let frame = 0;
 
@@ -1468,13 +1727,11 @@ function animate(){
   updateEnemyAI(delta * 1000);
   updateJizoPrompt();
 
-  // カメラ
   camera.position.copy(playerPos);
   camera.rotation.order = 'YXZ';
   camera.rotation.y = yaw;
   camera.rotation.x = pitch;
 
-  // 蝋燭ライト
   const dir = new THREE.Vector3(0,0,-1).applyEuler(camera.rotation);
   candleLight.position.copy(camera.position);
   candleLight.target.position.copy(camera.position.clone().addScaledVector(dir,6));
@@ -1490,7 +1747,6 @@ function animate(){
     candleLight.intensity=0; footLight.intensity=0;
   }
 
-  // 蝋燭残量タイマー
   const now = Date.now();
   if(!gameOver && now-lastTick>TICK_MS && candlePercent>0){
     candlePercent--; lastTick=now; updateCandleUI();
