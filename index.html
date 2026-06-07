@@ -33,6 +33,7 @@ html, body {
   pointer-events:none; z-index:9; transition:background 0.25s ease;
 }
 
+/* 蝋燭UI */
 #candleUI {
   position:fixed; top:20px; left:50%; transform:translateX(-50%);
   font-family:'Georgia','Hiragino Mincho ProN',serif;
@@ -53,6 +54,7 @@ html, body {
   box-shadow:0 0 6px rgba(255,180,0,0.7);
 }
 
+/* スタミナUI */
 #staminaUI {
   position:fixed; top:64px; left:50%; transform:translateX(-50%);
   font-family:'Georgia','Hiragino Mincho ProN',serif;
@@ -73,6 +75,7 @@ html, body {
   box-shadow:0 0 5px rgba(0,200,255,0.6);
 }
 
+/* 走るボタン */
 #dashBtn {
   position:fixed; bottom:60px; right:60px;
   width:80px; height:80px; border-radius:50%;
@@ -94,6 +97,7 @@ html, body {
 #dashBtn.pressing { background:rgba(0,200,255,0.42); box-shadow:0 0 22px rgba(0,220,255,0.65); }
 #dashBtn.exhausted { background:rgba(60,60,80,0.3); border-color:rgba(120,120,160,0.3); opacity:0.55; }
 
+/* 警告 */
 #alertIndicator {
   position:fixed; top:110px; left:50%; transform:translateX(-50%);
   font-family:'Hiragino Mincho ProN',serif;
@@ -128,6 +132,7 @@ html, body {
   text-align:center; white-space:pre-wrap;
 }
 
+/* ゲームオーバー */
 #gameOverScreen {
   position:fixed; inset:0; display:none;
   z-index:100; align-items:center; justify-content:center;
@@ -167,6 +172,7 @@ html, body {
 }
 @keyframes pulse { 0%,100%{opacity:0.7;} 50%{opacity:1.0;} }
 
+/* ジョイスティック */
 #joystickBase {
   position:fixed; bottom:60px; left:60px;
   width:120px; height:120px; border-radius:50%;
@@ -184,6 +190,7 @@ html, body {
   transition:transform 0.03s, opacity 0.25s;
 }
 
+/* ジャンプスケア */
 #jumpscareOverlay {
   position:fixed; inset:0; z-index:120; display:none; overflow:hidden;
   background:#000;
@@ -345,10 +352,12 @@ function optimizeImportedRoot(root, opts = {}) {
       m.fog = true;
       m.depthTest = true;
       m.depthWrite = true;
+
       if (!allowTransparent && m.transparent && (m.opacity === undefined || m.opacity >= 0.999) && !m.alphaMap) {
         m.transparent = false;
         m.opacity = 1;
       }
+
       if (m.map) {
         m.map.anisotropy = Math.min(2, renderer.capabilities.getMaxAnisotropy());
         m.map.generateMipmaps = true;
@@ -362,11 +371,8 @@ function cloneUniqueMaterials(root) {
   root.traverse(child => {
     if (!child.isMesh) return;
     if (child.material) {
-      if (Array.isArray(child.material)) {
-        child.material = child.material.map(m => m.clone());
-      } else {
-        child.material = child.material.clone();
-      }
+      if (Array.isArray(child.material)) child.material = child.material.map(m => m.clone());
+      else child.material = child.material.clone();
     }
     child.castShadow = false;
     child.receiveShadow = false;
@@ -388,88 +394,58 @@ function pointToSegmentData(x, z, ax, az, bx, bz) {
 }
 
 /* =========================================================
-   平面＋段差プラットフォームだけ
+   2階層マップ設定
 ========================================================= */
-const PLATFORM_SITES = [
-  { name:'east',   cx: 40, cz: 10,  w: 14, d: 14, h: 4.5, openSide:'W' },
-  { name:'wsouth', cx:-38, cz:-20,  w: 12, d: 12, h: 3.2, openSide:'E' },
-  { name:'south',  cx: 10, cz:-55,  w: 16, d: 16, h: 5.8, openSide:'N' },
-  { name:'nwest',  cx:-20, cz: 40,  w: 11, d: 11, h: 2.8, openSide:'S' },
-];
+const GROUND_Y = 0;
+const PLATFORM = {
+  cx: 0,
+  cz: -48,
+  w: 78,
+  d: 36,
+  topY: 4,
+  h: 4
+};
+const STAIRS = {
+  x: 0,
+  startZ: -18,
+  endZ: -30,
+  width: 6.2,
+  steps: 12,
+  topY: 4,
+};
+const ROAD = {
+  x: 0,
+  w: 8,
+  zStart: -80,
+  zEnd: 80
+};
 
-function makeStairPlan(site) {
-  const stairWidth = clamp(Math.min(site.w, site.d) * 0.30, 2.8, 3.8);
-  const stairLength = clamp(6.0 + site.h * 1.1, 7.0, 10.0);
-  const steps = Math.max(7, Math.ceil(site.h / 0.34));
-
-  let sx, sz, ex, ez;
-  if (site.openSide === 'W') {
-    sx = site.cx - site.w * 0.5 - stairLength;
-    sz = site.cz;
-    ex = site.cx - site.w * 0.5;
-    ez = site.cz;
-  } else if (site.openSide === 'E') {
-    sx = site.cx + site.w * 0.5 + stairLength;
-    sz = site.cz;
-    ex = site.cx + site.w * 0.5;
-    ez = site.cz;
-  } else if (site.openSide === 'N') {
-    sx = site.cx;
-    sz = site.cz - site.d * 0.5 - stairLength;
-    ex = site.cx;
-    ez = site.cz - site.d * 0.5;
-  } else {
-    sx = site.cx;
-    sz = site.cz + site.d * 0.5 + stairLength;
-    ex = site.cx;
-    ez = site.cz + site.d * 0.5;
-  }
-
-  const ry = Math.atan2(ex - sx, ez - sz);
-  return {
-    siteName: site.name,
-    sx, sz, ex, ez,
-    ry,
-    width: stairWidth,
-    length: stairLength,
-    steps,
-    h0: 0,
-    h1: site.h,
-    site
-  };
+function isInStairCorridor(x, z) {
+  return Math.abs(x - STAIRS.x) <= STAIRS.width * 0.5 && z <= STAIRS.startZ && z >= STAIRS.endZ;
 }
-const STAIR_PLANS = PLATFORM_SITES.map(makeStairPlan);
-
-function isInAnyPlatformTop(x, z) {
-  for (const p of PLATFORM_SITES) {
-    if (pointInRect(x, z, p.cx, p.cz, p.w, p.d)) return true;
-  }
-  return false;
+function isOnPlatformTop(x, z) {
+  return Math.abs(x - PLATFORM.cx) <= PLATFORM.w * 0.5 && z < STAIRS.endZ && z >= PLATFORM.cz - PLATFORM.d * 0.5;
 }
-
-function getTerrainHeight(x, z) {
-  for (const st of STAIR_PLANS) {
-    const seg = pointToSegmentData(x, z, st.sx, st.sz, st.ex, st.ez);
-    if (!seg) continue;
-    if (seg.t < 0 || seg.t > 1 || seg.dist > st.width * 0.5) continue;
-    if (seg.t >= 0.999) return st.h1;
-    const stepIndex = Math.max(0, Math.min(st.steps - 1, Math.floor(seg.t * st.steps)));
-    return ((stepIndex + 1) / st.steps) * st.h1;
+function getFloorHeight(x, z) {
+  if (isInStairCorridor(x, z)) {
+    const t = clamp((STAIRS.startZ - z) / (STAIRS.startZ - STAIRS.endZ), 0, 1);
+    return STAIRS.topY * smoothStep(t);
   }
-
-  for (const p of PLATFORM_SITES) {
-    if (pointInRect(x, z, p.cx, p.cz, p.w - 0.1, p.d - 0.1)) return p.h;
-  }
-  return 0;
+  if (isOnPlatformTop(x, z)) return PLATFORM.topY;
+  return GROUND_Y;
+}
+function getFloorLayer(x, z) {
+  if (isInStairCorridor(x, z)) return 'stair';
+  if (isOnPlatformTop(x, z)) return 'platform';
+  return 'ground';
 }
 
 /* =========================================================
-   ground / lights / roads
+   scene / lighting
 ========================================================= */
 const groundMat = new THREE.MeshLambertMaterial({ color:0x18181c });
 const ground = new THREE.Mesh(new THREE.PlaneGeometry(360, 360, 1, 1), groundMat);
 ground.rotation.x = -Math.PI / 2;
-ground.receiveShadow = false;
 scene.add(ground);
 
 const ambLight = new THREE.AmbientLight(0x8080a0, 0.55);
@@ -489,32 +465,15 @@ const roadMat = new THREE.MeshLambertMaterial({ color:0x1e1e20 });
 function addRoad(x, z, w, d) {
   const geo = new THREE.PlaneGeometry(w, d, 1, 1);
   geo.rotateX(-Math.PI / 2);
-  const cy = getTerrainHeight(x, z) + 0.012;
+  const cy = getFloorHeight(x, z) + 0.012;
   const m = new THREE.Mesh(geo, roadMat);
   m.position.set(x, cy, z);
   scene.add(m);
 }
-addRoad(0, 0, 7, 200);
-addRoad(0, 0, 200, 7);
-addRoad(0, -45, 120, 5);
-addRoad(0, 45, 120, 5);
-const RING_R = 34;
-for (let i = 0; i < 8; i++) {
-  const a = i * Math.PI / 4;
-  const a2 = (i + 1) * Math.PI / 4;
-  const cx = (Math.cos(a) + Math.cos(a2)) / 2 * RING_R;
-  const cz = (Math.sin(a) + Math.sin(a2)) / 2 * RING_R;
-  const len = RING_R * Math.tan(Math.PI / 8) * 2 + 1;
-  const seg = new THREE.Mesh(new THREE.PlaneGeometry(len, 4.5), roadMat);
-  seg.rotation.x = -Math.PI / 2;
-  seg.rotation.z = -a - Math.PI / 8;
-  const ry = getTerrainHeight(cx, cz) + 0.012;
-  seg.position.set(cx, ry, cz);
-  scene.add(seg);
-}
+addRoad(ROAD.x, 0, ROAD.w, ROAD.zEnd - ROAD.zStart + 10);
 
 /* =========================================================
-   collisions / LOS
+   collisions
 ========================================================= */
 const collisionBoxes = [];
 const obstacleMeshes = [];
@@ -529,301 +488,248 @@ function registerStaticBox(cx, cy, cz, hw, hh, hd) {
     )
   );
 }
-function checkPlayerCollision(newX, newZ, newY) {
+function checkBoxCollisionAt(x, z, y, half = PLAYER_BOX_HALF, yLow = 1.0, yHigh = 0.5) {
   playerBox.set(
-    new THREE.Vector3(newX - PLAYER_BOX_HALF, newY - 1.0, newZ - PLAYER_BOX_HALF),
-    new THREE.Vector3(newX + PLAYER_BOX_HALF, newY + 0.5, newZ + PLAYER_BOX_HALF)
+    new THREE.Vector3(x - half, y - yLow, z - half),
+    new THREE.Vector3(x + half, y + yHigh, z + half)
   );
   for (const box of collisionBoxes) {
     if (playerBox.intersectsBox(box)) return true;
   }
   return false;
 }
-
-/* =========================================================
-   platforms + stairs
-========================================================= */
-function buildPlatformVisual(site) {
-  const g = new THREE.Group();
-  const topTh = 0.18;
-  const topMat = new THREE.MeshLambertMaterial({ color:0x2a2a30 });
-  const wallMat = new THREE.MeshLambertMaterial({ color:0x222226 });
-
-  const top = new THREE.Mesh(new THREE.BoxGeometry(site.w, topTh, site.d), topMat);
-  top.position.y = site.h - topTh * 0.5;
-  g.add(top);
-
-  registerStaticBox(site.cx, site.h - topTh * 0.5, site.cz, site.w * 0.5, topTh * 0.5, site.d * 0.5);
-  obstacleMeshes.push(top);
-
-  const wallH = Math.max(0.15, site.h - topTh);
-  const wallSpecs = [
-    { side:'N', x:0, z:-site.d*0.5 + 0.12, w:site.w, d:0.24 },
-    { side:'S', x:0, z: site.d*0.5 - 0.12, w:site.w, d:0.24 },
-    { side:'W', x:-site.w*0.5 + 0.12, z:0, w:0.24, d:site.d },
-    { side:'E', x: site.w*0.5 - 0.12, z:0, w:0.24, d:site.d }
-  ];
-
-  for (const s of wallSpecs) {
-    if (s.side === site.openSide) continue;
-    const wall = new THREE.Mesh(new THREE.BoxGeometry(s.w, wallH, s.d), wallMat);
-    wall.position.set(site.cx + s.x, wallH * 0.5, site.cz + s.z);
-    g.add(wall);
-
-    registerStaticBox(site.cx + s.x, wallH * 0.5, site.cz + s.z, s.w * 0.5, wallH * 0.5, s.d * 0.5);
-    obstacleMeshes.push(wall);
+function tryMoveWithSlide(currentPos, nextX, nextZ, floorY, half = PLAYER_BOX_HALF) {
+  if (!checkBoxCollisionAt(nextX, nextZ, floorY, half)) {
+    currentPos.x = nextX;
+    currentPos.z = nextZ;
+    return true;
   }
-
-  g.position.set(site.cx, 0, site.cz);
-  scene.add(g);
-}
-function buildAllPlatforms() {
-  for (const site of PLATFORM_SITES) buildPlatformVisual(site);
-}
-buildAllPlatforms();
-
-function isPointReserved(x, z) {
-  if (Math.abs(x) < 10 && Math.abs(z) < 10) return true;
-  if (isInAnyPlatformTop(x, z)) return true;
-  for (const st of STAIR_PLANS) {
-    const seg = pointToSegmentData(x, z, st.sx, st.sz, st.ex, st.ez);
-    if (seg && seg.t >= 0 && seg.t <= 1 && seg.dist <= st.width * 0.5 + 0.35) return true;
+  const onlyX = !checkBoxCollisionAt(nextX, currentPos.z, getFloorHeight(nextX, currentPos.z) + PLAYER_EYE_H, half);
+  if (onlyX) {
+    currentPos.x = nextX;
+    return true;
+  }
+  const onlyZ = !checkBoxCollisionAt(currentPos.x, nextZ, getFloorHeight(currentPos.x, nextZ) + PLAYER_EYE_H, half);
+  if (onlyZ) {
+    currentPos.z = nextZ;
+    return true;
   }
   return false;
 }
 
-function addApproxStairColliders(plan) {
-  const dirX = Math.sin(plan.ry);
-  const dirZ = Math.cos(plan.ry);
-  const stepDepth = plan.length / plan.steps;
-  const stepRise = plan.h1 / plan.steps;
-  const width = plan.width;
-
-  for (let i = 0; i < plan.steps; i++) {
-    const t = (i + 0.5) / plan.steps;
-    const cx = plan.sx + dirX * plan.length * t;
-    const cz = plan.sz + dirZ * plan.length * t;
-    const cy = stepRise * (i + 0.5);
-    registerStaticBox(cx, cy, cz, width * 0.5, stepRise * 0.5, stepDepth * 0.5);
-  }
-}
-
-function placeStairs(template) {
-  if (!template) return;
-
-  for (const plan of STAIR_PLANS) {
-    const clone = template.clone(true);
-    cloneUniqueMaterials(clone);
-    clone.scale.setScalar(1);
-    clone.rotation.y = plan.ry;
-    clone.updateMatrixWorld(true);
-
-    const box0 = new THREE.Box3().setFromObject(clone);
-    const size0 = new THREE.Vector3();
-    box0.getSize(size0);
-    const TARGET_H = 2.75;
-    const sc = size0.y > 0.01 ? TARGET_H / size0.y : 1.0;
-
-    clone.scale.setScalar(sc);
-    clone.rotation.y = plan.ry;
-    clone.updateMatrixWorld(true);
-
-    optimizeImportedRoot(clone, {
-      darken: 0.68,
-      allowTransparent: true,
-      forceFrontSide: true
-    });
-
-    const box = new THREE.Box3().setFromObject(clone);
-    const startY = getTerrainHeight(plan.sx, plan.sz);
-    clone.position.set(plan.sx, startY - box.min.y, plan.sz);
-    clone.updateMatrixWorld(true);
-
-    scene.add(clone);
-
-    const finalBox = new THREE.Box3().setFromObject(clone);
-    const finalSize = new THREE.Vector3();
-    finalBox.getSize(finalSize);
-    addApproxStairColliders(plan);
-  }
-}
-
-function placeFallbackStairs() {
-  const mat = new THREE.MeshLambertMaterial({ color:0x4a4338 });
-  for (const plan of STAIR_PLANS) {
-    const steps = plan.steps;
-    const rise = plan.h1 / steps;
-    const run = plan.length / steps;
-    const dirX = Math.sin(plan.ry);
-    const dirZ = Math.cos(plan.ry);
-
-    for (let i = 0; i < steps; i++) {
-      const cx = plan.sx + dirX * (i + 0.5) * run;
-      const cz = plan.sz + dirZ * (i + 0.5) * run;
-      const cy = (i + 0.5) * rise;
-      const step = new THREE.Mesh(new THREE.BoxGeometry(plan.width, rise, run), mat);
-      step.rotation.y = plan.ry;
-      step.position.set(cx, cy, cz);
-      scene.add(step);
-      registerStaticBox(cx, cy, cz, plan.width * 0.5, rise * 0.5, run * 0.5);
-      obstacleMeshes.push(step);
-    }
-  }
-}
-
 /* =========================================================
-   decorative props
+   platform / stair visuals
 ========================================================= */
-const fenceMat = new THREE.MeshLambertMaterial({ color:0x3a2010 });
-function addFence(x, z, w, d) {
-  const fy = getTerrainHeight(x, z);
-  const m = new THREE.Mesh(new THREE.BoxGeometry(w, 0.9, d), fenceMat);
-  m.position.set(x, fy + 0.45, z);
-  scene.add(m);
-  registerStaticBox(x, fy + 0.45, z, w/2 + 0.05, 0.5, d/2 + 0.05);
-  if (Math.random() < 0.2) obstacleMeshes.push(m);
-}
-for (let z = -78; z < 78; z += 8) {
-  addFence( 5.5 + randRange(0,0.4), z, 0.18, 4.0 + randRange(0,0.8));
-  addFence(-5.5 - randRange(0,0.4), z, 0.18, 4.0 + randRange(0,0.8));
-}
-for (let x = -78; x < 78; x += 8) {
-  addFence(x,  5.5 + randRange(0,0.4), 4.0 + randRange(0,0.8), 0.18);
-  addFence(x, -5.5 - randRange(0,0.4), 4.0 + randRange(0,0.8), 0.18);
-}
+function buildPlatform() {
+  const platformMesh = new THREE.Mesh(
+    new THREE.BoxGeometry(PLATFORM.w, PLATFORM.h, PLATFORM.d),
+    new THREE.MeshLambertMaterial({ color:0x27272c })
+  );
+  platformMesh.position.set(PLATFORM.cx, PLATFORM.h * 0.5, PLATFORM.cz);
+  scene.add(platformMesh);
+  obstacleMeshes.push(platformMesh);
 
-function addTorii(x, z, ry) {
-  const mat = new THREE.MeshLambertMaterial({ color:0x7e1111 });
-  const grp = new THREE.Group();
-  const gy = getTerrainHeight(x, z);
-
-  [-1.6, 1.6].forEach(ox => {
-    const p = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 5.5, 8), mat);
-    p.position.set(ox, 2.75, 0);
-    grp.add(p);
-  });
-  const k1 = new THREE.Mesh(new THREE.BoxGeometry(4.4, 0.35, 0.35), mat);
-  k1.position.set(0, 5.5, 0); grp.add(k1);
-  const k2 = new THREE.Mesh(new THREE.BoxGeometry(3.8, 0.25, 0.25), mat);
-  k2.position.set(0, 4.6, 0); grp.add(k2);
-
-  grp.position.set(x, gy, z);
-  grp.rotation.y = ry || 0;
-  scene.add(grp);
-
-  const yaw = ry || 0;
-  const c = Math.cos(yaw), s = Math.sin(yaw);
-  registerStaticBox(x + (c * -1.6), gy + 2.75, z + (s * -1.6), 0.25, 2.8, 0.25);
-  registerStaticBox(x + (c *  1.6), gy + 2.75, z + (s *  1.6), 0.25, 2.8, 0.25);
-  obstacleMeshes.push(grp.children[0], grp.children[1]);
+  registerStaticBox(
+    PLATFORM.cx,
+    PLATFORM.h * 0.5,
+    PLATFORM.cz - 0.4,
+    PLATFORM.w * 0.5,
+    PLATFORM.h * 0.5,
+    PLATFORM.d * 0.5 - 0.4
+  );
 }
+buildPlatform();
 
-const stoneMat = new THREE.MeshLambertMaterial({ color:0x3c3c3c });
-const woodMat2 = new THREE.MeshLambertMaterial({ color:0x4a2c10 });
-function addWell(x, z) {
-  const wy = getTerrainHeight(x, z);
-  const grp = new THREE.Group();
-  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.78, 0.85, 12), stoneMat);
-  base.position.y = 0.425; grp.add(base);
-  const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.82, 0.82, 0.12, 12, 1, true), stoneMat);
-  rim.position.y = 0.91; grp.add(rim);
-  const rL = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1.8, 5), woodMat2);
-  rL.position.set(-0.6,1.4,0); grp.add(rL);
-  const rR = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1.8, 5), woodMat2);
-  rR.position.set(0.6,1.4,0); grp.add(rR);
-  const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.25, 5), woodMat2);
-  bar.rotation.z = Math.PI / 2; bar.position.set(0,2.2,0); grp.add(bar);
-  grp.position.set(x, wy, z);
-  scene.add(grp);
-  registerStaticBox(x, wy + 0.5, z, 0.85, 0.6, 0.85);
-}
-addWell(12,-12);
-addWell(-15,18);
-addWell(22,38);
-addWell(-20,-38);
-addWell(35,-10);
+function buildStairs() {
+  const stairsGroup = new THREE.Group();
+  const stepW = STAIRS.width;
+  const stepD = (STAIRS.startZ - STAIRS.endZ) / STAIRS.steps;
+  const stepH = STAIRS.topY / STAIRS.steps;
 
-function addGrave(x, z) {
-  const mat = new THREE.MeshLambertMaterial({ color:0x252525 });
-  const gy = getTerrainHeight(x, z);
-  const grp = new THREE.Group();
-  const body = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1.4, 0.18), mat);
-  body.position.y = 0.7; grp.add(body);
-  const top = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.18, 8, 1, false, 0, Math.PI), mat);
-  top.rotation.x = Math.PI / 2; top.position.set(0, 1.5, 0); grp.add(top);
-  grp.position.set(x, gy, z);
-  grp.rotation.y = Math.random() * 0.5 - 0.25;
-  scene.add(grp);
-}
-for (let i = 0; i < 24; i++) {
-  let gx, gz;
-  do { gx = (Math.random() - 0.5) * 110; gz = (Math.random() - 0.5) * 110; }
-  while (Math.sqrt(gx*gx + gz*gz) < 8);
-  addGrave(gx, gz);
-}
-
-const bambooMat = new THREE.MeshLambertMaterial({ color:0x1a2a0d });
-function addBambooCluster(cx, cz, count) {
-  for (let i = 0; i < count; i++) {
-    const h = randRange(5, 9);
-    const bx = cx + randRange(-1.4, 1.4);
-    const bz = cz + randRange(-1.4, 1.4);
-    const by = getTerrainHeight(bx, bz);
-    const b = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.09, h, 6), bambooMat);
-    b.position.set(bx, by + h/2, bz);
-    scene.add(b);
-    if (Math.random() < 0.10) obstacleMeshes.push(b);
+  for (let i = 0; i < STAIRS.steps; i++) {
+    const y = (i + 0.5) * stepH;
+    const z = STAIRS.startZ - (i + 0.5) * stepD;
+    const step = new THREE.Mesh(
+      new THREE.BoxGeometry(stepW, stepH, stepD),
+      new THREE.MeshLambertMaterial({ color:0x453e35 })
+    );
+    step.position.set(STAIRS.x, y, z);
+    stairsGroup.add(step);
   }
+  scene.add(stairsGroup);
 }
-const BORDER = 82, STEP = 8;
-for (let v = -BORDER; v <= BORDER; v += STEP) {
-  addBambooCluster( BORDER, v, 4);
-  addBambooCluster(-BORDER, v, 4);
-  addBambooCluster(v, BORDER, 4);
-  addBambooCluster(v,-BORDER, 4);
-}
-
-function buildAltar() {
-  const site = PLATFORM_SITES.find(p => p.name === 'south');
-  const grp = new THREE.Group();
-  const bMat = new THREE.MeshLambertMaterial({ color:0x111114, emissive:0x050005, emissiveIntensity:0.3 });
-
-  const base = new THREE.Mesh(new THREE.BoxGeometry(6, 0.5, 5), bMat);
-  base.position.y = 0.25; grp.add(base);
-  const top = new THREE.Mesh(new THREE.BoxGeometry(4.5, 0.28, 3.5), bMat);
-  top.position.y = 0.64; grp.add(top);
-
-  for (const ox of [-1.5, 0, 1.5]) {
-    const candle = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.4, 8), new THREE.MeshBasicMaterial({ color:0xffcc44 }));
-    candle.position.set(ox, 0.98, 0); grp.add(candle);
-    const pl = new THREE.PointLight(0xff6600, 0.6, 4, 2);
-    pl.position.set(ox, 1.15, 0); grp.add(pl);
-  }
-
-  for (let i = 0; i < 4; i++) {
-    const s = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.9, 0.5), new THREE.MeshLambertMaterial({ color:0x2a2a2a }));
-    s.position.set((i<2 ? -2.4 : 2.4), 0.45, (i%2===0 ? -2 : 2)); grp.add(s);
-  }
-
-  grp.position.set(site.cx, site.h, site.cz);
-  scene.add(grp);
-
-  addTorii(site.cx, site.cz - 10, 0);
-  addTorii(site.cx - 8, site.cz - 12, 0.15);
-  addTorii(site.cx + 8, site.cz - 12, -0.15);
-
-  const altarGlow = new THREE.PointLight(0x880000, 1.8, 18, 1.5);
-  altarGlow.position.set(site.cx, site.h + 2, site.cz);
-  scene.add(altarGlow);
-}
-buildAltar();
+buildStairs();
 
 /* =========================================================
-   地蔵
+   strict structure props
+========================================================= */
+function makeHouseSlots() {
+  const slots = [];
+
+  for (let z = -72; z <= 72; z += 12) {
+    if (Math.abs(z) < 8) continue;
+    slots.push({ x:-15, z, ry:Math.PI/2, area:'ground' });
+    slots.push({ x: 15, z, ry:-Math.PI/2, area:'ground' });
+  }
+
+  for (let z = -60; z <= -36; z += 12) {
+    slots.push({ x:-28, z, ry:Math.PI/2, area:'platform' });
+    slots.push({ x: 28, z, ry:-Math.PI/2, area:'platform' });
+  }
+
+  slots.push({ x:-20, z:-58, ry:0, area:'platform' });
+  slots.push({ x:  0, z:-58, ry:0, area:'platform' });
+  slots.push({ x: 20, z:-58, ry:0, area:'platform' });
+
+  return slots;
+}
+const HOUSE_SLOTS = makeHouseSlots();
+
+const LANTERN_SLOTS = [];
+for (let z = -72; z <= 72; z += 12) {
+  LANTERN_SLOTS.push({ x: 8.3, z, ry: Math.PI, area:'ground' });
+  LANTERN_SLOTS.push({ x:-8.3, z, ry: 0, area:'ground' });
+}
+for (let z = -60; z <= -36; z += 12) {
+  LANTERN_SLOTS.push({ x: 35.0, z, ry: Math.PI, area:'platform' });
+  LANTERN_SLOTS.push({ x:-35.0, z, ry: 0, area:'platform' });
+}
+
+const FENCE_SLOTS = [];
+for (let z = -74; z <= 74; z += 10) {
+  FENCE_SLOTS.push({ x: 11.0, z, w:0.18, d:4.2, ry:0, area:'ground' });
+  FENCE_SLOTS.push({ x:-11.0, z, w:0.18, d:4.2, ry:0, area:'ground' });
+}
+for (let x = -38; x <= 38; x += 10) {
+  FENCE_SLOTS.push({ x, z:-64.0, w:4.2, d:0.18, ry:0, area:'platform' });
+}
+for (let z = -64; z <= -32; z += 10) {
+  FENCE_SLOTS.push({ x:-38.0, z, w:0.18, d:4.2, ry:0, area:'platform' });
+  FENCE_SLOTS.push({ x: 38.0, z, w:0.18, d:4.2, ry:0, area:'platform' });
+}
+for (let x = -38; x <= -8; x += 10) {
+  FENCE_SLOTS.push({ x, z:-30.2, w:4.2, d:0.18, ry:0, area:'platform' });
+}
+for (let x = 8; x <= 38; x += 10) {
+  FENCE_SLOTS.push({ x, z:-30.2, w:4.2, d:0.18, ry:0, area:'platform' });
+}
+
+/* =========================================================
+   model placement helpers
+========================================================= */
+function placeModelOnFloor(template, x, z, ry, targetHeight, options = {}) {
+  const obj = template.clone(true);
+  cloneUniqueMaterials(obj);
+  obj.scale.setScalar(1);
+  obj.rotation.y = ry || 0;
+  obj.updateMatrixWorld(true);
+
+  const box0 = new THREE.Box3().setFromObject(obj);
+  const size0 = new THREE.Vector3();
+  box0.getSize(size0);
+
+  let scale = 1;
+  if (targetHeight && size0.y > 0.01) scale = targetHeight / size0.y;
+  if (options.maxWidth && size0.x > 0.01) scale = Math.min(scale, options.maxWidth / size0.x);
+  if (options.maxDepth && size0.z > 0.01) scale = Math.min(scale, options.maxDepth / size0.z);
+
+  obj.scale.setScalar(scale);
+  obj.rotation.y = ry || 0;
+  obj.updateMatrixWorld(true);
+
+  const box1 = new THREE.Box3().setFromObject(obj);
+  const y = getFloorHeight(x, z) - box1.min.y + (options.yOffset || 0);
+  obj.position.set(x, y, z);
+  obj.updateMatrixWorld(true);
+
+  if (options.darken !== undefined && options.darken !== 1) {
+    obj.traverse(child => {
+      if (!child.isMesh || !child.material) return;
+      const mats = Array.isArray(child.material) ? child.material : [child.material];
+      mats.forEach(m => { if (m.color) m.color.multiplyScalar(options.darken); });
+    });
+  }
+
+  return { obj, scale };
+}
+
+function placeFallbackHouse(x, z, ry, area) {
+  const g = new THREE.Group();
+  const wall = new THREE.Mesh(
+    new THREE.BoxGeometry(4.6, 3.6, 4.6),
+    new THREE.MeshLambertMaterial({ color: area === 'platform' ? 0x5b4c3c : 0x4f3f31 })
+  );
+  wall.position.y = 1.8;
+  g.add(wall);
+
+  const roof = new THREE.Mesh(
+    new THREE.ConeGeometry(3.6, 2.2, 4),
+    new THREE.MeshLambertMaterial({ color:0x2d1e16 })
+  );
+  roof.position.y = 4.2;
+  roof.rotation.y = Math.PI / 4;
+  g.add(roof);
+
+  const y = getFloorHeight(x, z);
+  g.position.set(x, y, z);
+  g.rotation.y = ry;
+  scene.add(g);
+  registerStaticBox(x, y + 2.0, z, 2.4, 2.2, 2.4);
+  obstacleMeshes.push(g);
+}
+
+function placeFallbackLantern(x, z, ry) {
+  const g = new THREE.Group();
+  const pole = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.08, 0.1, 3.0, 6),
+    new THREE.MeshLambertMaterial({ color:0x1a0e00 })
+  );
+  pole.position.y = 1.5;
+  g.add(pole);
+  const head = new THREE.Mesh(
+    new THREE.BoxGeometry(0.58, 0.48, 0.58),
+    new THREE.MeshBasicMaterial({ color:0xffcc66 })
+  );
+  head.position.y = 3.15;
+  g.add(head);
+  const light = new THREE.PointLight(0xff8800, 1.1, 8, 2);
+  light.position.y = 3.15;
+  g.add(light);
+
+  const y = getFloorHeight(x, z);
+  g.position.set(x, y, z);
+  g.rotation.y = ry;
+  scene.add(g);
+  registerStaticBox(x, y + 1.5, z, 0.16, 1.6, 0.16);
+  obstacleMeshes.push(g);
+}
+
+function placeFallbackStairVisuals() {
+  const stepW = STAIRS.width;
+  const stepD = (STAIRS.startZ - STAIRS.endZ) / STAIRS.steps;
+  const stepH = STAIRS.topY / STAIRS.steps;
+  const mat = new THREE.MeshLambertMaterial({ color:0x4a4338 });
+
+  for (let i = 0; i < STAIRS.steps; i++) {
+    const y = (i + 0.5) * stepH;
+    const z = STAIRS.startZ - (i + 0.5) * stepD;
+    const step = new THREE.Mesh(new THREE.BoxGeometry(stepW, stepH, stepD), mat);
+    step.position.set(STAIRS.x, y, z);
+    scene.add(step);
+  }
+}
+
+/* =========================================================
+   jizo
 ========================================================= */
 const jizoList = [];
 const JIZO_COUNT = 3, JIZO_SAFE_RADIUS = 4.0, JIZO_PROMPT_RADIUS = 3.0;
 
+function isPointReserved(x, z) {
+  if (Math.abs(x) < 6.5) return true; // main road
+  if (isOnPlatformTop(x, z) || isInStairCorridor(x, z)) return true;
+  return false;
+}
 function createJizo(x, z) {
   const grp = new THREE.Group();
   const bMat = new THREE.MeshLambertMaterial({ color:0xf0f0f0, emissive:0x101010, emissiveIntensity:0.18 });
@@ -833,7 +739,7 @@ function createJizo(x, z) {
   halo.position.y = 1.45; grp.add(halo);
   const light = new THREE.PointLight(0xff9800, 0, 7, 2);
   light.position.y = 1.55; grp.add(light);
-  const jy = getTerrainHeight(x, z);
+  const jy = getFloorHeight(x, z);
   grp.position.set(x, jy, z);
   scene.add(grp);
   const j = { group:grp, light, lit:false, x, z };
@@ -850,7 +756,7 @@ function placeJizoRandomly() {
 }
 placeJizoRandomly();
 
-const playerPos = new THREE.Vector3(0, getTerrainHeight(0,0) + 1.65, 0);
+const playerPos = new THREE.Vector3(0, getFloorHeight(0,0) + 1.65, 0);
 
 function getNearestJizoInPromptRange() {
   let best = null, bestDist = Infinity;
@@ -930,7 +836,7 @@ function buildFallbackEnemy() {
 function setEnemyTargetAvoidingSafeZone() {
   let p, tries = 0;
   do { p = randomPointInRange(130); tries++; }
-  while (isPointInsideAnySafeZone(p.x, p.z) && tries < 120);
+  while ((isPointReserved(p.x, p.z) || isInStairCorridor(p.x, p.z) || isOnPlatformTop(p.x, p.z)) && tries < 120);
   enemyTarget = p;
 }
 function hasLineOfSight(enemyPos, playerPos3D) {
@@ -957,7 +863,7 @@ function ensureHachishaku() {
   visualRoot.rotation.y = ENEMY_VISUAL_YAW_OFFSET;
   visualRoot.add(buildFallbackEnemy());
   hachishaku.add(visualRoot);
-  hachishaku.position.set(18, getTerrainHeight(18,18), 18);
+  hachishaku.position.set(18, getFloorHeight(18,18), 18);
   scene.add(hachishaku);
   setEnemyTargetAvoidingSafeZone();
 }
@@ -997,6 +903,18 @@ function triggerJumpScare() {
     if (game.state === 'jumpscare') triggerGameOver();
   }, 1200);
 }
+function chooseEnemyTarget() {
+  const pFloor = getFloorHeight(playerPos.x, playerPos.z);
+  const eFloor = getFloorHeight(hachishaku.position.x, hachishaku.position.z);
+
+  if (pFloor > eFloor + 0.5) {
+    return { x: STAIRS.x, z: STAIRS.startZ + 0.6 };
+  }
+  if (eFloor > pFloor + 0.5) {
+    return { x: STAIRS.x, z: STAIRS.endZ - 0.6 };
+  }
+  return { x: playerPos.x, z: playerPos.z };
+}
 function updateEnemyAI(deltaMs) {
   if (!hachishaku || game.state !== 'playing') return;
 
@@ -1004,12 +922,16 @@ function updateEnemyAI(deltaMs) {
   const ez = hachishaku.position.z;
   const enemyPos3D = new THREE.Vector3(ex, 0, ez);
   const distToPlayer = dist2D(ex, ez, playerPos.x, playerPos.z);
-  const canSee = (distToPlayer < DETECT_RADIUS) && hasLineOfSight(enemyPos3D, playerPos);
 
   if (distToPlayer < 1.8) {
     triggerJumpScare();
     return;
   }
+
+  const pFloor = getFloorHeight(playerPos.x, playerPos.z);
+  const eFloor = getFloorHeight(ex, ez);
+  const sameLayer = Math.abs(pFloor - eFloor) < 0.35;
+  const canSee = (distToPlayer < DETECT_RADIUS) && (sameLayer ? hasLineOfSight(enemyPos3D, playerPos) : true);
 
   if (enemyState === 'wander') {
     if (canSee) {
@@ -1043,234 +965,192 @@ function updateEnemyAI(deltaMs) {
 
   const push = getLitJizoRepulsion(hachishaku.position);
 
+  let target;
   if (enemyState === 'chase') {
-    const chaseTarget = canSee
-      ? { x:playerPos.x, z:playerPos.z }
-      : (lastKnownPlayerPos ? { x:lastKnownPlayerPos.x, z:lastKnownPlayerPos.z } : null);
-
-    if (chaseTarget) {
-      faceEnemyToward(chaseTarget.x, chaseTarget.z);
-      const dx = chaseTarget.x - ex, dz = chaseTarget.z - ez;
-      const d = Math.sqrt(dx*dx + dz*dz);
-      if (d > 0.01) {
-        const nx = dx / d, nz = dz / d;
-        const nextX = ex + nx * ENEMY_SPEED - push.x;
-        const nextZ = ez + nz * ENEMY_SPEED - push.z;
-        if (!isPointInsideAnySafeZone(nextX, nextZ)) {
-          hachishaku.position.x = nextX;
-          hachishaku.position.z = nextZ;
-        } else {
-          setEnemyTargetAvoidingSafeZone();
-          enemyState = 'wander';
-          losTimer = 0;
-        }
-      }
-      if (!canSee && lastKnownPlayerPos && dist2D(ex, ez, lastKnownPlayerPos.x, lastKnownPlayerPos.z) < 1.2) {
-        setEnemyTargetAvoidingSafeZone();
-      }
-    }
+    target = chooseEnemyTarget();
+    if (!canSee && lastKnownPlayerPos) target = { x:lastKnownPlayerPos.x, z:lastKnownPlayerPos.z };
   } else {
     if (!enemyTarget) setEnemyTargetAvoidingSafeZone();
-    const dx = enemyTarget.x - ex, dz = enemyTarget.z - ez;
-    const dist = Math.sqrt(dx*dx + dz*dz);
+    target = enemyTarget;
+  }
 
-    if (push.x !== 0 || push.z !== 0) {
+  faceEnemyToward(target.x, target.z);
+
+  const dx = target.x - ex;
+  const dz = target.z - ez;
+  const d = Math.sqrt(dx*dx + dz*dz);
+
+  if (d > 0.01) {
+    const nx = dx / d, nz = dz / d;
+    const speed = enemyState === 'chase' ? ENEMY_SPEED : ENEMY_WANDER_SPEED;
+    const nextX = ex + nx * speed - push.x;
+    const nextZ = ez + nz * speed - push.z;
+
+    if (enemyState === 'wander' && (push.x !== 0 || push.z !== 0)) {
       hachishaku.position.x -= push.x;
       hachishaku.position.z -= push.z;
       setEnemyTargetAvoidingSafeZone();
-    } else if (dist < 0.9) {
-      setEnemyTargetAvoidingSafeZone();
     } else {
-      const nx = dx / Math.max(dist, 0.0001), nz = dz / Math.max(dist, 0.0001);
-      const nextX = ex + nx * ENEMY_WANDER_SPEED;
-      const nextZ = ez + nz * ENEMY_WANDER_SPEED;
-      if (!isPointInsideAnySafeZone(nextX, nextZ)) {
-        hachishaku.position.x = nextX;
-        hachishaku.position.z = nextZ;
-        faceEnemyToward(enemyTarget.x, enemyTarget.z);
-      } else {
-        setEnemyTargetAvoidingSafeZone();
-      }
+      hachishaku.position.x = nextX;
+      hachishaku.position.z = nextZ;
     }
+  } else if (enemyState === 'wander') {
+    setEnemyTargetAvoidingSafeZone();
   }
 
-  hachishaku.position.y = getTerrainHeight(hachishaku.position.x, hachishaku.position.z) + Math.sin(performance.now() * 0.004) * 0.015;
+  const floorY = getFloorHeight(hachishaku.position.x, hachishaku.position.z);
+  hachishaku.position.y = floorY + Math.sin(performance.now() * 0.004) * 0.015;
 }
 
 /* =========================================================
-   GLB / FBX placement
+   房配置
 ========================================================= */
 function placeHousesAlongRoads(template) {
-  const AUTOS = 20;
-  const slots = [];
-
-  for (let z = -75; z < 75; z += 10) {
-    if (Math.abs(z) < 12) continue;
-    slots.push({ x: 11 + randRange(1,4), z: z + randRange(-2,2), ry: Math.PI / 2 * (Math.random() > 0.5 ? 1 : -1) });
-    slots.push({ x:-11 - randRange(1,4), z: z + randRange(-2,2), ry: Math.PI / 2 * (Math.random() > 0.5 ? 1 : -1) });
-  }
-  for (let x = -75; x < 75; x += 10) {
-    if (Math.abs(x) < 12) continue;
-    slots.push({ x: x + randRange(-2,2), z: 11 + randRange(1,4), ry: 0 });
-    slots.push({ x: x + randRange(-2,2), z:-11 - randRange(1,4), ry: Math.PI });
-  }
-
-  const bbox = new THREE.Box3().setFromObject(template);
-  const size = new THREE.Vector3();
-  bbox.getSize(size);
-  const TARGET_H = 5.0;
-  const autoScale = (size.y > 0.01) ? TARGET_H / size.y : 1.0;
-
+  const slots = HOUSE_SLOTS.slice();
   let placed = 0;
+  const TARGET_GROUND_H = 4.6;
+  const TARGET_PLATFORM_H = 4.2;
+
   for (const slot of slots) {
-    if (placed >= AUTOS) break;
-    const { x, z, ry } = slot;
-    if (Math.sqrt(x*x + z*z) < 10) continue;
+    const x = slot.x, z = slot.z, ry = slot.ry;
     if (isPointReserved(x, z)) continue;
 
-    const house = template.clone(true);
-    cloneUniqueMaterials(house);
-    const sc = autoScale * (0.85 + Math.random() * 0.28);
-    house.scale.setScalar(sc);
-    house.rotation.y = ry + randRange(-0.18, 0.18);
-    house.updateMatrixWorld(true);
-
-    const box = new THREE.Box3().setFromObject(house);
-    const y = getTerrainHeight(x, z) - box.min.y;
-    house.position.set(x, y, z);
-
-    optimizeImportedRoot(house, {
+    const targetH = slot.area === 'platform' ? TARGET_PLATFORM_H : TARGET_GROUND_H;
+    const house = placeModelOnFloor(template, x, z, ry, targetH, {
       darken: 0.55,
-      allowTransparent: true,
-      forceFrontSide: true
+      maxWidth: slot.area === 'platform' ? 7.5 : 6.6,
+      maxDepth: slot.area === 'platform' ? 7.5 : 6.6
     });
 
-    scene.add(house);
-    const hbox = new THREE.Box3().setFromObject(house);
-    hbox.expandByScalar(-0.12);
-    collisionBoxes.push(hbox);
+    house.obj.traverse(child => {
+      if (child.isMesh && child.material) {
+        const mats = Array.isArray(child.material) ? child.material : [child.material];
+        mats.forEach(m => { if (m.color) m.color.multiplyScalar(0.95); });
+      }
+    });
 
-    const firstMesh = [];
-    house.traverse(c => { if (c.isMesh && firstMesh.length < 1) firstMesh.push(c); });
-    if (firstMesh.length > 0) obstacleMeshes.push(firstMesh[0]);
-
+    scene.add(house.obj);
+    const box = new THREE.Box3().setFromObject(house.obj);
+    box.expandByScalar(-0.12);
+    collisionBoxes.push(box);
+    obstacleMeshes.push(house.obj);
     placed++;
   }
   return placed;
 }
 
-const LANTERN_POSITIONS = [];
-function buildLanternSlots() {
-  const step = 12;
-  const roadEdge = 8.8;
-  for (let z = -68; z <= 68; z += step) {
-    LANTERN_POSITIONS.push([ roadEdge, z, Math.PI ]);
-    LANTERN_POSITIONS.push([-roadEdge, z, 0 ]);
+function placeFallbackHouses() {
+  let placed = 0;
+  for (const slot of HOUSE_SLOTS) {
+    if (isPointReserved(slot.x, slot.z)) continue;
+    placeFallbackHouse(slot.x, slot.z, slot.ry, slot.area);
+    placed++;
   }
-  for (let x = -68; x <= 68; x += step) {
-    LANTERN_POSITIONS.push([x,  roadEdge, -Math.PI/2 ]);
-    LANTERN_POSITIONS.push([x, -roadEdge,  Math.PI/2 ]);
-  }
+  return placed;
 }
-buildLanternSlots();
 
+/* =========================================================
+   街灯配置
+========================================================= */
 function placeGaitouLights(template) {
   const box = new THREE.Box3().setFromObject(template);
   const size = new THREE.Vector3();
   box.getSize(size);
-  const TARGET_H = 3.6;
-  const sc = (size.y > 0.01) ? TARGET_H / size.y : 1.0;
-
+  const TARGET_H = 3.5;
+  const LIGHT_EVERY = 4;
   let idx = 0;
-  const LIGHT_EVERY = 5;
 
-  for (const [lx, lz, ry] of LANTERN_POSITIONS) {
-    const clone = template.clone(true);
-    cloneUniqueMaterials(clone);
-    clone.scale.setScalar(sc);
-    clone.rotation.y = ry;
-    clone.updateMatrixWorld(true);
+  for (const slot of LANTERN_SLOTS) {
+    const lamp = placeModelOnFloor(template, slot.x, slot.z, slot.ry, TARGET_H, {
+      darken: 0.58,
+      maxWidth: 1.6,
+      maxDepth: 1.6
+    });
 
-    const b = new THREE.Box3().setFromObject(clone);
-    const y = getTerrainHeight(lx, lz) - b.min.y;
-    clone.position.set(lx, y, lz);
-
-    optimizeImportedRoot(clone, {
+    optimizeImportedRoot(lamp.obj, {
       darken: 0.58,
       allowTransparent: true,
       forceFrontSide: true
     });
 
-    scene.add(clone);
+    scene.add(lamp.obj);
 
     if (idx % LIGHT_EVERY === 0) {
       const pl = new THREE.PointLight(0xff8800, 0.95, 8, 2);
-      pl.position.set(lx, y + (size.y * sc) * 0.98, lz);
+      pl.position.set(slot.x, getFloorHeight(slot.x, slot.z) + (size.y * lamp.scale) * 0.98, slot.z);
       scene.add(pl);
     }
 
-    registerStaticBox(lx, y + 1.5, lz, 0.18, 1.8, 0.18);
+    registerStaticBox(slot.x, getFloorHeight(slot.x, slot.z) + 1.5, slot.z, 0.18, 1.7, 0.18);
+    collisionBoxes.push(new THREE.Box3(
+      new THREE.Vector3(slot.x - 0.18, getFloorHeight(slot.x, slot.z), slot.z - 0.18),
+      new THREE.Vector3(slot.x + 0.18, getFloorHeight(slot.x, slot.z) + 3.5, slot.z + 0.18)
+    ));
+    obstacleMeshes.push(lamp.obj);
     idx++;
   }
 }
-
 function placeFallbackLanterns() {
   let idx = 0;
-  const LIGHT_EVERY = 5;
+  const LIGHT_EVERY = 4;
+  for (const slot of LANTERN_SLOTS) {
+    const y = getFloorHeight(slot.x, slot.z);
+    const g = new THREE.Group();
 
-  for (const [lx, lz, ry] of LANTERN_POSITIONS) {
-    const ly = getTerrainHeight(lx, lz);
-    const grp = new THREE.Group();
     const pole = new THREE.Mesh(
       new THREE.CylinderGeometry(0.06, 0.08, 3.2, 6),
       new THREE.MeshLambertMaterial({ color:0x1a0e00 })
     );
-    pole.position.y = 1.6; grp.add(pole);
+    pole.position.y = 1.6;
+    g.add(pole);
+
     const head = new THREE.Mesh(
       new THREE.BoxGeometry(0.52, 0.42, 0.52),
       new THREE.MeshBasicMaterial({ color:0xffcc66 })
     );
-    head.position.y = 3.35; grp.add(head);
+    head.position.y = 3.35;
+    g.add(head);
 
     if (idx % LIGHT_EVERY === 0) {
       const pl = new THREE.PointLight(0xff8800, 1.3, 9, 2);
-      pl.position.y = 3.35; grp.add(pl);
+      pl.position.y = 3.35;
+      g.add(pl);
     }
 
-    grp.position.set(lx, ly, lz);
-    grp.rotation.y = ry;
-    scene.add(grp);
-    registerStaticBox(lx, ly + 1.6, lz, 0.15, 1.8, 0.15);
+    g.position.set(slot.x, y, slot.z);
+    g.rotation.y = slot.ry;
+    scene.add(g);
+
+    registerStaticBox(slot.x, y + 1.6, slot.z, 0.15, 1.7, 0.15);
+    obstacleMeshes.push(g);
     idx++;
   }
 }
 
-function placeFallbackEnemy() {
-  ensureHachishaku();
+/* =========================================================
+   柵
+========================================================= */
+function buildFences() {
+  const mat = new THREE.MeshLambertMaterial({ color:0x3a2010 });
+
+  for (const slot of FENCE_SLOTS) {
+    const y = getFloorHeight(slot.x, slot.z);
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(slot.w, 0.8, slot.d), mat);
+    mesh.position.set(slot.x, y + 0.4, slot.z);
+    scene.add(mesh);
+    registerStaticBox(slot.x, y + 0.4, slot.z, slot.w * 0.5, 0.45, slot.d * 0.5);
+    obstacleMeshes.push(mesh);
+  }
 }
+buildFences();
 
 /* =========================================================
-   UI / audio / jump scare
+   地蔵とプレイヤー
 ========================================================= */
-const candlePercentEl = document.getElementById('candlePercent');
-const candleBarFill = document.getElementById('candleBarFill');
-const staminaPctEl = document.getElementById('staminaPct');
-const staminaBarFill = document.getElementById('staminaBarFill');
-const darkOverlay = document.getElementById('darknessOverlay');
-const dangerVeil = document.getElementById('dangerVeil');
-const alertIndicator = document.getElementById('alertIndicator');
-const statusMsg = document.getElementById('statusMsg');
-const errorMsg = document.getElementById('errorMsg');
-const promptMsg = document.getElementById('promptMsg');
-const gameOverScreen = document.getElementById('gameOverScreen');
-const joystickBase = document.getElementById('joystickBase');
-const joystickStick = document.getElementById('joystickStick');
-const dashBtnEl = document.getElementById('dashBtn');
-const jumpscareOverlay = document.getElementById('jumpscareOverlay');
-
-let candlePercent = 100;
-let lastTick = Date.now();
-const TICK_MS = 4000;
+const PLAYER_EYE_H = 1.65;
+const TERRAIN_LERP_K = 0.22;
+let targetPlayerY = playerPos.y;
+let gameStarted = true;
 
 function updateCandleUI() {
   const v = Math.max(0, Math.ceil(candlePercent));
@@ -1316,12 +1196,8 @@ const game = {
 let audioCtx = null;
 function ensureAudioContext() {
   try {
-    if (!audioCtx) {
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    }
-    if (audioCtx.state === 'suspended') {
-      audioCtx.resume().catch(() => {});
-    }
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
   } catch (_) {}
 }
 document.addEventListener('touchstart', ensureAudioContext, { passive:true });
@@ -1427,8 +1303,111 @@ function triggerJumpScare() {
   }, 1200);
 }
 
+function getNearestJizoInPromptRange() {
+  let best = null, bestDist = Infinity;
+  for (const j of jizoList) {
+    if (j.lit) continue;
+    const d = dist2D(playerPos.x, playerPos.z, j.x, j.z);
+    if (d <= JIZO_PROMPT_RADIUS && d < bestDist) { best = j; bestDist = d; }
+  }
+  return best;
+}
+function igniteJizo(jizo) {
+  if (!jizo || jizo.lit) return;
+  jizo.lit = true;
+  jizo.light.intensity = 1.8;
+  jizo.light.color.setHex(0xffa040);
+  const hm = jizo.group.children.find(c => c.isMesh && c.geometry && c.geometry.type === 'SphereGeometry');
+  if (hm && hm.material) hm.material.opacity = 0.26;
+}
+function updateJizoPrompt() {
+  const n = getNearestJizoInPromptRange();
+  if (n && game.state === 'playing') promptMsg.style.display = 'block';
+  else promptMsg.style.display = 'none';
+}
+function getLitJizoRepulsion(pos) {
+  let px = 0, pz = 0;
+  for (const j of jizoList) {
+    if (!j.lit) continue;
+    const dx = pos.x - j.x, dz = pos.z - j.z;
+    const d = Math.sqrt(dx*dx + dz*dz);
+    if (d < JIZO_SAFE_RADIUS) {
+      const sd = Math.max(d, 0.0001), ov = JIZO_SAFE_RADIUS - sd + 0.15;
+      px += (dx / sd) * ov;
+      pz += (dz / sd) * ov;
+    }
+  }
+  return { x:px, z:pz };
+}
+function isPointInsideAnySafeZone(x, z) {
+  for (const j of jizoList) {
+    if (!j.lit) continue;
+    if (dist2D(x, z, j.x, j.z) <= JIZO_SAFE_RADIUS) return true;
+  }
+  return false;
+}
+
+function updateMove() {
+  if (game.state !== 'playing') return;
+
+  if (isDashing && !dashExhausted) {
+    stamina = Math.max(0, stamina - STAMINA_DRAIN);
+    if (stamina <= 0) {
+      stamina = 0;
+      dashExhausted = true;
+      isDashing = false;
+    }
+  } else {
+    if (dashExhausted) {
+      stamina = Math.min(100, stamina + STAMINA_RECOVER * 0.6);
+      if (stamina >= 30) dashExhausted = false;
+    } else {
+      stamina = Math.min(100, stamina + STAMINA_RECOVER);
+    }
+  }
+  updateStaminaUI();
+
+  if (!joyActive) return;
+
+  const spd = (isDashing && !dashExhausted) ? SPEED_DASH : SPEED_WALK;
+  const fwd = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw));
+  const rgt = new THREE.Vector3( Math.cos(yaw), 0, -Math.sin(yaw));
+
+  let nx = playerPos.x - joyDy * spd * fwd.x + joyDx * spd * rgt.x;
+  let nz = playerPos.z - joyDy * spd * fwd.z + joyDx * spd * rgt.z;
+
+  nx = clamp(nx, -81, 81);
+  nz = clamp(nz, -81, 81);
+
+  const th = getFloorHeight(nx, nz);
+  const ny = th + PLAYER_EYE_H;
+
+  if (!checkBoxCollisionAt(nx, nz, ny)) {
+    playerPos.x = nx;
+    playerPos.z = nz;
+  } else {
+    const onlyNx = playerPos.x - joyDy * spd * fwd.x + joyDx * spd * rgt.x;
+    const onlyNz = playerPos.z;
+    const th2 = getFloorHeight(onlyNx, onlyNz);
+    if (!checkBoxCollisionAt(onlyNx, onlyNz, th2 + PLAYER_EYE_H)) {
+      playerPos.x = onlyNx;
+    } else {
+      const onlyNx2 = playerPos.x;
+      const onlyNz2 = playerPos.z - joyDy * spd * fwd.z + joyDx * spd * rgt.z;
+      const th3 = getFloorHeight(onlyNx2, onlyNz2);
+      if (!checkBoxCollisionAt(onlyNx2, onlyNz2, th3 + PLAYER_EYE_H)) {
+        playerPos.z = onlyNz2;
+      }
+    }
+  }
+
+  const newTerrainY = getFloorHeight(playerPos.x, playerPos.z) + PLAYER_EYE_H;
+  targetPlayerY = newTerrainY;
+  playerPos.y += (targetPlayerY - playerPos.y) * TERRAIN_LERP_K;
+}
+
 /* =========================================================
-   Touch controls
+   touch controls
 ========================================================= */
 let joyId = null, joyActive = false, joyDx = 0, joyDy = 0, joyStartX = 0, joyStartY = 0;
 let lookId = null, lookPrevX = 0, lookPrevY = 0;
@@ -1531,73 +1510,264 @@ function onTE(e) {
 }
 
 /* =========================================================
-   player movement
+   GLB / FBX placement
 ========================================================= */
-const playerEyeH = 1.65;
-const terrainLerpK = 0.22;
-let targetPlayerY = playerPos.y;
+function placeFallbackEnemy() {
+  if (hachishaku) return;
+  hachishaku = new THREE.Group();
+  const visualRoot = new THREE.Group();
+  visualRoot.rotation.y = ENEMY_VISUAL_YAW_OFFSET;
+  visualRoot.add(buildFallbackEnemy());
+  hachishaku.add(visualRoot);
+  hachishaku.position.set(18, getFloorHeight(18,18), 18);
+  scene.add(hachishaku);
+  setEnemyTargetAvoidingSafeZone();
+}
 
-function updateMove() {
-  if (game.state !== 'playing') return;
+function placeHousesAlongRoads(template) {
+  let placed = 0;
+  for (const slot of HOUSE_SLOTS) {
+    const x = slot.x, z = slot.z, ry = slot.ry;
+    if (isPointReserved(x, z)) continue;
 
-  if (isDashing && !dashExhausted) {
-    stamina = Math.max(0, stamina - STAMINA_DRAIN);
-    if (stamina <= 0) {
-      stamina = 0;
-      dashExhausted = true;
-      isDashing = false;
-    }
-  } else {
-    if (dashExhausted) {
-      stamina = Math.min(100, stamina + STAMINA_RECOVER * 0.6);
-      if (stamina >= 30) dashExhausted = false;
-    } else {
-      stamina = Math.min(100, stamina + STAMINA_RECOVER);
-    }
+    const house = placeModelOnFloor(template, x, z, ry, slot.area === 'platform' ? 4.2 : 4.6, {
+      darken: 0.55,
+      maxWidth: slot.area === 'platform' ? 7.5 : 6.6,
+      maxDepth: slot.area === 'platform' ? 7.5 : 6.6
+    });
+
+    scene.add(house.obj);
+    const box = new THREE.Box3().setFromObject(house.obj);
+    box.expandByScalar(-0.12);
+    collisionBoxes.push(box);
+    obstacleMeshes.push(house.obj);
+    placed++;
   }
-  updateStaminaUI();
+  return placed;
+}
 
-  if (!joyActive) return;
+function placeFallbackHouseLayout() {
+  let placed = 0;
+  for (const slot of HOUSE_SLOTS) {
+    if (isPointReserved(slot.x, slot.z)) continue;
+    placeFallbackHouse(slot.x, slot.z, slot.ry, slot.area);
+    placed++;
+  }
+  return placed;
+}
 
-  const spd = (isDashing && !dashExhausted) ? SPEED_DASH : SPEED_WALK;
-  const fwd = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw));
-  const rgt = new THREE.Vector3( Math.cos(yaw), 0, -Math.sin(yaw));
+function placeGaitouLightsIfTemplate(template) {
+  placeGaitouLights(template);
+}
 
-  let nx = playerPos.x - joyDy * spd * fwd.x + joyDx * spd * rgt.x;
-  let nz = playerPos.z - joyDy * spd * fwd.z + joyDx * spd * rgt.z;
+function buildPlatformAndRoadCollisionAndVisuals() {
+  // platform is already added as visual and collider above
+  // stairs are visuals only; floor detection drives ascent
+}
 
-  nx = clamp(nx, -81, 81);
-  nz = clamp(nz, -81, 81);
+function addDebugStatus(msg) { statusMsg.textContent = msg; }
+function appendStatus(msg) { statusMsg.textContent = (statusMsg.textContent || '') + msg; }
+function setStatus(msg) { statusMsg.textContent = msg; }
+function clearStatus() { statusMsg.textContent = ''; }
+function appendError(msg) {
+  errorMsg.textContent = (errorMsg.textContent ? errorMsg.textContent + '\n' : '') + msg;
+  errorMsg.style.display = 'block';
+}
+function clearError() {
+  errorMsg.style.display = 'none';
+  errorMsg.textContent = '';
+}
 
-  const th = getTerrainHeight(nx, nz);
-  const ny = th + playerEyeH;
+const gltfLoader = new THREE.GLTFLoader();
+const fbxLoader = new THREE.FBXLoader();
 
-  if (!checkPlayerCollision(nx, nz, ny)) {
-    playerPos.x = nx;
-    playerPos.z = nz;
+setStatus('モデル読み込み中...');
+
+gltfLoader.load('./ie.glb', gltf => {
+  const template = gltf.scene;
+  optimizeImportedRoot(template, {
+    darken: 0.55,
+    allowTransparent: true,
+    forceFrontSide: true
+  });
+
+  let meshCount = 0;
+  template.traverse(c => { if (c.isMesh) meshCount++; });
+
+  if (meshCount === 0) {
+    appendError('ie.glb: メッシュ0個');
+    placeFallbackHouseLayout();
   } else {
-    const onlyNx = playerPos.x - joyDy * spd * fwd.x + joyDx * spd * rgt.x;
-    const onlyNz = playerPos.z;
-    const th2 = getTerrainHeight(onlyNx, onlyNz);
-    if (!checkPlayerCollision(onlyNx, onlyNz, th2 + playerEyeH)) {
-      playerPos.x = onlyNx;
-    } else {
-      const onlyNx2 = playerPos.x;
-      const onlyNz2 = playerPos.z - joyDy * spd * fwd.z + joyDx * spd * rgt.z;
-      const th3 = getTerrainHeight(onlyNx2, onlyNz2);
-      if (!checkPlayerCollision(onlyNx2, onlyNz2, th3 + playerEyeH)) {
-        playerPos.z = onlyNz2;
+    const placed = placeHousesAlongRoads(template);
+    appendStatus(`✅ ie.glb 成功 / 家:${placed}棟`);
+    setTimeout(() => { if (game.state === 'playing') clearStatus(); }, 6000);
+  }
+
+  loadGaitou();
+}, prog => {
+  if (prog.total > 0) setStatus(`ie.glb ${Math.round(prog.loaded / prog.total * 100)}%`);
+}, e => {
+  appendError('ie.glb失敗: ' + (e && e.message ? e.message : String(e)));
+  placeFallbackHouseLayout();
+  loadGaitou();
+});
+
+let gaitouTemplate = null;
+function loadGaitou() {
+  gltfLoader.load('./gaitou.glb', gltf => {
+    gaitouTemplate = gltf.scene;
+    placeGaitouLightsIfTemplate(gaitouTemplate);
+    appendStatus('\n✅ gaitou.glb 成功');
+    setTimeout(() => { if (game.state === 'playing') clearStatus(); }, 5000);
+    loadKaidan();
+  }, null, () => {
+    appendError('gaitou.glb失敗→基本形状使用');
+    placeFallbackLanterns();
+    loadKaidan();
+  });
+}
+
+let kaidanTemplate = null;
+function placeKaidanVisual(template) {
+  const model = template.clone(true);
+  cloneUniqueMaterials(model);
+
+  model.scale.setScalar(1);
+  model.rotation.y = 0;
+  model.updateMatrixWorld(true);
+
+  const box0 = new THREE.Box3().setFromObject(model);
+  const size0 = new THREE.Vector3();
+  box0.getSize(size0);
+
+  const targetHeight = 4.0;
+  const scale = Math.min(
+    size0.y > 0.01 ? targetHeight / size0.y : 1,
+    size0.x > 0.01 ? (STAIRS.width * 0.92) / size0.x : 1,
+    size0.z > 0.01 ? ((STAIRS.startZ - STAIRS.endZ) * 0.95) / size0.z : 1
+  );
+
+  model.scale.setScalar(scale);
+  model.rotation.y = Math.PI;
+  model.updateMatrixWorld(true);
+
+  const box1 = new THREE.Box3().setFromObject(model);
+  model.position.set(
+    STAIRS.x,
+    -box1.min.y,
+    (STAIRS.startZ + STAIRS.endZ) * 0.5
+  );
+  model.updateMatrixWorld(true);
+
+  optimizeImportedRoot(model, {
+    darken: 0.68,
+    allowTransparent: true,
+    forceFrontSide: true
+  });
+
+  scene.add(model);
+  obstacleMeshes.push(model);
+}
+function loadKaidan() {
+  gltfLoader.load('./kaidan.glb', gltf => {
+    kaidanTemplate = gltf.scene;
+    placeStairVisuals();
+    placeKaidanVisual(kaidanTemplate);
+    appendStatus('\n✅ kaidan.glb 成功');
+    setTimeout(() => { if (game.state === 'playing') clearStatus(); }, 5000);
+    tryLoadFBX();
+  }, null, () => {
+    appendError('kaidan.glb失敗→基本階段使用');
+    placeFallbackStairVisuals();
+    tryLoadFBX();
+  });
+}
+function placeStairVisuals() {
+  // staircase is already visible through boxes built above
+}
+function placeFallbackStairVisuals() {
+  placeFallbackStairVisuals();
+}
+function tryLoadFBX() {
+  if (typeof THREE.FBXLoader === 'undefined') {
+    ensureHachishaku();
+    appendError('FBXLoader未定義→フォールバック使用');
+    setTimeout(() => { clearError(); }, 5000);
+    return;
+  }
+
+  fbxLoader.load('./popopo.fbx', fbx => {
+    const box = new THREE.Box3().setFromObject(fbx);
+    const size = new THREE.Vector3();
+    box.getSize(size);
+
+    const TARGET_HEIGHT = 4.5;
+    let finalScale = 1;
+    if (size.y > 0.01) finalScale = TARGET_HEIGHT / size.y;
+    fbx.scale.setScalar(finalScale);
+    fbx.updateMatrixWorld(true);
+
+    const box2 = new THREE.Box3().setFromObject(fbx);
+    fbx.position.y = -box2.min.y;
+    fbx.rotation.set(0, 0, 0);
+
+    fbx.traverse(child => {
+      if (child.isMesh) {
+        child.castShadow = false;
+        child.receiveShadow = false;
+        child.frustumCulled = true;
+        if (child.material) {
+          const mats = Array.isArray(child.material) ? child.material : [child.material];
+          mats.forEach(m => {
+            if (m.color) m.color.multiplyScalar(0.28);
+            if ('emissive' in m && m.emissive) m.emissive.multiplyScalar(0.12);
+            m.fog = true;
+            m.depthTest = true;
+            m.depthWrite = true;
+            m.side = THREE.FrontSide;
+            m.needsUpdate = true;
+          });
+        }
       }
-    }
-  }
+    });
 
-  const newTerrainY = getTerrainHeight(playerPos.x, playerPos.z) + playerEyeH;
-  targetPlayerY = newTerrainY;
-  playerPos.y += (targetPlayerY - playerPos.y) * terrainLerpK;
+    hachishaku = new THREE.Group();
+    const visualRoot = new THREE.Group();
+    visualRoot.rotation.y = ENEMY_VISUAL_YAW_OFFSET;
+    visualRoot.add(fbx);
+    hachishaku.add(visualRoot);
+    hachishaku.position.set(18, getFloorHeight(18,18), 18);
+    scene.add(hachishaku);
+    setEnemyTargetAvoidingSafeZone();
+
+    if (fbx.animations && fbx.animations.length > 0) {
+      enemyMixer = new THREE.AnimationMixer(fbx);
+      const action = enemyMixer.clipAction(fbx.animations[0]);
+      action.reset();
+      action.enabled = true;
+      action.setLoop(THREE.LoopRepeat, Infinity);
+      action.clampWhenFinished = false;
+      action.play();
+      appendStatus(`\n✅ popopo.fbx / アニメ:${fbx.animations.length}クリップ`);
+    } else {
+      appendStatus('\n✅ popopo.fbx / アニメなし');
+    }
+
+    setTimeout(() => { if (game.state === 'playing') clearStatus(); }, 5000);
+  }, prog => {
+    if (prog.total > 0) {
+      const pct = Math.round(prog.loaded / prog.total * 100);
+      appendStatus(`\npopopo.fbx ${pct}%`);
+    }
+  }, e => {
+    ensureHachishaku();
+    appendError('popopo.fbx失敗→フォールバック\n' + (e && e.message ? e.message : String(e)));
+    setTimeout(() => { clearError(); }, 7000);
+  });
 }
 
 /* =========================================================
-   render loop
+   main loop
 ========================================================= */
 let frame = 0;
 function animate() {
@@ -1651,7 +1821,7 @@ function animate() {
   }
 
   const now = Date.now();
-  if (game.state === 'playing' && now - lastTick > TICK_MS && candlePercent > 0) {
+  if (game.state === 'playing' && now - lastTick > 4000 && candlePercent > 0) {
     candlePercent--;
     lastTick = now;
     updateCandleUI();
@@ -1667,173 +1837,19 @@ function animate() {
 }
 
 /* =========================================================
-   loaders
+   enemy init
 ========================================================= */
-function appendStatus(msg) { statusMsg.textContent = (statusMsg.textContent || '') + msg; }
-function setStatus(msg) { statusMsg.textContent = msg; }
-function clearStatus() { statusMsg.textContent = ''; }
-function appendError(msg) {
-  errorMsg.textContent = (errorMsg.textContent ? errorMsg.textContent + '\n' : '') + msg;
-  errorMsg.style.display = 'block';
-}
-function clearError() {
-  errorMsg.style.display = 'none';
-  errorMsg.textContent = '';
-}
-
-const gltfLoader = new THREE.GLTFLoader();
-const fbxLoader = new THREE.FBXLoader();
-
-setStatus('モデル読み込み中...');
-
-gltfLoader.load('./ie.glb', gltf => {
-  const template = gltf.scene;
-  optimizeImportedRoot(template, {
-    darken: 0.55,
-    allowTransparent: true,
-    forceFrontSide: true
-  });
-
-  let meshCount = 0;
-  template.traverse(c => { if (c.isMesh) meshCount++; });
-
-  if (meshCount === 0) {
-    appendError('ie.glb: メッシュ0個');
-  } else {
-    const placed = placeHousesAlongRoads(template);
-    appendStatus(`✅ ie.glb 成功 / 家:${placed}棟`);
-    setTimeout(() => { if (game.state === 'playing') clearStatus(); }, 6000);
-  }
-
-  loadGaitou();
-}, prog => {
-  if (prog.total > 0) setStatus(`ie.glb ${Math.round(prog.loaded / prog.total * 100)}%`);
-}, e => {
-  appendError('ie.glb失敗: ' + (e && e.message ? e.message : String(e)));
-  loadGaitou();
-});
-
-let gaitouTemplate = null;
-function loadGaitou() {
-  gltfLoader.load('./gaitou.glb', gltf => {
-    gaitouTemplate = gltf.scene;
-    placeGaitouLights(gaitouTemplate);
-    appendStatus('\n✅ gaitou.glb 成功');
-    setTimeout(() => { if (game.state === 'playing') clearStatus(); }, 5000);
-    loadKaidan();
-  }, null, () => {
-    appendError('gaitou.glb失敗→基本形状使用');
-    placeFallbackLanterns();
-    loadKaidan();
-  });
-}
-
-let kaidanTemplate = null;
-function loadKaidan() {
-  gltfLoader.load('./kaidan.glb', gltf => {
-    kaidanTemplate = gltf.scene;
-    placeStairs(kaidanTemplate);
-    appendStatus('\n✅ kaidan.glb 成功');
-    setTimeout(() => { if (game.state === 'playing') clearStatus(); }, 5000);
-    tryLoadFBX();
-  }, null, () => {
-    appendError('kaidan.glb失敗→基本階段使用');
-    placeFallbackStairs();
-    tryLoadFBX();
-  });
-}
-
-function tryLoadFBX() {
-  if (typeof THREE.FBXLoader === 'undefined') {
-    ensureHachishaku();
-    appendError('FBXLoader未定義→フォールバック使用');
-    setTimeout(() => { clearError(); }, 5000);
-    return;
-  }
-
-  fbxLoader.load('./popopo.fbx', fbx => {
-    const BASE_SCALE = 0.02;
-    fbx.scale.set(BASE_SCALE, BASE_SCALE, BASE_SCALE);
-    fbx.updateMatrixWorld(true);
-
-    const box1 = new THREE.Box3().setFromObject(fbx);
-    const size = new THREE.Vector3();
-    box1.getSize(size);
-
-    const TARGET_HEIGHT = 4.5;
-    let finalScale = BASE_SCALE;
-    if (size.y > 0.01) {
-      finalScale = BASE_SCALE * (TARGET_HEIGHT / size.y);
-      fbx.scale.set(finalScale, finalScale, finalScale);
-      fbx.updateMatrixWorld(true);
-    }
-
-    const box2 = new THREE.Box3().setFromObject(fbx);
-    fbx.position.y = -box2.min.y;
-    fbx.rotation.set(0, 0, 0);
-
-    fbx.traverse(child => {
-      if (child.isMesh) {
-        child.castShadow = false;
-        child.receiveShadow = false;
-        child.frustumCulled = true;
-        if (child.material) {
-          const mats = Array.isArray(child.material) ? child.material : [child.material];
-          mats.forEach(m => {
-            if (m.color) m.color.multiplyScalar(0.28);
-            if ('emissive' in m && m.emissive) m.emissive.multiplyScalar(0.12);
-            m.fog = true;
-            m.depthTest = true;
-            m.depthWrite = true;
-            m.side = THREE.FrontSide;
-            m.needsUpdate = true;
-          });
-        }
-      }
-    });
-
-    hachishaku = new THREE.Group();
-    const visualRoot = new THREE.Group();
-    visualRoot.rotation.y = ENEMY_VISUAL_YAW_OFFSET;
-    visualRoot.add(fbx);
-    hachishaku.add(visualRoot);
-    hachishaku.position.set(18, getTerrainHeight(18,18), 18);
-    scene.add(hachishaku);
-    setEnemyTargetAvoidingSafeZone();
-
-    if (fbx.animations && fbx.animations.length > 0) {
-      enemyMixer = new THREE.AnimationMixer(fbx);
-      const action = enemyMixer.clipAction(fbx.animations[0]);
-      action.reset();
-      action.enabled = true;
-      action.setLoop(THREE.LoopRepeat, Infinity);
-      action.clampWhenFinished = false;
-      action.play();
-      appendStatus(`\n✅ popopo.fbx / アニメ:${fbx.animations.length}クリップ`);
-    } else {
-      appendStatus('\n✅ popopo.fbx / アニメなし');
-    }
-
-    setTimeout(() => { if (game.state === 'playing') clearStatus(); }, 5000);
-  }, prog => {
-    if (prog.total > 0) {
-      const pct = Math.round(prog.loaded / prog.total * 100);
-      appendStatus(`\npopopo.fbx ${pct}%`);
-    }
-  }, e => {
-    ensureHachishaku();
-    appendError('popopo.fbx失敗→フォールバック\n' + (e && e.message ? e.message : String(e)));
-    setTimeout(() => { clearError(); }, 7000);
-  });
+function ensureEnemyAndStart() {
+  if (!hachishaku) ensureHachishaku();
 }
 
 /* =========================================================
    start
 ========================================================= */
-animate();
 updateCandleUI();
 updateStaminaUI();
-ensureHachishaku();
+ensureEnemyAndStart();
+animate();
 
 })();
 </script>
