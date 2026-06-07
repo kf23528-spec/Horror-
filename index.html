@@ -20,34 +20,33 @@ html, body {
 #gameCanvas { display:block; width:100%; height:100%; touch-action:none; }
 
 /* =====================================================
-   導入プロローグ画面（★修正1：新設）
+   導入プロローグ画面
 ===================================================== */
 #prologueScreen {
   position:fixed; inset:0; z-index:200;
   background:#000;
   display:flex; flex-direction:column;
   align-items:center; justify-content:center;
-  padding:32px 28px;
+  padding:28px 26px;
   pointer-events:auto;
   transition:opacity 1.2s ease;
+  overflow-y:auto;
 }
 #prologueScreen.fadeout {
   opacity:0;
   pointer-events:none;
 }
-#prologueScreen.gone {
-  display:none;
-}
+#prologueScreen.gone { display:none; }
 
-/* 血文字のタイトルロゴ */
+/* 血文字タイトル */
 #prologueLogo {
   font-family:'Hiragino Mincho ProN','Yu Mincho',serif;
-  font-size:clamp(28px,7vw,52px);
+  font-size:clamp(30px,7.5vw,56px);
   color:#c80000;
-  letter-spacing:0.18em;
+  letter-spacing:0.20em;
   text-align:center;
   line-height:1.3;
-  margin-bottom:28px;
+  margin-bottom:20px;
   text-shadow:
     0 0 14px rgba(200,0,0,0.9),
     0 0 36px rgba(160,0,0,0.6),
@@ -55,49 +54,71 @@ html, body {
     2px 2px 0 #1a0000,
     -2px -2px 0 #1a0000;
   animation:bloodPulse 2.8s ease-in-out infinite;
+  flex-shrink:0;
 }
 @keyframes bloodPulse {
   0%,100% { filter:brightness(1.0) drop-shadow(0 0 10px rgba(200,0,0,0.5)); }
   50%      { filter:brightness(1.18) drop-shadow(0 0 22px rgba(255,0,0,0.8)); }
 }
 
+/* サブタイトル */
+#prologueSub {
+  font-family:'Hiragino Mincho ProN','Yu Mincho',serif;
+  font-size:clamp(11px,2.2vw,14px);
+  color:#554433;
+  letter-spacing:0.28em;
+  text-align:center;
+  margin-bottom:20px;
+  flex-shrink:0;
+}
+
 /* 縦線区切り */
 #prologueDivider {
-  width:1px; height:36px;
+  width:1px; height:30px;
   background:linear-gradient(to bottom, transparent, #600000, transparent);
-  margin-bottom:24px;
+  margin-bottom:18px;
+  flex-shrink:0;
 }
 
 /* 本文 */
 #prologueBody {
   font-family:'Hiragino Mincho ProN','Yu Mincho',serif;
-  font-size:clamp(13px,2.8vw,17px);
+  font-size:clamp(12.5px,2.6vw,16px);
   color:#d4c0b0;
-  line-height:2.0;
+  line-height:2.05;
   letter-spacing:0.07em;
   text-align:left;
-  max-width:600px; width:100%;
+  max-width:620px; width:100%;
   text-shadow:0 1px 8px rgba(0,0,0,0.95);
-  margin-bottom:28px;
+  margin-bottom:22px;
+  flex-shrink:0;
 }
+#prologueBody p { margin-bottom:10px; }
 #prologueBody .red { color:#e83030; font-weight:700; }
 #prologueBody .dim { color:#886655; }
+#prologueBody .ghost {
+  color:#b08080;
+  font-style:italic;
+  letter-spacing:0.12em;
+  text-shadow:0 0 12px rgba(200,80,80,0.4), 0 1px 8px rgba(0,0,0,0.95);
+}
 
 /* 操作説明 */
 #prologueControls {
   font-family:'Hiragino Mincho ProN','Yu Mincho',serif;
-  font-size:clamp(11px,2.3vw,14px);
+  font-size:clamp(11px,2.2vw,14px);
   color:#886040;
-  line-height:1.9;
+  line-height:1.95;
   letter-spacing:0.06em;
   text-align:left;
-  max-width:600px; width:100%;
+  max-width:620px; width:100%;
   border-left:2px solid #4a2010;
   padding-left:14px;
-  margin-bottom:32px;
+  margin-bottom:26px;
+  flex-shrink:0;
 }
 
-/* タップ促進テキスト */
+/* タップ促進 */
 #prologueTapHint {
   font-family:'Hiragino Mincho ProN','Yu Mincho',serif;
   font-size:clamp(13px,2.6vw,16px);
@@ -105,21 +126,24 @@ html, body {
   letter-spacing:0.18em;
   text-align:center;
   animation:blinkRed 1.1s step-end infinite;
+  flex-shrink:0;
+  max-width:620px; width:100%;
 }
 @keyframes blinkRed { 0%,100%{opacity:1.0;} 50%{opacity:0.28;} }
 
-/* 血のにじみ風アンビエント */
+/* 血のにじみ ambient */
 #prologueScreen::before {
   content:"";
-  position:absolute; inset:0;
+  position:fixed; inset:0;
   background:
     radial-gradient(ellipse 70% 40% at 20% 10%, rgba(80,0,0,0.25) 0%, transparent 70%),
     radial-gradient(ellipse 50% 60% at 80% 90%, rgba(60,0,0,0.20) 0%, transparent 70%);
   pointer-events:none;
+  z-index:-1;
 }
 
 /* =====================================================
-   ゲーム本体UI（プロローグ消えるまで隠す）
+   ゲームUIラッパー
 ===================================================== */
 #gameUI {
   opacity:0;
@@ -132,7 +156,41 @@ html, body {
 }
 
 /* =====================================================
-   以下は既存のUI（変更なし）
+   ★新設：目的指示UI（左上、常時表示）
+===================================================== */
+#objectiveUI {
+  position:fixed; top:18px; left:18px;
+  z-index:25; pointer-events:none;
+  max-width:calc(100vw - 36px);
+}
+#objectiveLabel {
+  font-family:'Hiragino Mincho ProN','Yu Mincho',serif;
+  font-size:clamp(11px,2.2vw,13px);
+  color:#888866;
+  letter-spacing:0.14em;
+  display:block;
+  margin-bottom:3px;
+  text-shadow:
+    -1px -1px 0 #000, 1px -1px 0 #000,
+    -1px  1px 0 #000, 1px  1px 0 #000;
+}
+#objectiveText {
+  font-family:'Hiragino Mincho ProN','Yu Mincho',serif;
+  font-size:clamp(12px,2.6vw,15px);
+  color:#ffffff;
+  letter-spacing:0.08em;
+  line-height:1.6;
+  display:block;
+  text-shadow:
+    -2px -2px 0 #000, 2px -2px 0 #000,
+    -2px  2px 0 #000, 2px  2px 0 #000,
+    0 0 14px rgba(0,0,0,0.9),
+    0 0 28px rgba(0,0,0,0.7);
+  transition:opacity 0.5s ease;
+}
+
+/* =====================================================
+   既存UI（変更なし）
 ===================================================== */
 #vignette {
   position:fixed; inset:0;
@@ -192,7 +250,7 @@ html, body {
 
 /* チャプター表示 */
 #chapterBadge {
-  position:fixed; top:20px; left:20px;
+  position:fixed; top:20px; right:20px;
   font-family:'Hiragino Mincho ProN','Georgia',serif;
   font-size:13px; color:#998877; letter-spacing:3px;
   text-shadow:0 0 8px #000;
@@ -397,7 +455,7 @@ html, body {
 }
 
 /* =====================================================
-   シネマティックテキストウィンドウ（★修正3：タップ送り対応）
+   シネマティックテキストウィンドウ
 ===================================================== */
 #cinemaTop {
   position:fixed; top:0; left:0; right:0;
@@ -419,13 +477,26 @@ html, body {
   position:fixed; top:4px; right:18px;
   font-family:'Hiragino Mincho ProN',serif;
   font-size:12px; color:#554433; letter-spacing:2px;
-  z-index:88; pointer-events:none; display:none;
+  z-index:95; pointer-events:none; display:none;
 }
+
+/* ★バグ修正の核心：storyTapLayer は画面全体を覆う透明タップ受付レイヤー */
+/* z-index:90 で cinemaTop/Bot(80) より上、gameOverScreen(100) より下に配置 */
+#storyTapLayer {
+  position:fixed; inset:0;
+  z-index:90;
+  display:none;
+  background:transparent;
+  pointer-events:auto;
+  /* デバッグ時は背景色をつけて確認できる */
+  /* background:rgba(255,0,0,0.1); */
+}
+#storyTapLayer.active { display:block; }
 
 #storyPanel {
   position:fixed; inset:0; z-index:85;
   display:none; align-items:center; justify-content:center;
-  pointer-events:auto;
+  pointer-events:none; /* タップはstoryTapLayerで受ける */
 }
 #storyPanel.active { display:flex; }
 
@@ -434,7 +505,7 @@ html, body {
   height:24vh; display:flex; flex-direction:column;
   align-items:center; justify-content:center;
   padding:12px 40px 20px;
-  pointer-events:auto;
+  pointer-events:none;
 }
 #storyText {
   font-family:'Hiragino Mincho ProN','Yu Mincho',serif;
@@ -482,14 +553,19 @@ html, body {
 <canvas id="gameCanvas"></canvas>
 
 <!-- =====================================================
-   ★修正1：導入プロローグ画面（新設）
+   導入プロローグ画面（長文・強化版）
 ===================================================== -->
 <div id="prologueScreen">
   <div id="prologueLogo">忌夜ノ村</div>
+  <div id="prologueSub">第1章：静寂の廃村</div>
   <div id="prologueDivider"></div>
   <div id="prologueBody">
-    <p>数日前、「八尺様」の呪いについて調べに行った<span class="red">親友が姿を消した</span>。</p>
-    <p style="margin-top:10px">あいつの足取りを追い、私は地図にない廃村へと足を踏み入れる……。</p>
+    <p>数日前、「<span class="red">八尺様</span>」と呼ばれる怪異の呪いについて調べていた親友が、<br>
+    「<span class="ghost">あの村には、絶対に触れてはならない因習がある</span>」と言い残し、忽然と姿を消した。</p>
+    <p>警察は見向きもしない。<span class="red">あいつを救えるのは、私しかいない……。</span></p>
+    <p>手がかりを頼りに山奥へと進むうち、霧の向こうに、<span class="red">地図にない廃村</span>が姿を現した。<br>
+    生温かい不気味な風が吹き抜ける。</p>
+    <p class="ghost">どこからか「ポ、ポ、ポ……」という、<br>低く、あり得ないほど不気味な声が聞こえた気がした。</p>
   </div>
   <div id="prologueControls">
     ・画面<b>左側</b>：移動（ジョイスティック）<br>
@@ -508,6 +584,12 @@ html, body {
 <div id="darknessOverlay"></div>
 <div id="dangerVeil"></div>
 <div id="shakeOverlay"></div>
+
+<!-- ★新設：目的指示UI（左上） -->
+<div id="objectiveUI">
+  <span id="objectiveLabel">▸ 現在の目的</span>
+  <span id="objectiveText">怪しく光る灯篭の家を探し、<br>親友の痕跡を調査せよ</span>
+</div>
 
 <div id="chapterBadge">第1章：静寂の廃村</div>
 
@@ -542,6 +624,14 @@ html, body {
 <div id="cinemaTop"></div>
 <div id="cinemaBot"></div>
 <div id="storyPageNum"></div>
+
+<!--
+  ★バグ修正の核心：
+  storyTapLayer = 画面全体を覆う透明なタップ受付専用レイヤー（z-index:90）
+  storyPanel    = テキスト表示専用（pointer-events:none、タップは受けない）
+  この分離により「テキスト表示中にどこをタップしても確実に進む」を実現
+-->
+<div id="storyTapLayer"></div>
 <div id="storyPanel">
   <div id="storyBox">
     <div id="storyText"><span id="storyContent"></span><span id="storyCursor"></span></div>
@@ -560,31 +650,26 @@ html, body {
 'use strict';
 
 /* =====================================================
-   ★修正1：プロローグ制御
-   - ゲームはプロローグが消えるまで操作不可
+   プロローグ制御
 ===================================================== */
 let prologueDone = false;
 const prologueScreen = document.getElementById('prologueScreen');
-const gameUI = document.getElementById('gameUI');
+const gameUI         = document.getElementById('gameUI');
 
 function dismissPrologue() {
   if (prologueDone) return;
   prologueDone = true;
   prologueScreen.classList.add('fadeout');
-  // ゲームUIを表示
   gameUI.classList.add('visible');
-  setTimeout(() => {
-    prologueScreen.classList.add('gone');
-  }, 1300);
+  setTimeout(() => { prologueScreen.classList.add('gone'); }, 1300);
 }
 
-// プロローグ画面のタッチ／クリックで消去
-prologueScreen.addEventListener('touchstart', (e) => {
+prologueScreen.addEventListener('touchstart', e => {
   e.preventDefault();
   ensureAudio();
   dismissPrologue();
 }, { passive:false });
-prologueScreen.addEventListener('pointerdown', (e) => {
+prologueScreen.addEventListener('pointerdown', e => {
   e.preventDefault();
   ensureAudio();
   dismissPrologue();
@@ -986,12 +1071,10 @@ function jizoRepulsion(pos) {
 }
 
 /* =====================================================
-   ★修正2：ノートオブジェクト — シンプル距離判定に変更
-   複雑なレイキャストは廃止。プレイヤーが NOTE_INTERACT_R 以内で
-   画面右側タップ（または全体タップ）なら確実に反応する。
+   ノートオブジェクト（距離判定）
 ===================================================== */
 const NOTE_POS = { x: 15, z: -8 };
-const NOTE_INTERACT_R = 3.0;  // 距離3m以内
+const NOTE_INTERACT_R = 3.0;
 
 let noteRead = false;
 let noteMesh = null;
@@ -1017,9 +1100,6 @@ function buildEventHouseNote() {
 }
 buildEventHouseNote();
 
-/**
- * ★修正2コア：距離判定のみでノート読める範囲かチェック
- */
 function isNoteInRange() {
   return dist2D(playerPos.x, playerPos.z, NOTE_POS.x, NOTE_POS.z) <= NOTE_INTERACT_R;
 }
@@ -1198,7 +1278,7 @@ let candlePercent = 100;
 let lastCandleTick = Date.now();
 const CANDLE_TICK_MS = 4000;
 const candlePercentEl = document.getElementById('candlePercent');
-const candleBarFill = document.getElementById('candleBarFill');
+const candleBarFill   = document.getElementById('candleBarFill');
 const darknessOverlay = document.getElementById('darknessOverlay');
 
 function updateCandleUI() {
@@ -1210,9 +1290,9 @@ function updateCandleUI() {
 /* =====================================================
    Stamina & Dash
 ===================================================== */
-const staminaPctEl = document.getElementById('staminaPct');
-const staminaBarFill = document.getElementById('staminaBarFill');
-const dashBtnEl = document.getElementById('dashBtn');
+const staminaPctEl  = document.getElementById('staminaPct');
+const staminaBarFillEl = document.getElementById('staminaBarFill');
+const dashBtnEl     = document.getElementById('dashBtn');
 let stamina = 100, isDashing = false, dashExhausted = false;
 const STAMINA_DRAIN = 0.55, STAMINA_RECOVER = 0.22;
 const SPEED_WALK = 0.058, SPEED_DASH = 0.115;
@@ -1220,14 +1300,28 @@ const SPEED_WALK = 0.058, SPEED_DASH = 0.115;
 function updateStaminaUI() {
   const v = Math.max(0, Math.round(stamina));
   staminaPctEl.textContent = v;
-  staminaBarFill.style.width = v + '%';
+  staminaBarFillEl.style.width = v + '%';
   dashBtnEl.classList.toggle('exhausted', dashExhausted);
   dashBtnEl.classList.toggle('pressing', isDashing && !dashExhausted);
 }
 
 /* =====================================================
-   ★修正3：ストーリーテキストシステム（タップページ送り）
-   3ページ構成、各タップで文字送り→次ページ→クローズ
+   ★新設：目的指示UI 更新
+===================================================== */
+const objectiveTextEl = document.getElementById('objectiveText');
+
+function updateObjectiveUI() {
+  if (chapter.phase >= 1) {
+    objectiveTextEl.innerHTML = '封鎖が解けた階段を上り、<br>高台の集落へ進め';
+  } else {
+    objectiveTextEl.innerHTML = '怪しく光る灯篭の家を探し、<br>親友の痕跡を調査せよ';
+  }
+}
+
+/* =====================================================
+   ★バグ修正の核心：ストーリーテキストシステム
+   ─ storyTapLayer（z-index:90, 画面全体を覆う透明div）が
+     touchstart / click を直接受け取り advanceStory() を呼ぶ ─
 ===================================================== */
 const cinemaTop    = document.getElementById('cinemaTop');
 const cinemaBot    = document.getElementById('cinemaBot');
@@ -1235,19 +1329,21 @@ const storyPanel   = document.getElementById('storyPanel');
 const storyContent = document.getElementById('storyContent');
 const storyCursor  = document.getElementById('storyCursor');
 const storyPageNum = document.getElementById('storyPageNum');
+// ★このレイヤーがバグ修正の本体
+const storyTapLayer = document.getElementById('storyTapLayer');
 
-// ★3ページ構成（修正指示通りの文章）
+// 3ページ構成
 const STORY_PAGES = [
   "×月×日：親友の手帳の文字だ。間違いなくあいつはここに来ている……",
   "『この村は100年以上前、巨大な影に魅入られた。村人はそれを「八尺様」と呼び、若い生贄を捧げることで村を守ってきた……』",
   "『最後に生贄が捧げられたのは15年前。それ以来、村は呪われ、誰もいなくなった』……おい、奥の部屋から何か物音が聞こえ――"
 ];
 
-let storyPage = 0;
-let storyTyping = false;
+let storyPage    = 0;
+let storyTyping  = false;
 let storyTypeIdx = 0;
 let storyTypeTimer = null;
-let storyOpen = false;
+let storyOpen    = false;
 
 function openStory() {
   storyOpen = true;
@@ -1256,13 +1352,15 @@ function openStory() {
   cinemaBot.classList.add('open');
   storyPanel.classList.add('active');
   storyPageNum.style.display = 'block';
+  // ★タップ受付レイヤーを有効化
+  storyTapLayer.classList.add('active');
   showStoryPage(0);
 }
 
 function showStoryPage(idx) {
   storyContent.textContent = '';
   storyCursor.style.display = 'inline-block';
-  storyTyping = true;
+  storyTyping  = true;
   storyTypeIdx = 0;
   const text = STORY_PAGES[idx];
   storyPageNum.textContent = `${idx + 1} / ${STORY_PAGES.length}`;
@@ -1279,28 +1377,25 @@ function showStoryPage(idx) {
 }
 
 /**
- * ★修正3コア：タップするたびにページを進める
- *   1タップ目：文字送り中なら即座に全表示
- *   2タップ目：次のページへ
- *   3ページ目を読み終えてタップ：ウィンドウを閉じてクリア演出
+ * ★バグ修正：advanceStory をタップごとに確実に呼ぶ
+ *   タイプ中 → 即全表示
+ *   表示完了 → 次ページ or クローズ
  */
 function advanceStory() {
   if (!storyOpen) return;
 
   if (storyTyping) {
-    // タイプ中なら即全表示
+    // 即全表示
     clearInterval(storyTypeTimer);
     storyTyping = false;
     storyContent.textContent = STORY_PAGES[storyPage];
     return;
   }
 
-  // 次ページへ
   storyPage++;
   if (storyPage < STORY_PAGES.length) {
     showStoryPage(storyPage);
   } else {
-    // 全ページ読了 → クローズ
     closeStory();
   }
 }
@@ -1310,6 +1405,8 @@ function closeStory() {
   storyOpen = false;
   storyPanel.classList.remove('active');
   storyPageNum.style.display = 'none';
+  // ★タップ受付レイヤーを無効化
+  storyTapLayer.classList.remove('active');
 
   setTimeout(() => {
     cinemaTop.classList.remove('open');
@@ -1320,11 +1417,30 @@ function closeStory() {
 }
 
 /* =====================================================
+   ★storyTapLayer に直接イベント登録（バグ修正の肝）
+   pointer-events:auto の透明div が最前面でタップを確実に捕捉
+===================================================== */
+storyTapLayer.addEventListener('touchstart', e => {
+  e.preventDefault();
+  e.stopPropagation();
+  ensureAudio();
+  advanceStory();
+}, { passive:false });
+
+storyTapLayer.addEventListener('click', e => {
+  e.preventDefault();
+  e.stopPropagation();
+  ensureAudio();
+  advanceStory();
+});
+
+/* =====================================================
    Chapter 1 clear
 ===================================================== */
 function onChapter1Clear() {
   chapter.phase = 2;
   noteRead = true;
+  updateObjectiveUI(); // ★目的UIを更新
   triggerDoomShake();
   setTimeout(() => removeStairBarrier(), 600);
   setTimeout(() => spawnHachishakuWithFBX(), 200);
@@ -1354,16 +1470,16 @@ function triggerDoomShake() {
 /* =====================================================
    Game over & jump scare
 ===================================================== */
-const gameOverScreen  = document.getElementById('gameOverScreen');
-const alertIndicator  = document.getElementById('alertIndicator');
-const dangerVeil      = document.getElementById('dangerVeil');
+const gameOverScreen   = document.getElementById('gameOverScreen');
+const alertIndicator   = document.getElementById('alertIndicator');
+const dangerVeil       = document.getElementById('dangerVeil');
 const jumpscareOverlay = document.getElementById('jumpscareOverlay');
-const statusMsg       = document.getElementById('statusMsg');
-const errorMsg        = document.getElementById('errorMsg');
-const blockMsg        = document.getElementById('blockMsg');
+const statusMsg        = document.getElementById('statusMsg');
+const errorMsg         = document.getElementById('errorMsg');
+const blockMsg         = document.getElementById('blockMsg');
 
 function hideControls() {
-  document.getElementById('joystickBase').style.display = 'none';
+  document.getElementById('joystickBase').style.display  = 'none';
   document.getElementById('joystickStick').style.display = 'none';
   dashBtnEl.style.display = 'none';
 }
@@ -1394,7 +1510,8 @@ function triggerJumpscare() {
 
 /* =====================================================
    Touch controls
-   ★修正2：ノートのタッチ判定をシンプルな距離判定に統一
+   （ストーリー中のタップは storyTapLayer が処理するため
+     canvas の onTS では storyOpen チェックのみ残す）
 ===================================================== */
 const joystickBase  = document.getElementById('joystickBase');
 const joystickStick = document.getElementById('joystickStick');
@@ -1410,11 +1527,11 @@ let moveLocked = false;
 
 dashBtnEl.addEventListener('touchstart', e => {
   e.stopPropagation(); ensureAudio();
-  if (game.state !== 'playing' || dashExhausted || moveLocked || !prologueDone) return;
+  if (game.state !== 'playing' || dashExhausted || moveLocked || !prologueDone || storyOpen) return;
   isDashing = true;
 }, { passive:true });
-dashBtnEl.addEventListener('touchend',   e => { e.stopPropagation(); isDashing = false; }, { passive:true });
-dashBtnEl.addEventListener('touchcancel',e => { e.stopPropagation(); isDashing = false; }, { passive:true });
+dashBtnEl.addEventListener('touchend',    e => { e.stopPropagation(); isDashing = false; }, { passive:true });
+dashBtnEl.addEventListener('touchcancel', e => { e.stopPropagation(); isDashing = false; }, { passive:true });
 
 canvas.addEventListener('touchstart',  onTS, { passive:false });
 canvas.addEventListener('touchmove',   onTM, { passive:false });
@@ -1425,13 +1542,8 @@ function onTS(e) {
   e.preventDefault();
   ensureAudio();
 
-  // ★修正3：ストーリー中のタップはページ送り
-  if (storyOpen) {
-    advanceStory();
-    return;
-  }
-
-  // プロローグが終わっていない場合は操作しない
+  // storyOpen 中は storyTapLayer が処理するので canvas では何もしない
+  if (storyOpen) return;
   if (!prologueDone) return;
   if (game.state !== 'playing') return;
 
@@ -1471,12 +1583,6 @@ function onTM(e) {
   }
 }
 
-/**
- * ★修正2：tryInteract — 距離判定のみでノートイベントを起動
- *   ・プレイヤーがノート座標から3m以内 かつ
- *   ・タップが短押し（350ms未満）であれば
- *   → どこをタップしても確実にノートイベント発動
- */
 function tryInteract(t) {
   if (game.state !== 'playing' || !prologueDone) return;
   const meta = touchStartMeta.get(t.identifier);
@@ -1485,10 +1591,9 @@ function tryInteract(t) {
   const elapsed = Date.now() - meta.time;
   const moved   = Math.hypot(t.clientX - meta.x, t.clientY - meta.y);
 
-  // 長押し・スワイプは除外
   if (elapsed > 400 || moved > 30) return;
 
-  // ★ノートイベント：距離判定のみ（レイキャスト不使用）
+  // ノートイベント：距離判定のみ
   if (!noteRead && chapter.phase === 0 && isNoteInRange()) {
     chapter.phase = 1;
     moveLocked = true;
@@ -1515,7 +1620,8 @@ function onTE(e) {
       joystickStick.style.transform = 'translate(0,0)';
     }
     if (t.identifier === lookId) lookId = null;
-    tryInteract(t);
+    // storyOpen 中は tryInteract をスキップ（storyTapLayer が処理）
+    if (!storyOpen) tryInteract(t);
     touchStartMeta.delete(t.identifier);
   }
 }
@@ -1729,7 +1835,6 @@ function animate() {
   if (game.state === 'playing' && !storyOpen && prologueDone) {
     jizoPromptEl.style.display = getNearestJizoInRange() ? 'block' : 'none';
 
-    // ★修正2：ノートプロンプトも距離判定のみ
     if (!noteRead && chapter.phase === 0 && isNoteInRange()) {
       promptMsg.textContent = '【タップ】古いノートを読む';
       promptMsg.style.display = 'block';
@@ -1798,7 +1903,7 @@ function placeHouses(template) {
     optimizeRoot(house, { darken:0.55, allowTransparent:true });
     scene.add(house);
 
-    // ★既存最適化維持：Box3 軽量当たり判定
+    // Box3 軽量当たり判定（ラグ防止）
     const finalBB = new THREE.Box3().setFromObject(house);
     finalBB.expandByScalar(-0.10);
     collisionBoxes.push(finalBB);
@@ -1834,7 +1939,7 @@ function placeLanterns(template) {
     clone.scale.setScalar(sc);
     clone.rotation.y = ry;
     clone.updateMatrixWorld(true);
-    // ★既存最適化維持：Y=0 接地処理
+    // Y=0 接地処理
     const cb = new THREE.Box3().setFromObject(clone);
     clone.position.set(lx, -cb.min.y, lz);
     optimizeRoot(clone, { darken:0.58, allowTransparent:true });
@@ -1883,7 +1988,7 @@ function placeStairs(template) {
   clone.scale.set(scW, scH, scH);
   clone.rotation.y = STAIR.ry;
   clone.updateMatrixWorld(true);
-  // ★既存最適化維持：kaidan.glb の接地処理
+  // kaidan.glb 接地処理
   const cb2 = new THREE.Box3().setFromObject(clone);
   clone.position.set(STAIR.cx, -cb2.min.y, STAIR.cz);
   optimizeRoot(clone, { darken:0.7, allowTransparent:true });
@@ -2005,6 +2110,7 @@ function loadFBX() {
 animate();
 updateCandleUI();
 updateStaminaUI();
+updateObjectiveUI();
 
 })();
 </script>
