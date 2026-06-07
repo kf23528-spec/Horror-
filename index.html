@@ -93,7 +93,7 @@
 
   <div id="objective">
     <div id="objective-label">▶ 目的</div>
-    <div id="objective-text">再生数のために、赤いスマホが落ちている不気味な一軒家を探せ</div>
+    <div id="objective-text">再生数のために、黄色いピンが立っている不気味な一軒家を探せ</div>
   </div>
 
   <div id="live-badge">
@@ -416,6 +416,16 @@ function normalizeModel(root, targetHeight = 5) {
   root.updateMatrixWorld(true);
   return root;
 }
+function groundToSurface(obj) {
+  obj.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(obj);
+  const size = box.getSize(new THREE.Vector3());
+  // If the model pivot is centered, this lifts it by half-height;
+  // if it already has a bottom pivot, the extra lift is zeroed by min.y.
+  obj.position.y += (size.y / 2) - box.min.y;
+  obj.updateMatrixWorld(true);
+  return obj;
+}
 function clonePreparedModel(template) {
   const cloned = template.clone(true);
   cloned.traverse(obj => {
@@ -453,20 +463,20 @@ async function initThree() {
   renderer.setClearColor(0x000000);
 
   const scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(0x000000, 0.038);
+  scene.fog = new THREE.Fog(0x000000, 5, 50);
   scene.background = new THREE.Color(0x000204);
 
   const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1200);
   camera.position.set(0, 1.65, 0);
   scene.add(camera);
 
-  const ambLight = new THREE.AmbientLight(0x111827, 1.05); scene.add(ambLight);
-  const ptLight = new THREE.PointLight(0x223344, 1.2, 28); ptLight.position.set(0, 6, 0); scene.add(ptLight);
-  const ptLight2 = new THREE.PointLight(0x112233, 0.7, 22); ptLight2.position.set(12, 5, -30); scene.add(ptLight2);
+  const ambLight = new THREE.AmbientLight(0x111827, 0.2); scene.add(ambLight);
+  const ptLight = new THREE.PointLight(0x223344, 3.6, 45, 1); ptLight.position.set(0, 6, 0); scene.add(ptLight);
+  const ptLight2 = new THREE.PointLight(0x112233, 2.4, 40, 1); ptLight2.position.set(12, 5, -30); scene.add(ptLight2);
 
-  const flashlight = new THREE.SpotLight(0xfff6dd, 2.8, 55, Math.PI / 7, 0.45, 1.7);
-  flashlight.position.set(0, 0, 0);
-  flashlight.target.position.set(0, 0, -10);
+  const flashlight = new THREE.SpotLight(0xfff6dd, 10.8, 70, Math.PI / 6.5, 0.45, 1);
+  flashlight.position.set(0, 0.8, 0);
+  flashlight.target.position.set(0, 0.45, -18);
   camera.add(flashlight);
   camera.add(flashlight.target);
 
@@ -632,10 +642,14 @@ async function initThree() {
   const collisionBoxes = [];
   let phoneMesh = null;
   let phoneGlow = null;
+  let targetPin = null;
+  let targetPinGlow = null;
   const phoneInteractDist = 3.5;
   const phoneHouseIndex = 3;
   const houseSpacing = 9;
   const numHouses = 18;
+  const HOUSE_TARGET_HEIGHT = 5.0;
+  const LAMP_TARGET_HEIGHT = 5.5;
 
   function buildPhone() {
     const phoneGeo = new THREE.BoxGeometry(0.12, 0.24, 0.015);
@@ -649,35 +663,61 @@ async function initThree() {
     scene.add(phoneGlow);
   }
 
+  function buildTargetPin(x, z, y) {
+    if (targetPin) scene.remove(targetPin);
+    if (targetPinGlow) scene.remove(targetPinGlow);
+    targetPin = new THREE.Group();
+    const pinMat = new THREE.MeshBasicMaterial({ color:0xffdd33 });
+    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.12, 1.8, 10), pinMat);
+    shaft.position.y = 1.1;
+    targetPin.add(shaft);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.42, 14, 14), pinMat);
+    head.position.y = 2.15;
+    targetPin.add(head);
+    const tip = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.85, 12), pinMat);
+    tip.position.y = 0.35;
+    tip.rotation.x = Math.PI;
+    targetPin.add(tip);
+    targetPin.position.set(x, y, z);
+    scene.add(targetPin);
+    targetPinGlow = new THREE.PointLight(0xffdd55, 3.0, 18, 1);
+    targetPinGlow.position.set(x, y + 1.2, z);
+    scene.add(targetPinGlow);
+  }
+
   function placeHouse(modelTemplate, x, z, side) {
     const obj = clonePreparedModel(modelTemplate);
     obj.position.set(x, 0, z);
     obj.rotation.y = (side === 'left') ? Math.PI / 2 : -Math.PI / 2;
+    groundToSurface(obj);
     scene.add(obj);
     collisionBoxes.push(new THREE.Box3().setFromObject(obj));
   }
   function placeLamp(modelTemplate, x, z) {
     const obj = clonePreparedModel(modelTemplate);
     obj.position.set(x, 0, z);
+    groundToSurface(obj);
     scene.add(obj);
   }
   function placeFallbackHouseAt(x, z, side) {
     const obj = makeFallbackHouse();
     obj.position.set(x, 0, z);
     obj.rotation.y = (side === 'left') ? Math.PI / 2 : -Math.PI / 2;
+    groundToSurface(obj);
     scene.add(obj);
     collisionBoxes.push(new THREE.Box3().setFromObject(obj));
   }
   function placeFallbackLampAt(x, z) {
     const obj = makeFallbackLamp();
     obj.position.set(x, 0, z);
+    groundToSurface(obj);
     scene.add(obj);
   }
 
   async function buildWorld() {
     loadingEl.classList.add('active');
-    const houseResult = await loadGLTF('./ie.glb').then(gltf => ({ ok:true, scene: normalizeModel(gltf.scene, 5.0) }), err => ({ ok:false, err }));
-    const lampResult = await loadGLTF('./gaitou.glb').then(gltf => ({ ok:true, scene: normalizeModel(gltf.scene, 5.5) }), err => ({ ok:false, err }));
+    const houseResult = await loadGLTF('./ie.glb').then(gltf => ({ ok:true, scene: normalizeModel(gltf.scene, HOUSE_TARGET_HEIGHT) }), err => ({ ok:false, err }));
+    const lampResult = await loadGLTF('./gaitou.glb').then(gltf => ({ ok:true, scene: normalizeModel(gltf.scene, LAMP_TARGET_HEIGHT) }), err => ({ ok:false, err }));
     const houseTemplate = houseResult.ok ? houseResult.scene : null;
     const lampTemplate = lampResult.ok ? lampResult.scene : null;
 
@@ -691,6 +731,9 @@ async function initThree() {
         else { placeFallbackLampAt(-5.5, z); placeFallbackLampAt(5.5, z); }
       }
     }
+
+    const targetZ = -80 + phoneHouseIndex * houseSpacing;
+    buildTargetPin(-10, targetZ, HOUSE_TARGET_HEIGHT + 1.0);
     buildPhone();
     loadingEl.classList.remove('active');
   }
@@ -768,7 +811,12 @@ async function initThree() {
     camera.rotation.y = yaw;
     camera.rotation.x = pitch;
 
-    flashlight.target.position.set(0, 0, -10);
+    flashlight.target.position.set(0, 0.6, -12);
+    if (targetPin) {
+      targetPin.position.y = (HOUSE_TARGET_HEIGHT + 1.2) + Math.sin(elapsed * 2) * 0.12;
+      targetPin.rotation.y = elapsed * 0.6;
+      if (targetPinGlow) targetPinGlow.intensity = 2.0 + Math.sin(elapsed * 3.5) * 0.6;
+    }
 
     if (!phonePickedUp && !storyActive && phoneMesh) {
       const dist = camera.position.distanceTo(phoneMesh.position);
