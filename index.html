@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<title>夜の村 - 和風ホラー</title>
+<title>忌夜ノ村（いみのむら） - 第1章：静寂の廃村</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fflate@0.7.4/umd/index.js"></script>
@@ -33,7 +33,6 @@ html, body {
   pointer-events:none; z-index:9; transition:background 0.25s ease;
 }
 
-/* 蝋燭UI */
 #candleUI {
   position:fixed; top:20px; left:50%; transform:translateX(-50%);
   font-family:'Georgia','Hiragino Mincho ProN',serif;
@@ -54,7 +53,6 @@ html, body {
   box-shadow:0 0 6px rgba(255,180,0,0.7);
 }
 
-/* スタミナUI */
 #staminaUI {
   position:fixed; top:64px; left:50%; transform:translateX(-50%);
   font-family:'Georgia','Hiragino Mincho ProN',serif;
@@ -75,7 +73,6 @@ html, body {
   box-shadow:0 0 5px rgba(0,200,255,0.6);
 }
 
-/* 走るボタン */
 #dashBtn {
   position:fixed; bottom:60px; right:60px;
   width:80px; height:80px; border-radius:50%;
@@ -97,7 +94,6 @@ html, body {
 #dashBtn.pressing { background:rgba(0,200,255,0.42); box-shadow:0 0 22px rgba(0,220,255,0.65); }
 #dashBtn.exhausted { background:rgba(60,60,80,0.3); border-color:rgba(120,120,160,0.3); opacity:0.55; }
 
-/* 警告 */
 #alertIndicator {
   position:fixed; top:110px; left:50%; transform:translateX(-50%);
   font-family:'Hiragino Mincho ProN',serif;
@@ -124,18 +120,24 @@ html, body {
   text-shadow:0 0 8px #000;
   z-index:21; pointer-events:none; display:none;
 }
+#smallHint {
+  position:fixed; top:150px; left:50%; transform:translateX(-50%);
+  font-family:'Hiragino Mincho ProN',serif;
+  font-size:12px; color:#d7d7d7; letter-spacing:1px;
+  text-shadow:0 0 8px #000;
+  z-index:20; pointer-events:none; display:none;
+}
 #errorMsg {
-  position:fixed; top:148px; left:50%; transform:translateX(-50%);
+  position:fixed; top:170px; left:50%; transform:translateX(-50%);
   font-family:monospace; font-size:11px; color:#ff6666;
   text-shadow:0 0 6px #000;
   z-index:20; pointer-events:none; display:none;
   text-align:center; white-space:pre-wrap;
 }
 
-/* ゲームオーバー */
 #gameOverScreen {
   position:fixed; inset:0; display:none;
-  z-index:100; align-items:center; justify-content:center;
+  z-index:120; align-items:center; justify-content:center;
   text-align:center; background:rgba(0,0,0,0.0); pointer-events:none;
 }
 #gameOverScreen.active {
@@ -172,7 +174,6 @@ html, body {
 }
 @keyframes pulse { 0%,100%{opacity:0.7;} 50%{opacity:1.0;} }
 
-/* ジョイスティック */
 #joystickBase {
   position:fixed; bottom:60px; left:60px;
   width:120px; height:120px; border-radius:50%;
@@ -190,11 +191,9 @@ html, body {
   transition:transform 0.03s, opacity 0.25s;
 }
 
-/* ジャンプスケア */
 #jumpscareOverlay {
-  position:fixed; inset:0; z-index:120; display:none; overflow:hidden;
-  background:#000;
-  pointer-events:none;
+  position:fixed; inset:0; z-index:130; display:none; overflow:hidden;
+  background:#000; pointer-events:none;
 }
 #jumpscareOverlay.active { display:block; }
 #jumpscareOverlay .bg {
@@ -254,6 +253,65 @@ html, body {
   opacity:0.0;
   transition:opacity 0.25s ease;
 }
+
+#storyOverlay {
+  position:fixed; inset:0;
+  z-index:110;
+  display:none;
+  pointer-events:auto;
+  touch-action:none;
+  background:rgba(0,0,0,0.18);
+}
+#storyOverlay.active { display:block; }
+#storyTopBand, #storyBottomBand {
+  position:absolute; left:0; width:100%; height:18vh; background:#000;
+}
+#storyTopBand { top:0; }
+#storyBottomBand { bottom:0; }
+#storyPanel {
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  width:min(900px, 92vw);
+  padding:18px 18px 16px;
+  background:rgba(10,10,10,0.7);
+  border:1px solid rgba(255,255,255,0.15);
+  border-radius:16px;
+  box-shadow:0 0 18px rgba(0,0,0,0.6);
+  color:#f4f4f4;
+  text-align:center;
+}
+#storyChapter {
+  font-family:'Hiragino Mincho ProN',serif;
+  font-size:clamp(18px,4vw,26px);
+  letter-spacing:3px;
+  color:#ffdddd;
+  margin-bottom:12px;
+  text-shadow:0 0 10px rgba(255,0,0,0.4);
+}
+#storyText {
+  font-family:'Hiragino Mincho ProN',serif;
+  font-size:clamp(15px,3.4vw,21px);
+  line-height:1.9;
+  white-space:pre-wrap;
+  text-align:left;
+  color:#f2f2f2;
+  min-height:5.5em;
+}
+#storyFooter {
+  margin-top:12px;
+  font-family:monospace;
+  font-size:12px;
+  color:#cccccc;
+  letter-spacing:1px;
+  opacity:0.9;
+}
+
+#chapterToast {
+  position:fixed; top:110px; left:50%; transform:translateX(-50%);
+  z-index:22; pointer-events:none; display:none;
+  font-family:'Hiragino Mincho ProN',serif;
+  font-size:14px; color:#ffe7a9; letter-spacing:2px;
+  text-shadow:0 0 10px rgba(0,0,0,0.8), 0 0 14px rgba(255,170,0,0.4);
+}
 </style>
 </head>
 <body>
@@ -272,7 +330,9 @@ html, body {
 <div id="alertIndicator">⚠ 八尺様に発見された…</div>
 <div id="statusMsg"></div>
 <div id="promptMsg">【画面をタップ】して地蔵に火を灯す</div>
+<div id="smallHint">まだ上に行くべきではない…</div>
 <div id="errorMsg"></div>
+<div id="chapterToast"></div>
 
 <div id="gameOverScreen">
   <div id="gameOverInner">
@@ -281,11 +341,19 @@ html, body {
   </div>
 </div>
 
+<div id="storyOverlay">
+  <div id="storyTopBand"></div>
+  <div id="storyBottomBand"></div>
+  <div id="storyPanel">
+    <div id="storyChapter">第1章：静寂の廃村</div>
+    <div id="storyText"></div>
+    <div id="storyFooter">タップで次へ</div>
+  </div>
+</div>
+
 <div id="jumpscareOverlay">
   <div class="bg"></div>
-  <div id="jumpscareFace">
-    <div id="jumpscareMouth"></div>
-  </div>
+  <div id="jumpscareFace"><div id="jumpscareMouth"></div></div>
 </div>
 
 <div id="joystickBase"></div>
@@ -310,39 +378,53 @@ scene.background = new THREE.Color(0x0c0d12);
 scene.fog = new THREE.FogExp2(0x111218, 0.022);
 
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 180);
-camera.position.set(0, 2.5, 0);
+camera.position.set(0, 1.65, 0);
 camera.rotation.order = 'YXZ';
 
 const clock = new THREE.Clock();
-
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-function dist2D(ax, az, bx, bz) { const dx = ax - bx, dz = az - bz; return Math.sqrt(dx*dx + dz*dz); }
-function randRange(a, b) { return a + Math.random() * (b - a); }
-function randomPointInRange(r) { return { x:(Math.random()-0.5)*r, z:(Math.random()-0.5)*r }; }
-function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
-function smoothStep(t) { return t*t*(3-2*t); }
+const $ = id => document.getElementById(id);
+
+const ui = {
+  candlePct: $('candlePercent'),
+  candleBar: $('candleBarFill'),
+  staminaPct: $('staminaPct'),
+  staminaBar: $('staminaBarFill'),
+  darkOverlay: $('darknessOverlay'),
+  dangerVeil: $('dangerVeil'),
+  alert: $('alertIndicator'),
+  status: $('statusMsg'),
+  prompt: $('promptMsg'),
+  smallHint: $('smallHint'),
+  error: $('errorMsg'),
+  gameOver: $('gameOverScreen'),
+  story: $('storyOverlay'),
+  storyText: $('storyText'),
+  toast: $('chapterToast'),
+  joyBase: $('joystickBase'),
+  joyStick: $('joystickStick'),
+  dashBtn: $('dashBtn'),
+  jumpscare: $('jumpscareOverlay'),
+};
+
+function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
+function dist2D(ax, az, bx, bz){ const dx = ax - bx, dz = az - bz; return Math.sqrt(dx*dx + dz*dz); }
+function randRange(a, b){ return a + Math.random() * (b - a); }
+function randomPointInRange(r){ return { x:(Math.random()-0.5)*r, z:(Math.random()-0.5)*r }; }
 
 function optimizeImportedRoot(root, opts = {}) {
-  const {
-    darken = 1,
-    allowTransparent = false,
-    forceFrontSide = true,
-  } = opts;
-
+  const { darken = 1, allowTransparent = false, forceFrontSide = true } = opts;
   root.traverse(child => {
     if (!child.isMesh) return;
-
     child.castShadow = false;
     child.receiveShadow = false;
     child.frustumCulled = true;
-    if (child.geometry && !child.geometry.boundingSphere) {
-      child.geometry.computeBoundingSphere();
-    }
+    if (child.geometry && !child.geometry.boundingSphere) child.geometry.computeBoundingSphere();
 
     const mats = Array.isArray(child.material) ? child.material : [child.material];
     mats.forEach(m => {
@@ -352,16 +434,11 @@ function optimizeImportedRoot(root, opts = {}) {
       m.fog = true;
       m.depthTest = true;
       m.depthWrite = true;
-
       if (!allowTransparent && m.transparent && (m.opacity === undefined || m.opacity >= 0.999) && !m.alphaMap) {
         m.transparent = false;
         m.opacity = 1;
       }
-
-      if (m.map) {
-        m.map.anisotropy = Math.min(2, renderer.capabilities.getMaxAnisotropy());
-        m.map.generateMipmaps = true;
-      }
+      if (m.map) m.map.anisotropy = Math.min(2, renderer.capabilities.getMaxAnisotropy());
       m.needsUpdate = true;
     });
   });
@@ -371,82 +448,54 @@ function cloneUniqueMaterials(root) {
   root.traverse(child => {
     if (!child.isMesh) return;
     if (child.material) {
-      if (Array.isArray(child.material)) child.material = child.material.map(m => m.clone());
-      else child.material = child.material.clone();
+      child.material = Array.isArray(child.material) ? child.material.map(m => m.clone()) : child.material.clone();
     }
-    child.castShadow = false;
-    child.receiveShadow = false;
   });
 }
 
-function pointInRect(x, z, cx, cz, w, d) {
-  return Math.abs(x - cx) <= w * 0.5 && Math.abs(z - cz) <= d * 0.5;
-}
 function pointToSegmentData(x, z, ax, az, bx, bz) {
   const vx = bx - ax, vz = bz - az;
   const len2 = vx*vx + vz*vz;
   if (len2 < 1e-8) return null;
   const t = ((x - ax) * vx + (z - az) * vz) / len2;
-  const px = ax + vx * t;
-  const pz = az + vz * t;
+  const px = ax + vx * t, pz = az + vz * t;
   const dist = Math.sqrt((x - px) ** 2 + (z - pz) ** 2);
-  return { t, px, pz, dist, vx, vz, len2 };
+  return { t, px, pz, dist };
 }
+function pointInRect(x, z, cx, cz, w, d){
+  return Math.abs(x - cx) <= w * 0.5 && Math.abs(z - cz) <= d * 0.5;
+}
+function smoothStep(t){ return t*t*(3 - 2*t); }
 
-/* =========================================================
-   2階層マップ設定
-========================================================= */
-const GROUND_Y = 0;
-const PLATFORM = {
-  cx: 0,
-  cz: -48,
-  w: 78,
-  d: 36,
-  topY: 4,
-  h: 4
-};
-const STAIRS = {
-  x: 0,
-  startZ: -18,
-  endZ: -30,
-  width: 6.2,
-  steps: 12,
-  topY: 4,
-};
-const ROAD = {
-  x: 0,
-  w: 8,
-  zStart: -80,
-  zEnd: 80
+/* ===================================================================
+   2階層マップ（完全固定）
+=================================================================== */
+const MAP = {
+  groundY: 0,
+  platformY: 4,
+  platform: { cx: 0, cz: -70, w: 62, d: 24 },      // 高台の床メッシュは1つだけ
+  stair: { x: 0, zStart: -48, zEnd: -58, w: 8, steps: 8 }, // ground -> platform edge
 };
 
-function isInStairCorridor(x, z) {
-  return Math.abs(x - STAIRS.x) <= STAIRS.width * 0.5 && z <= STAIRS.startZ && z >= STAIRS.endZ;
-}
-function isOnPlatformTop(x, z) {
-  return Math.abs(x - PLATFORM.cx) <= PLATFORM.w * 0.5 && z < STAIRS.endZ && z >= PLATFORM.cz - PLATFORM.d * 0.5;
-}
-function getFloorHeight(x, z) {
-  if (isInStairCorridor(x, z)) {
-    const t = clamp((STAIRS.startZ - z) / (STAIRS.startZ - STAIRS.endZ), 0, 1);
-    return STAIRS.topY * smoothStep(t);
+function getSurfaceHeight(x, z) {
+  if (Math.abs(x - MAP.stair.x) <= MAP.stair.w * 0.5 && z <= MAP.stair.zStart && z >= MAP.stair.zEnd) {
+    const t = (MAP.stair.zStart - z) / (MAP.stair.zStart - MAP.stair.zEnd);
+    const step = Math.max(0, Math.min(MAP.stair.steps - 1, Math.floor(t * MAP.stair.steps)));
+    return ((step + 1) / MAP.stair.steps) * MAP.platformY;
   }
-  if (isOnPlatformTop(x, z)) return PLATFORM.topY;
-  return GROUND_Y;
+  if (pointInRect(x, z, MAP.platform.cx, MAP.platform.cz, MAP.platform.w, MAP.platform.d)) {
+    return MAP.platformY;
+  }
+  return MAP.groundY;
 }
-function getFloorLayer(x, z) {
-  if (isInStairCorridor(x, z)) return 'stair';
-  if (isOnPlatformTop(x, z)) return 'platform';
-  return 'ground';
-}
+function isOnPlatform(x, z){ return pointInRect(x, z, MAP.platform.cx, MAP.platform.cz, MAP.platform.w, MAP.platform.d); }
+function isOnStairCorridor(x, z){ return Math.abs(x - MAP.stair.x) <= MAP.stair.w * 0.5 && z <= MAP.stair.zStart && z >= MAP.stair.zEnd; }
 
-/* =========================================================
-   scene / lighting
-========================================================= */
-const groundMat = new THREE.MeshLambertMaterial({ color:0x18181c });
-const ground = new THREE.Mesh(new THREE.PlaneGeometry(360, 360, 1, 1), groundMat);
-ground.rotation.x = -Math.PI / 2;
-scene.add(ground);
+/* ===================================================================
+   Scene / lights
+=================================================================== */
+const sceneRoot = new THREE.Group();
+scene.add(sceneRoot);
 
 const ambLight = new THREE.AmbientLight(0x8080a0, 0.55);
 scene.add(ambLight);
@@ -461,275 +510,375 @@ scene.add(candleLight, candleLight.target);
 const footLight = new THREE.PointLight(0xff7a18, 2.0, 5.0);
 scene.add(footLight);
 
+/* ===================================================================
+   Ground / plateau / roads
+=================================================================== */
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(360, 360, 1, 1),
+  new THREE.MeshLambertMaterial({ color:0x18181c })
+);
+ground.rotation.x = -Math.PI / 2;
+scene.add(ground);
+
+const platformMesh = new THREE.Mesh(
+  new THREE.BoxGeometry(MAP.platform.w, MAP.platformY, MAP.platform.d),
+  new THREE.MeshLambertMaterial({ color:0x2a2a30 })
+);
+platformMesh.position.set(MAP.platform.cx, MAP.platformY * 0.5, MAP.platform.cz);
+scene.add(platformMesh);
+
 const roadMat = new THREE.MeshLambertMaterial({ color:0x1e1e20 });
-function addRoad(x, z, w, d) {
+function addRoad(x, z, w, d, y = 0) {
   const geo = new THREE.PlaneGeometry(w, d, 1, 1);
   geo.rotateX(-Math.PI / 2);
-  const cy = getFloorHeight(x, z) + 0.012;
   const m = new THREE.Mesh(geo, roadMat);
-  m.position.set(x, cy, z);
+  m.position.set(x, y + 0.012, z);
   scene.add(m);
 }
-addRoad(ROAD.x, 0, ROAD.w, ROAD.zEnd - ROAD.zStart + 10);
+addRoad(0, 0, 7, 160, 0);
+addRoad(0, -70, 42, 4, 4); // plateau road
 
-/* =========================================================
-   collisions
-========================================================= */
-const collisionBoxes = [];
-const obstacleMeshes = [];
+/* ===================================================================
+   Collision system (Box3 only)
+=================================================================== */
+const collisions = []; // { box: Box3, active: boolean }
+const obstaclesLOS = []; // representative meshes for raycast only
+const tmpBox = new THREE.Box3();
 const playerBox = new THREE.Box3();
 const PLAYER_BOX_HALF = 0.38;
 
-function registerStaticBox(cx, cy, cz, hw, hh, hd) {
-  collisionBoxes.push(
+function addCollisionBox(box, active = true) {
+  const entry = { box: box.clone(), active };
+  collisions.push(entry);
+  return entry;
+}
+function addStaticBox(cx, cy, cz, hw, hh, hd, active = true) {
+  return addCollisionBox(
     new THREE.Box3(
       new THREE.Vector3(cx - hw, cy - hh, cz - hd),
       new THREE.Vector3(cx + hw, cy + hh, cz + hd)
-    )
+    ),
+    active
   );
 }
-function checkBoxCollisionAt(x, z, y, half = PLAYER_BOX_HALF, yLow = 1.0, yHigh = 0.5) {
+function checkPlayerCollision(newX, newZ, newY) {
   playerBox.set(
-    new THREE.Vector3(x - half, y - yLow, z - half),
-    new THREE.Vector3(x + half, y + yHigh, z + half)
+    new THREE.Vector3(newX - PLAYER_BOX_HALF, newY - 1.0, newZ - PLAYER_BOX_HALF),
+    new THREE.Vector3(newX + PLAYER_BOX_HALF, newY + 0.5, newZ + PLAYER_BOX_HALF)
   );
-  for (const box of collisionBoxes) {
-    if (playerBox.intersectsBox(box)) return true;
-  }
-  return false;
-}
-function tryMoveWithSlide(currentPos, nextX, nextZ, floorY, half = PLAYER_BOX_HALF) {
-  if (!checkBoxCollisionAt(nextX, nextZ, floorY, half)) {
-    currentPos.x = nextX;
-    currentPos.z = nextZ;
-    return true;
-  }
-  const onlyX = !checkBoxCollisionAt(nextX, currentPos.z, getFloorHeight(nextX, currentPos.z) + PLAYER_EYE_H, half);
-  if (onlyX) {
-    currentPos.x = nextX;
-    return true;
-  }
-  const onlyZ = !checkBoxCollisionAt(currentPos.x, nextZ, getFloorHeight(currentPos.x, nextZ) + PLAYER_EYE_H, half);
-  if (onlyZ) {
-    currentPos.z = nextZ;
-    return true;
+  for (const c of collisions) {
+    if (!c.active) continue;
+    if (playerBox.intersectsBox(c.box)) return true;
   }
   return false;
 }
 
-/* =========================================================
-   platform / stair visuals
-========================================================= */
-function buildPlatform() {
-  const platformMesh = new THREE.Mesh(
-    new THREE.BoxGeometry(PLATFORM.w, PLATFORM.h, PLATFORM.d),
-    new THREE.MeshLambertMaterial({ color:0x27272c })
-  );
-  platformMesh.position.set(PLATFORM.cx, PLATFORM.h * 0.5, PLATFORM.cz);
-  scene.add(platformMesh);
-  obstacleMeshes.push(platformMesh);
+/* ===================================================================
+   Platform walls + stairs
+=================================================================== */
+const platformWallMat = new THREE.MeshLambertMaterial({ color:0x222226 });
+function buildPlatformWalls() {
+  const y = MAP.platformY * 0.5;
+  const h = MAP.platformY;
+  const w = MAP.platform.w, d = MAP.platform.d;
+  const cx = MAP.platform.cx, cz = MAP.platform.cz;
 
-  registerStaticBox(
-    PLATFORM.cx,
-    PLATFORM.h * 0.5,
-    PLATFORM.cz - 0.4,
-    PLATFORM.w * 0.5,
-    PLATFORM.h * 0.5,
-    PLATFORM.d * 0.5 - 0.4
-  );
+  const frontGapW = MAP.stair.w + 1.2;
+
+  // left wall
+  addStaticBox(cx - w*0.5 + 0.12, y, cz, 0.24, h*0.5, d*0.5);
+  // right wall
+  addStaticBox(cx + w*0.5 - 0.12, y, cz, 0.24, h*0.5, d*0.5);
+  // back wall
+  addStaticBox(cx, y, cz - d*0.5 + 0.12, w*0.5, h*0.5, 0.24);
+  // front walls around stair opening
+  addStaticBox(cx - (frontGapW*0.5 + 4.0), y, cz + d*0.5 - 0.12, 4.0, h*0.5, 0.24);
+  addStaticBox(cx + (frontGapW*0.5 + 4.0), y, cz + d*0.5 - 0.12, 4.0, h*0.5, 0.24);
+
+  const walls = new THREE.Group();
+  const left = new THREE.Mesh(new THREE.BoxGeometry(0.24, h, d), platformWallMat);
+  left.position.set(cx - w*0.5 + 0.12, y, cz); walls.add(left);
+  const right = new THREE.Mesh(new THREE.BoxGeometry(0.24, h, d), platformWallMat);
+  right.position.set(cx + w*0.5 - 0.12, y, cz); walls.add(right);
+  const back = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.24), platformWallMat);
+  back.position.set(cx, y, cz - d*0.5 + 0.12); walls.add(back);
+
+  const fl = new THREE.Mesh(new THREE.BoxGeometry(8.8, h, 0.24), platformWallMat);
+  fl.position.set(cx - (frontGapW*0.5 + 4.0), y, cz + d*0.5 - 0.12); walls.add(fl);
+  const fr = new THREE.Mesh(new THREE.BoxGeometry(8.8, h, 0.24), platformWallMat);
+  fr.position.set(cx + (frontGapW*0.5 + 4.0), y, cz + d*0.5 - 0.12); walls.add(fr);
+
+  scene.add(walls);
 }
-buildPlatform();
+buildPlatformWalls();
 
 function buildStairs() {
-  const stairsGroup = new THREE.Group();
-  const stepW = STAIRS.width;
-  const stepD = (STAIRS.startZ - STAIRS.endZ) / STAIRS.steps;
-  const stepH = STAIRS.topY / STAIRS.steps;
+  const group = new THREE.Group();
+  const stepCount = MAP.stair.steps;
+  const stepDepth = (MAP.stair.zStart - MAP.stair.zEnd) / stepCount; // 10 / 8
+  const rise = MAP.platformY / stepCount; // 0.5
+  const stepMat = new THREE.MeshLambertMaterial({ color:0x54483b });
 
-  for (let i = 0; i < STAIRS.steps; i++) {
-    const y = (i + 0.5) * stepH;
-    const z = STAIRS.startZ - (i + 0.5) * stepD;
-    const step = new THREE.Mesh(
-      new THREE.BoxGeometry(stepW, stepH, stepD),
-      new THREE.MeshLambertMaterial({ color:0x453e35 })
-    );
-    step.position.set(STAIRS.x, y, z);
-    stairsGroup.add(step);
+  for (let i = 0; i < stepCount; i++) {
+    const stepTop = (i + 1) * rise;
+    const stepCenterY = stepTop - rise * 0.5;
+    const zCenter = MAP.stair.zStart - stepDepth * (i + 0.5);
+
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(MAP.stair.w, rise, stepDepth), stepMat);
+    mesh.position.set(0, stepCenterY, zCenter);
+    group.add(mesh);
+
+    addStaticBox(0, stepCenterY, zCenter, MAP.stair.w * 0.5, rise * 0.5, stepDepth * 0.5);
   }
-  scene.add(stairsGroup);
+  scene.add(group);
 }
 buildStairs();
 
-/* =========================================================
-   strict structure props
-========================================================= */
-function makeHouseSlots() {
-  const slots = [];
+const stairBarrier = new THREE.Group();
+function buildBarrier() {
+  const mat = new THREE.MeshLambertMaterial({ color:0x3a2010 });
+  const y = 1.0;
+  const z = MAP.stair.zStart + 0.25;
+  const left = new THREE.Mesh(new THREE.BoxGeometry(0.22, 2.2, 0.22), mat);
+  left.position.set(-2.6, y, z);
+  stairBarrier.add(left);
+  const right = new THREE.Mesh(new THREE.BoxGeometry(0.22, 2.2, 0.22), mat);
+  right.position.set(2.6, y, z);
+  stairBarrier.add(right);
+  const beam = new THREE.Mesh(new THREE.BoxGeometry(5.4, 0.22, 0.22), mat);
+  beam.position.set(0, 1.9, z);
+  stairBarrier.add(beam);
 
-  for (let z = -72; z <= 72; z += 12) {
-    if (Math.abs(z) < 8) continue;
-    slots.push({ x:-15, z, ry:Math.PI/2, area:'ground' });
-    slots.push({ x: 15, z, ry:-Math.PI/2, area:'ground' });
-  }
-
-  for (let z = -60; z <= -36; z += 12) {
-    slots.push({ x:-28, z, ry:Math.PI/2, area:'platform' });
-    slots.push({ x: 28, z, ry:-Math.PI/2, area:'platform' });
-  }
-
-  slots.push({ x:-20, z:-58, ry:0, area:'platform' });
-  slots.push({ x:  0, z:-58, ry:0, area:'platform' });
-  slots.push({ x: 20, z:-58, ry:0, area:'platform' });
-
-  return slots;
+  addStaticBox(0, 1.0, z, 2.85, 1.25, 0.3, true); // active until chapter clear
+  scene.add(stairBarrier);
 }
-const HOUSE_SLOTS = makeHouseSlots();
+buildBarrier();
 
-const LANTERN_SLOTS = [];
-for (let z = -72; z <= 72; z += 12) {
-  LANTERN_SLOTS.push({ x: 8.3, z, ry: Math.PI, area:'ground' });
-  LANTERN_SLOTS.push({ x:-8.3, z, ry: 0, area:'ground' });
-}
-for (let z = -60; z <= -36; z += 12) {
-  LANTERN_SLOTS.push({ x: 35.0, z, ry: Math.PI, area:'platform' });
-  LANTERN_SLOTS.push({ x:-35.0, z, ry: 0, area:'platform' });
+let barrierCollisionIndex = collisions.length - 1;
+function removeBarrier() {
+  if (stairBarrier) stairBarrier.visible = false;
+  if (collisions[barrierCollisionIndex]) collisions[barrierCollisionIndex].active = false;
 }
 
-const FENCE_SLOTS = [];
-for (let z = -74; z <= 74; z += 10) {
-  FENCE_SLOTS.push({ x: 11.0, z, w:0.18, d:4.2, ry:0, area:'ground' });
-  FENCE_SLOTS.push({ x:-11.0, z, w:0.18, d:4.2, ry:0, area:'ground' });
+/* ===================================================================
+   Generic placement
+=================================================================== */
+function placeOnSurface(object3D, x, z, surfaceY, ry = 0, scale = 1) {
+  object3D.scale.setScalar(scale);
+  object3D.rotation.y = ry;
+  object3D.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(object3D);
+  object3D.position.set(x, surfaceY - box.min.y, z);
+  object3D.updateMatrixWorld(true);
+  return new THREE.Box3().setFromObject(object3D);
 }
-for (let x = -38; x <= 38; x += 10) {
-  FENCE_SLOTS.push({ x, z:-64.0, w:4.2, d:0.18, ry:0, area:'platform' });
-}
-for (let z = -64; z <= -32; z += 10) {
-  FENCE_SLOTS.push({ x:-38.0, z, w:0.18, d:4.2, ry:0, area:'platform' });
-  FENCE_SLOTS.push({ x: 38.0, z, w:0.18, d:4.2, ry:0, area:'platform' });
-}
-for (let x = -38; x <= -8; x += 10) {
-  FENCE_SLOTS.push({ x, z:-30.2, w:4.2, d:0.18, ry:0, area:'platform' });
-}
-for (let x = 8; x <= 38; x += 10) {
-  FENCE_SLOTS.push({ x, z:-30.2, w:4.2, d:0.18, ry:0, area:'platform' });
-}
-
-/* =========================================================
-   model placement helpers
-========================================================= */
-function placeModelOnFloor(template, x, z, ry, targetHeight, options = {}) {
-  const obj = template.clone(true);
-  cloneUniqueMaterials(obj);
-  obj.scale.setScalar(1);
-  obj.rotation.y = ry || 0;
-  obj.updateMatrixWorld(true);
-
-  const box0 = new THREE.Box3().setFromObject(obj);
-  const size0 = new THREE.Vector3();
-  box0.getSize(size0);
-
-  let scale = 1;
-  if (targetHeight && size0.y > 0.01) scale = targetHeight / size0.y;
-  if (options.maxWidth && size0.x > 0.01) scale = Math.min(scale, options.maxWidth / size0.x);
-  if (options.maxDepth && size0.z > 0.01) scale = Math.min(scale, options.maxDepth / size0.z);
-
-  obj.scale.setScalar(scale);
-  obj.rotation.y = ry || 0;
-  obj.updateMatrixWorld(true);
-
-  const box1 = new THREE.Box3().setFromObject(obj);
-  const y = getFloorHeight(x, z) - box1.min.y + (options.yOffset || 0);
-  obj.position.set(x, y, z);
-  obj.updateMatrixWorld(true);
-
-  if (options.darken !== undefined && options.darken !== 1) {
-    obj.traverse(child => {
-      if (!child.isMesh || !child.material) return;
-      const mats = Array.isArray(child.material) ? child.material : [child.material];
-      mats.forEach(m => { if (m.color) m.color.multiplyScalar(options.darken); });
-    });
-  }
-
-  return { obj, scale };
+function centerScaleToHeight(object3D, targetHeight) {
+  object3D.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(object3D);
+  const size = new THREE.Vector3();
+  box.getSize(size);
+  const s = size.y > 0.01 ? targetHeight / size.y : 1;
+  object3D.scale.setScalar(s);
+  object3D.updateMatrixWorld(true);
+  return s;
 }
 
-function placeFallbackHouse(x, z, ry, area) {
+/* ===================================================================
+   Houses / lanterns / note
+=================================================================== */
+const houseSlots = [
+  { x:-18, z:-8,  ry: Math.PI/2,  surface:0 },
+  { x: 18, z:-8,  ry:-Math.PI/2,  surface:0 },
+  { x:-18, z: 8,  ry: Math.PI/2,  surface:0 },
+  { x: 18, z: 8,  ry:-Math.PI/2,  surface:0 },
+  { x:-18, z: 24, ry: Math.PI/2,  surface:0 },
+  { x: 18, z: 24, ry:-Math.PI/2,  surface:0 },
+  { x:-18, z: 40, ry: Math.PI/2,  surface:0 },
+  { x: 18, z: 40, ry:-Math.PI/2,  surface:0 },
+
+  { x:-16, z:-70, ry:0,           surface:4 },
+  { x: 16, z:-70, ry:Math.PI,     surface:4 },
+  { x:  0, z:-76, ry:Math.PI/2,   surface:4 },
+];
+const specialHouseIndex = 1; // 地上エリアの特定の1軒
+const houseInfos = [];
+let houseTemplate = null;
+
+const lanternSlots = [];
+for (let z = -72; z <= 56; z += 12) {
+  lanternSlots.push({ x: 8.5,  z, ry: Math.PI, surface:0 });
+  lanternSlots.push({ x:-8.5,  z, ry: 0,       surface:0 });
+}
+for (let x = -24; x <= 24; x += 12) {
+  lanternSlots.push({ x, z:-70, ry: 0,        surface:4 });
+}
+
+const houseCollisionMaterial = new THREE.MeshLambertMaterial({ color:0x1d1d22 });
+const woodMat = new THREE.MeshLambertMaterial({ color:0x4a2c10 });
+const noteMat = new THREE.MeshBasicMaterial({ color:0xf8e9c6 });
+
+function buildFallbackHouse() {
   const g = new THREE.Group();
-  const wall = new THREE.Mesh(
-    new THREE.BoxGeometry(4.6, 3.6, 4.6),
-    new THREE.MeshLambertMaterial({ color: area === 'platform' ? 0x5b4c3c : 0x4f3f31 })
-  );
-  wall.position.y = 1.8;
-  g.add(wall);
-
-  const roof = new THREE.Mesh(
-    new THREE.ConeGeometry(3.6, 2.2, 4),
-    new THREE.MeshLambertMaterial({ color:0x2d1e16 })
-  );
-  roof.position.y = 4.2;
+  const base = new THREE.Mesh(new THREE.BoxGeometry(4.2, 3.1, 4.8), houseCollisionMaterial);
+  base.position.y = 1.55;
+  g.add(base);
+  const roof = new THREE.Mesh(new THREE.ConeGeometry(3.2, 1.9, 4), new THREE.MeshLambertMaterial({ color:0x2c2320 }));
+  roof.position.y = 3.95;
   roof.rotation.y = Math.PI / 4;
   g.add(roof);
-
-  const y = getFloorHeight(x, z);
-  g.position.set(x, y, z);
-  g.rotation.y = ry;
-  scene.add(g);
-  registerStaticBox(x, y + 2.0, z, 2.4, 2.2, 2.4);
-  obstacleMeshes.push(g);
+  return g;
 }
-
-function placeFallbackLantern(x, z, ry) {
+function buildFallbackLantern() {
   const g = new THREE.Group();
-  const pole = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.08, 0.1, 3.0, 6),
-    new THREE.MeshLambertMaterial({ color:0x1a0e00 })
-  );
-  pole.position.y = 1.5;
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.07,0.08,3.2,6), new THREE.MeshLambertMaterial({ color:0x1a0e00 }));
+  pole.position.y = 1.6;
   g.add(pole);
-  const head = new THREE.Mesh(
-    new THREE.BoxGeometry(0.58, 0.48, 0.58),
-    new THREE.MeshBasicMaterial({ color:0xffcc66 })
-  );
-  head.position.y = 3.15;
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.6,0.5,0.6), new THREE.MeshBasicMaterial({ color:0xffcc66 }));
+  head.position.y = 3.3;
   g.add(head);
-  const light = new THREE.PointLight(0xff8800, 1.1, 8, 2);
-  light.position.y = 3.15;
+  const light = new THREE.PointLight(0xff8800, 1.15, 9, 2);
+  light.position.y = 3.25;
   g.add(light);
-
-  const y = getFloorHeight(x, z);
-  g.position.set(x, y, z);
-  g.rotation.y = ry;
-  scene.add(g);
-  registerStaticBox(x, y + 1.5, z, 0.16, 1.6, 0.16);
-  obstacleMeshes.push(g);
+  return g;
+}
+function buildFallbackStair() {
+  const g = new THREE.Group();
+  const m = new THREE.MeshLambertMaterial({ color:0x54483b });
+  const count = MAP.stair.steps;
+  const stepDepth = (MAP.stair.zStart - MAP.stair.zEnd) / count;
+  const rise = MAP.platformY / count;
+  for (let i = 0; i < count; i++) {
+    const stepTop = (i + 1) * rise;
+    const cy = stepTop - rise * 0.5;
+    const zc = MAP.stair.zStart - stepDepth * (i + 0.5);
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(MAP.stair.w, rise, stepDepth), m);
+    mesh.position.set(0, cy, zc);
+    g.add(mesh);
+  }
+  return g;
+}
+function buildFallbackEnemy() {
+  const grp = new THREE.Group();
+  const mat = new THREE.MeshLambertMaterial({ color:0x1a1111, emissive:0x050000, emissiveIntensity:0.2 });
+  const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.55, 2.8, 8), mat);
+  torso.position.y = 2.0; grp.add(torso);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.85, 14, 14), mat);
+  head.position.y = 4.0; grp.add(head);
+  const aGeo = new THREE.CylinderGeometry(0.12, 0.14, 1.9, 6);
+  const aL = new THREE.Mesh(aGeo, mat); aL.position.set(-0.95,2.6,0); aL.rotation.z=0.7; grp.add(aL);
+  const aR = new THREE.Mesh(aGeo, mat); aR.position.set(0.95,2.6,0); aR.rotation.z=-0.7; grp.add(aR);
+  const lGeo = new THREE.CylinderGeometry(0.15, 0.18, 1.7, 6);
+  const lL = new THREE.Mesh(lGeo, mat); lL.position.set(-0.26,0.9,0); grp.add(lL);
+  const lR = new THREE.Mesh(lGeo, mat); lR.position.set(0.26,0.9,0); grp.add(lR);
+  return grp;
 }
 
-function placeFallbackStairVisuals() {
-  const stepW = STAIRS.width;
-  const stepD = (STAIRS.startZ - STAIRS.endZ) / STAIRS.steps;
-  const stepH = STAIRS.topY / STAIRS.steps;
-  const mat = new THREE.MeshLambertMaterial({ color:0x4a4338 });
+function placeHouseOnSlot(template, slot, index) {
+  const house = template.clone(true);
+  cloneUniqueMaterials(house);
+  optimizeImportedRoot(house, { darken:0.55, allowTransparent:true, forceFrontSide:true });
+  const scale = centerScaleToHeight(house, 4.8);
+  house.rotation.y = slot.ry + randRange(-0.18, 0.18);
+  house.updateMatrixWorld(true);
 
-  for (let i = 0; i < STAIRS.steps; i++) {
-    const y = (i + 0.5) * stepH;
-    const z = STAIRS.startZ - (i + 0.5) * stepD;
-    const step = new THREE.Mesh(new THREE.BoxGeometry(stepW, stepH, stepD), mat);
-    step.position.set(STAIRS.x, y, z);
-    scene.add(step);
+  const box = new THREE.Box3().setFromObject(house);
+  const surfaceY = slot.surface === 4 ? MAP.platformY : MAP.groundY;
+  house.position.set(slot.x, surfaceY - box.min.y, slot.z);
+  house.updateMatrixWorld(true);
+
+  scene.add(house);
+  const finalBox = new THREE.Box3().setFromObject(house);
+  finalBox.expandByScalar(-0.12);
+  addCollisionBox(finalBox, true);
+  obstaclesLOS.push(house.children[0] || house);
+
+  const info = { index, slot, house, surfaceY, box: finalBox, noteGroup:null, notePos:null, noteUsed:false };
+  houseInfos.push(info);
+  return info;
+}
+
+function attachNoteToHouse(info) {
+  const noteGroup = new THREE.Group();
+  const table = new THREE.Mesh(new THREE.BoxGeometry(1.15,0.08,0.72), woodMat);
+  table.position.set(0.0, 0.55, 0.65);
+  noteGroup.add(table);
+
+  const paper = new THREE.Mesh(new THREE.BoxGeometry(0.22,0.018,0.16), noteMat);
+  paper.position.set(0.0, 0.63, 0.65);
+  noteGroup.add(paper);
+
+  const glow = new THREE.PointLight(0xffdd88, 0.8, 4.5, 2);
+  glow.position.set(0.0, 0.75, 0.65);
+  noteGroup.add(glow);
+
+  info.house.add(noteGroup);
+  info.noteGroup = noteGroup;
+  info.notePos = new THREE.Vector3(info.slot.x, info.surfaceY + 0.6, info.slot.z + 0.65);
+}
+
+let gaitouTemplate = null;
+function placeLantern(template, slot) {
+  const lantern = template.clone(true);
+  cloneUniqueMaterials(lantern);
+  optimizeImportedRoot(lantern, { darken:0.58, allowTransparent:true, forceFrontSide:true });
+  const scale = centerScaleToHeight(lantern, 3.6);
+  lantern.rotation.y = slot.ry;
+  lantern.updateMatrixWorld(true);
+
+  const box = new THREE.Box3().setFromObject(lantern);
+  const y = slot.surface === 4 ? MAP.platformY : MAP.groundY;
+  lantern.position.set(slot.x, y - box.min.y, slot.z);
+  lantern.updateMatrixWorld(true);
+
+  scene.add(lantern);
+  const finalBox = new THREE.Box3().setFromObject(lantern);
+  addCollisionBox(finalBox, true);
+
+  // only some lights to keep it light
+  const lightEvery = 4;
+  if ((Math.abs(Math.round(slot.x + slot.z)) % lightEvery) === 0) {
+    const pl = new THREE.PointLight(0xff8800, 0.95, 8, 2);
+    pl.position.set(slot.x, slot.surface === 4 ? MAP.platformY + 3.2 : 3.2, slot.z);
+    scene.add(pl);
+  }
+  obstaclesLOS.push(lantern.children[0] || lantern);
+}
+
+function placeNoteHouseDecoration(info) {
+  attachNoteToHouse(info);
+  const warm = new THREE.PointLight(0xffd080, 0.9, 8, 2);
+  warm.position.set(info.slot.x, info.surfaceY + 3.0, info.slot.z + 1.4);
+  scene.add(warm);
+}
+
+function updateNoteVisibilityAfterRead() {
+  for (const info of houseInfos) {
+    if (info.noteGroup && info.noteUsed) info.noteGroup.visible = false;
   }
 }
 
-/* =========================================================
-   jizo
-========================================================= */
-const jizoList = [];
-const JIZO_COUNT = 3, JIZO_SAFE_RADIUS = 4.0, JIZO_PROMPT_RADIUS = 3.0;
-
-function isPointReserved(x, z) {
-  if (Math.abs(x) < 6.5) return true; // main road
-  if (isOnPlatformTop(x, z) || isInStairCorridor(x, z)) return true;
-  return false;
+function buildFallbackNoteHouseOnInfo(info) {
+  const table = new THREE.Mesh(new THREE.BoxGeometry(1.15,0.08,0.72), woodMat);
+  table.position.set(0, 0.55, 0.65);
+  info.house.add(table);
+  const paper = new THREE.Mesh(new THREE.BoxGeometry(0.22,0.018,0.16), noteMat);
+  paper.position.set(0, 0.63, 0.65);
+  info.house.add(paper);
+  const glow = new THREE.PointLight(0xffdd88, 0.8, 4.5, 2);
+  glow.position.set(0, 0.75, 0.65);
+  info.house.add(glow);
+  info.noteGroup = table;
+  info.notePos = new THREE.Vector3(info.slot.x, info.surfaceY + 0.6, info.slot.z + 0.65);
 }
+
+/* ===================================================================
+   Jizo / safe zones
+=================================================================== */
+const jizoList = [];
+const JIZO_COUNT = 3;
+const JIZO_SAFE_RADIUS = 4.0;
+const JIZO_PROMPT_RADIUS = 3.0;
+
 function createJizo(x, z) {
   const grp = new THREE.Group();
   const bMat = new THREE.MeshLambertMaterial({ color:0xf0f0f0, emissive:0x101010, emissiveIntensity:0.18 });
@@ -739,7 +888,8 @@ function createJizo(x, z) {
   halo.position.y = 1.45; grp.add(halo);
   const light = new THREE.PointLight(0xff9800, 0, 7, 2);
   light.position.y = 1.55; grp.add(light);
-  const jy = getFloorHeight(x, z);
+
+  const jy = getSurfaceHeight(x, z);
   grp.position.set(x, jy, z);
   scene.add(grp);
   const j = { group:grp, light, lit:false, x, z };
@@ -750,22 +900,14 @@ function placeJizoRandomly() {
   for (let i = 0; i < JIZO_COUNT; i++) {
     let p, tries = 0;
     do { p = randomPointInRange(65); tries++; }
-    while (isPointReserved(p.x, p.z) && tries < 250);
+    while ((Math.abs(p.x) < 10 && Math.abs(p.z) < 10) || isOnPlatform(p.x,p.z) || isOnStairCorridor(p.x,p.z) || tries < 1 && false || tries < 250 && false);
+    // strong safety: avoid stairs/platform and central road
+    while ((isOnPlatform(p.x,p.z) || isOnStairCorridor(p.x,p.z) || (Math.abs(p.x) < 8 && Math.abs(p.z) < 8)) && tries < 250) {
+      p = randomPointInRange(65);
+      tries++;
+    }
     createJizo(p.x, p.z);
   }
-}
-placeJizoRandomly();
-
-const playerPos = new THREE.Vector3(0, getFloorHeight(0,0) + 1.65, 0);
-
-function getNearestJizoInPromptRange() {
-  let best = null, bestDist = Infinity;
-  for (const j of jizoList) {
-    if (j.lit) continue;
-    const d = dist2D(playerPos.x, playerPos.z, j.x, j.z);
-    if (d <= JIZO_PROMPT_RADIUS && d < bestDist) { best = j; bestDist = d; }
-  }
-  return best;
 }
 function igniteJizo(jizo) {
   if (!jizo || jizo.lit) return;
@@ -775,10 +917,14 @@ function igniteJizo(jizo) {
   const hm = jizo.group.children.find(c => c.isMesh && c.geometry && c.geometry.type === 'SphereGeometry');
   if (hm && hm.material) hm.material.opacity = 0.26;
 }
-function updateJizoPrompt() {
-  const n = getNearestJizoInPromptRange();
-  if (n && game.state === 'playing') promptMsg.style.display = 'block';
-  else promptMsg.style.display = 'none';
+function getNearestJizoInPromptRange() {
+  let best = null, bestDist = Infinity;
+  for (const j of jizoList) {
+    if (j.lit) continue;
+    const d = dist2D(playerPos.x, playerPos.z, j.x, j.z);
+    if (d <= JIZO_PROMPT_RADIUS && d < bestDist) { best = j; bestDist = d; }
+  }
+  return best;
 }
 function getLitJizoRepulsion(pos) {
   let px = 0, pz = 0;
@@ -801,53 +947,150 @@ function isPointInsideAnySafeZone(x, z) {
   }
   return false;
 }
+placeJizoRandomly();
 
-/* =========================================================
-   八尺様
-========================================================= */
+/* ===================================================================
+   Chapter / story system
+=================================================================== */
+const chapterState = {
+  storyOpen: false,
+  chapter1Cleared: false,
+  enemySpawned: false,
+  noteRead: false,
+  boomUntil: 0,
+};
+
+const chapterPages = [
+`×月×日：親友の手帳の文字だ。間違いなくあいつはここに来ている。`,
+`……『この村は100年以上前、巨大な影に魅入られた。村人はそれを「八尺様」と呼び、若い生贄を捧げることで村を守ってきた。`,
+`最後に生贄が捧げられたのは15年前……それ以来、村は呪われ、誰もいなくなった』……おい、奥の部屋から何か物音が聞こえ――`,
+];
+
+let storyIndex = 0;
+function lockPlayerInput(lock) {
+  game.inputLocked = lock;
+  if (lock) {
+    joyId = null; lookId = null; joyActive = false; joyDx = 0; joyDy = 0;
+    isDashing = false;
+    ui.joyStick.style.transform = 'translate(0,0)';
+  }
+}
+function openStory() {
+  if (chapterState.storyOpen) return;
+  chapterState.storyOpen = true;
+  lockPlayerInput(true);
+  storyIndex = 0;
+  ui.story.classList.add('active');
+  ui.storyText.textContent = chapterPages[storyIndex];
+}
+function advanceStory() {
+  if (!chapterState.storyOpen) return;
+  storyIndex++;
+  if (storyIndex < chapterPages.length) {
+    ui.storyText.textContent = chapterPages[storyIndex];
+    return;
+  }
+  closeStoryAndClearChapter();
+}
+function closeStoryAndClearChapter() {
+  chapterState.storyOpen = false;
+  ui.story.classList.remove('active');
+  playChapterBoom();
+  chapterState.chapter1Cleared = true;
+  removeBarrier();
+  showToast('第1章クリア：階段が解放された');
+  lockPlayerInput(false);
+  ui.smallHint.style.display = 'none';
+  setTimeout(() => {
+    if (!chapterState.enemySpawned) spawnEnemy();
+  }, 1400);
+}
+function showToast(text) {
+  ui.toast.textContent = text;
+  ui.toast.style.display = 'block';
+  setTimeout(() => { ui.toast.style.display = 'none'; }, 2200);
+}
+function playChapterBoom() {
+  ensureAudioContext();
+  if (!audioCtx) return;
+
+  const now = audioCtx.currentTime;
+  const noiseDur = 0.65;
+  const len = Math.floor(audioCtx.sampleRate * noiseDur);
+  const buffer = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < len; i++) {
+    const fade = 1 - (i / len);
+    data[i] = (Math.random() * 2 - 1) * fade * 0.75;
+  }
+
+  const noise = audioCtx.createBufferSource();
+  noise.buffer = buffer;
+
+  const bp = audioCtx.createBiquadFilter();
+  bp.type = 'bandpass';
+  bp.frequency.value = 180;
+  bp.Q.value = 0.8;
+
+  const gain = audioCtx.createGain();
+  gain.gain.setValueAtTime(0.001, now);
+  gain.gain.exponentialRampToValueAtTime(1.0, now + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + noiseDur);
+
+  noise.connect(bp);
+  bp.connect(gain);
+  gain.connect(audioCtx.destination);
+  noise.start();
+
+  const osc = audioCtx.createOscillator();
+  const og = audioCtx.createGain();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(62, now);
+  osc.frequency.exponentialRampToValueAtTime(30, now + 0.35);
+  og.gain.setValueAtTime(0.001, now);
+  og.gain.exponentialRampToValueAtTime(0.55, now + 0.02);
+  og.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+  osc.connect(og);
+  og.connect(audioCtx.destination);
+  osc.start();
+  osc.stop(now + 0.6);
+
+  chapterState.boomUntil = performance.now() + 800;
+  if (navigator.vibrate) navigator.vibrate([120, 60, 180]);
+  ui.dangerVeil.style.background = 'rgba(255,0,0,0.16)';
+  setTimeout(() => { if (!chapterState.storyOpen && !gameOverActive) ui.dangerVeil.style.background = 'rgba(0,0,0,0)'; }, 700);
+}
+ui.story.addEventListener('touchstart', e => { e.preventDefault(); ensureAudioContext(); }, { passive:false });
+ui.story.addEventListener('touchend', e => { e.preventDefault(); advanceStory(); }, { passive:false });
+ui.story.addEventListener('click', advanceStory);
+
+/* ===================================================================
+   Enemy / stealth AI
+=================================================================== */
+let enemyTemplate = null; // loaded, but not spawned until chapter 1 clears
 let hachishaku = null;
+let enemyRoot = null;
 let enemyTarget = null;
 let enemyState = 'wander';
 let losTimer = 0;
 const LOS_LOSE_TIME = 3000;
 let lastKnownPlayerPos = null;
+let enemyMixer = null;
 const raycaster = new THREE.Raycaster();
 const ENEMY_VISUAL_YAW_OFFSET = -Math.PI / 2;
 const ENEMY_SPEED = 0.05 * 1.2;
 const ENEMY_WANDER_SPEED = 0.016 * 1.2;
 const DETECT_RADIUS = 30;
-let enemyMixer = null;
 
-function buildFallbackEnemy() {
-  const grp = new THREE.Group();
-  const mat = new THREE.MeshLambertMaterial({ color:0x1a1111, emissive:0x050000, emissiveIntensity:0.2 });
-  const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.55, 2.8, 8), mat);
-  torso.position.y = 2.0; grp.add(torso);
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.85, 14, 14), mat);
-  head.position.y = 4.0; grp.add(head);
-  const aGeo = new THREE.CylinderGeometry(0.12, 0.14, 1.9, 6);
-  const aL = new THREE.Mesh(aGeo, mat); aL.position.set(-0.95,2.6,0); aL.rotation.z=0.7; grp.add(aL);
-  const aR = new THREE.Mesh(aGeo, mat); aR.position.set(0.95,2.6,0); aR.rotation.z=-0.7; grp.add(aR);
-  const lGeo = new THREE.CylinderGeometry(0.15, 0.18, 1.7, 6);
-  const lL = new THREE.Mesh(lGeo, mat); lL.position.set(-0.26,0.9,0); grp.add(lL);
-  const lR = new THREE.Mesh(lGeo, mat); lR.position.set(0.26,0.9,0); grp.add(lR);
-  return grp;
-}
-function setEnemyTargetAvoidingSafeZone() {
-  let p, tries = 0;
-  do { p = randomPointInRange(130); tries++; }
-  while ((isPointReserved(p.x, p.z) || isInStairCorridor(p.x, p.z) || isOnPlatformTop(p.x, p.z)) && tries < 120);
-  enemyTarget = p;
-}
 function hasLineOfSight(enemyPos, playerPos3D) {
-  if (obstacleMeshes.length === 0) return true;
+  if (obstaclesLOS.length === 0) return true;
   const eyePos = enemyPos.clone(); eyePos.y += 2.2;
   const targetPos = playerPos3D.clone(); targetPos.y += 1.0;
   const dir = new THREE.Vector3().subVectors(targetPos, eyePos).normalize();
   const dist = eyePos.distanceTo(targetPos);
   raycaster.set(eyePos, dir);
   raycaster.far = dist - 0.3;
-  const hits = raycaster.intersectObjects(obstacleMeshes, true);
+  const hits = raycaster.intersectObjects(obstaclesLOS, true);
   return hits.length === 0;
 }
 function faceEnemyToward(tx, tz) {
@@ -856,82 +1099,112 @@ function faceEnemyToward(tx, tz) {
   const dz = tz - hachishaku.position.z;
   hachishaku.rotation.set(0, Math.atan2(dx, dz), 0);
 }
-function ensureHachishaku() {
+function setEnemyTargetAvoidingSafeZone() {
+  let p, tries = 0;
+  do { p = randomPointInRange(130); tries++; }
+  while ((isPointInsideAnySafeZone(p.x, p.z) || isOnPlatform(p.x, p.z) || isOnStairCorridor(p.x, p.z)) && tries < 180);
+  enemyTarget = p;
+}
+function ensureHachishakuFallback() {
   if (hachishaku) return;
   hachishaku = new THREE.Group();
   const visualRoot = new THREE.Group();
   visualRoot.rotation.y = ENEMY_VISUAL_YAW_OFFSET;
   visualRoot.add(buildFallbackEnemy());
   hachishaku.add(visualRoot);
-  hachishaku.position.set(18, getFloorHeight(18,18), 18);
+  hachishaku.position.set(18, getSurfaceHeight(18,-74), -74);
   scene.add(hachishaku);
   setEnemyTargetAvoidingSafeZone();
 }
-function triggerGameOver() {
-  if (game.state === 'gameover') return;
-  game.state = 'gameover';
-  game.running = false;
+function spawnEnemy() {
+  if (chapterState.enemySpawned) return;
+  chapterState.enemySpawned = true;
 
-  jumpscareOverlay.classList.add('fadeOut');
-  setTimeout(() => {
-    jumpscareOverlay.style.display = 'none';
-  }, 220);
+  if (hachishaku && hachishaku.parent) hachishaku.parent.remove(hachishaku);
 
-  hideControls();
-  alertIndicator.style.display = 'none';
-  promptMsg.style.display = 'none';
-  statusMsg.textContent = '';
-  errorMsg.textContent = '';
-  dangerVeil.style.background = 'rgba(0,0,0,0)';
-  gameOverScreen.classList.add('active');
+  let base = enemyTemplate ? enemyTemplate : buildFallbackEnemy();
+  if (base.parent) base.parent.remove(base);
+
+  // scale enemy to about human tall
+  base.updateMatrixWorld(true);
+  const b0 = new THREE.Box3().setFromObject(base);
+  const s0 = new THREE.Vector3();
+  b0.getSize(s0);
+  const targetH = 4.5;
+  const scale = s0.y > 0.01 ? targetH / s0.y : 1.0;
+  base.scale.setScalar(scale);
+  base.updateMatrixWorld(true);
+  const b1 = new THREE.Box3().setFromObject(base);
+  base.position.y = -b1.min.y;
+  base.updateMatrixWorld(true);
+
+  hachishaku = new THREE.Group();
+  const visualRoot = new THREE.Group();
+  visualRoot.rotation.y = ENEMY_VISUAL_YAW_OFFSET;
+  visualRoot.add(base);
+  hachishaku.add(visualRoot);
+  hachishaku.position.set(18, getSurfaceHeight(18,-74), -74);
+  scene.add(hachishaku);
+  setEnemyTargetAvoidingSafeZone();
+
+  if (base.animations && base.animations.length > 0) {
+    enemyMixer = new THREE.AnimationMixer(base);
+    const action = enemyMixer.clipAction(base.animations[0]);
+    action.reset();
+    action.enabled = true;
+    action.setLoop(THREE.LoopRepeat, Infinity);
+    action.play();
+  } else {
+    enemyMixer = null;
+  }
 }
 function triggerJumpScare() {
-  if (game.state !== 'playing') return;
+  if (gameOverActive || chapterState.storyOpen) return;
   game.state = 'jumpscare';
-  game.scareStart = performance.now();
-
-  jumpscareOverlay.style.display = 'block';
-  jumpscareOverlay.classList.remove('fadeOut');
-  alertIndicator.style.display = 'none';
-  promptMsg.style.display = 'none';
-  statusMsg.textContent = '';
-  errorMsg.textContent = '';
-  dangerVeil.style.background = 'rgba(255,0,0,0.33)';
+  chapterState.enemySpawned = true;
+  ui.jumpscare.style.display = 'block';
+  ui.jumpscare.classList.remove('fadeOut');
+  ui.alert.style.display = 'none';
+  ui.prompt.style.display = 'none';
+  ui.smallHint.style.display = 'none';
+  ui.status.textContent = '';
+  ui.error.textContent = '';
+  ui.dangerVeil.style.background = 'rgba(255,0,0,0.33)';
   playJumpNoise();
-
   setTimeout(() => {
     if (game.state === 'jumpscare') triggerGameOver();
   }, 1200);
 }
-function chooseEnemyTarget() {
-  const pFloor = getFloorHeight(playerPos.x, playerPos.z);
-  const eFloor = getFloorHeight(hachishaku.position.x, hachishaku.position.z);
-
-  if (pFloor > eFloor + 0.5) {
-    return { x: STAIRS.x, z: STAIRS.startZ + 0.6 };
-  }
-  if (eFloor > pFloor + 0.5) {
-    return { x: STAIRS.x, z: STAIRS.endZ - 0.6 };
-  }
-  return { x: playerPos.x, z: playerPos.z };
+function triggerGameOver() {
+  if (gameOverActive) return;
+  gameOverActive = true;
+  game.state = 'gameover';
+  ui.jumpscare.classList.add('fadeOut');
+  setTimeout(() => { ui.jumpscare.style.display = 'none'; }, 220);
+  hideControls();
+  ui.alert.style.display = 'none';
+  ui.prompt.style.display = 'none';
+  ui.smallHint.style.display = 'none';
+  ui.status.textContent = '';
+  ui.error.textContent = '';
+  ui.dangerVeil.style.background = 'rgba(0,0,0,0)';
+  ui.gameOver.classList.add('active');
 }
+let gameOverActive = false;
+
 function updateEnemyAI(deltaMs) {
-  if (!hachishaku || game.state !== 'playing') return;
+  if (!hachishaku || game.state !== 'playing' || chapterState.storyOpen) return;
 
   const ex = hachishaku.position.x;
   const ez = hachishaku.position.z;
   const enemyPos3D = new THREE.Vector3(ex, 0, ez);
   const distToPlayer = dist2D(ex, ez, playerPos.x, playerPos.z);
+  const canSee = (distToPlayer < DETECT_RADIUS) && hasLineOfSight(enemyPos3D, playerPos);
 
   if (distToPlayer < 1.8) {
     triggerJumpScare();
     return;
   }
-
-  const pFloor = getFloorHeight(playerPos.x, playerPos.z);
-  const eFloor = getFloorHeight(ex, ez);
-  const sameLayer = Math.abs(pFloor - eFloor) < 0.35;
-  const canSee = (distToPlayer < DETECT_RADIUS) && (sameLayer ? hasLineOfSight(enemyPos3D, playerPos) : true);
 
   if (enemyState === 'wander') {
     if (canSee) {
@@ -955,253 +1228,252 @@ function updateEnemyAI(deltaMs) {
   }
 
   if (enemyState === 'chase') {
-    alertIndicator.style.display = 'block';
-    const veilAlpha = Math.max(0, Math.min(0.22, (DETECT_RADIUS - distToPlayer) / DETECT_RADIUS * 0.3));
-    dangerVeil.style.background = `rgba(180,0,0,${veilAlpha})`;
+    ui.alert.style.display = 'block';
+    const veilAlpha = clamp((DETECT_RADIUS - distToPlayer) / DETECT_RADIUS * 0.3, 0, 0.22);
+    ui.dangerVeil.style.background = `rgba(180,0,0,${veilAlpha})`;
   } else {
-    alertIndicator.style.display = 'none';
-    dangerVeil.style.background = 'rgba(0,0,0,0)';
+    ui.alert.style.display = 'none';
+    ui.dangerVeil.style.background = 'rgba(0,0,0,0)';
   }
 
   const push = getLitJizoRepulsion(hachishaku.position);
 
-  let target;
   if (enemyState === 'chase') {
-    target = chooseEnemyTarget();
-    if (!canSee && lastKnownPlayerPos) target = { x:lastKnownPlayerPos.x, z:lastKnownPlayerPos.z };
+    const chaseTarget = canSee
+      ? { x:playerPos.x, z:playerPos.z }
+      : (lastKnownPlayerPos ? { x:lastKnownPlayerPos.x, z:lastKnownPlayerPos.z } : null);
+
+    if (chaseTarget) {
+      faceEnemyToward(chaseTarget.x, chaseTarget.z);
+      const dx = chaseTarget.x - ex, dz = chaseTarget.z - ez;
+      const d = Math.sqrt(dx*dx + dz*dz);
+      if (d > 0.01) {
+        const nx = dx / d, nz = dz / d;
+        const nextX = ex + nx * ENEMY_SPEED - push.x;
+        const nextZ = ez + nz * ENEMY_SPEED - push.z;
+        if (!isPointInsideAnySafeZone(nextX, nextZ)) {
+          hachishaku.position.x = nextX;
+          hachishaku.position.z = nextZ;
+        } else {
+          setEnemyTargetAvoidingSafeZone();
+          enemyState = 'wander';
+          losTimer = 0;
+        }
+      }
+    }
   } else {
     if (!enemyTarget) setEnemyTargetAvoidingSafeZone();
-    target = enemyTarget;
-  }
+    const dx = enemyTarget.x - ex, dz = enemyTarget.z - ez;
+    const dist = Math.sqrt(dx*dx + dz*dz);
 
-  faceEnemyToward(target.x, target.z);
-
-  const dx = target.x - ex;
-  const dz = target.z - ez;
-  const d = Math.sqrt(dx*dx + dz*dz);
-
-  if (d > 0.01) {
-    const nx = dx / d, nz = dz / d;
-    const speed = enemyState === 'chase' ? ENEMY_SPEED : ENEMY_WANDER_SPEED;
-    const nextX = ex + nx * speed - push.x;
-    const nextZ = ez + nz * speed - push.z;
-
-    if (enemyState === 'wander' && (push.x !== 0 || push.z !== 0)) {
+    if (push.x !== 0 || push.z !== 0) {
       hachishaku.position.x -= push.x;
       hachishaku.position.z -= push.z;
       setEnemyTargetAvoidingSafeZone();
+    } else if (dist < 0.9) {
+      setEnemyTargetAvoidingSafeZone();
     } else {
-      hachishaku.position.x = nextX;
-      hachishaku.position.z = nextZ;
-    }
-  } else if (enemyState === 'wander') {
-    setEnemyTargetAvoidingSafeZone();
-  }
-
-  const floorY = getFloorHeight(hachishaku.position.x, hachishaku.position.z);
-  hachishaku.position.y = floorY + Math.sin(performance.now() * 0.004) * 0.015;
-}
-
-/* =========================================================
-   房配置
-========================================================= */
-function placeHousesAlongRoads(template) {
-  const slots = HOUSE_SLOTS.slice();
-  let placed = 0;
-  const TARGET_GROUND_H = 4.6;
-  const TARGET_PLATFORM_H = 4.2;
-
-  for (const slot of slots) {
-    const x = slot.x, z = slot.z, ry = slot.ry;
-    if (isPointReserved(x, z)) continue;
-
-    const targetH = slot.area === 'platform' ? TARGET_PLATFORM_H : TARGET_GROUND_H;
-    const house = placeModelOnFloor(template, x, z, ry, targetH, {
-      darken: 0.55,
-      maxWidth: slot.area === 'platform' ? 7.5 : 6.6,
-      maxDepth: slot.area === 'platform' ? 7.5 : 6.6
-    });
-
-    house.obj.traverse(child => {
-      if (child.isMesh && child.material) {
-        const mats = Array.isArray(child.material) ? child.material : [child.material];
-        mats.forEach(m => { if (m.color) m.color.multiplyScalar(0.95); });
+      const nx = dx / Math.max(dist, 0.0001), nz = dz / Math.max(dist, 0.0001);
+      const nextX = ex + nx * ENEMY_WANDER_SPEED;
+      const nextZ = ez + nz * ENEMY_WANDER_SPEED;
+      if (!isPointInsideAnySafeZone(nextX, nextZ)) {
+        hachishaku.position.x = nextX;
+        hachishaku.position.z = nextZ;
+        faceEnemyToward(enemyTarget.x, enemyTarget.z);
+      } else {
+        setEnemyTargetAvoidingSafeZone();
       }
-    });
-
-    scene.add(house.obj);
-    const box = new THREE.Box3().setFromObject(house.obj);
-    box.expandByScalar(-0.12);
-    collisionBoxes.push(box);
-    obstacleMeshes.push(house.obj);
-    placed++;
-  }
-  return placed;
-}
-
-function placeFallbackHouses() {
-  let placed = 0;
-  for (const slot of HOUSE_SLOTS) {
-    if (isPointReserved(slot.x, slot.z)) continue;
-    placeFallbackHouse(slot.x, slot.z, slot.ry, slot.area);
-    placed++;
-  }
-  return placed;
-}
-
-/* =========================================================
-   街灯配置
-========================================================= */
-function placeGaitouLights(template) {
-  const box = new THREE.Box3().setFromObject(template);
-  const size = new THREE.Vector3();
-  box.getSize(size);
-  const TARGET_H = 3.5;
-  const LIGHT_EVERY = 4;
-  let idx = 0;
-
-  for (const slot of LANTERN_SLOTS) {
-    const lamp = placeModelOnFloor(template, slot.x, slot.z, slot.ry, TARGET_H, {
-      darken: 0.58,
-      maxWidth: 1.6,
-      maxDepth: 1.6
-    });
-
-    optimizeImportedRoot(lamp.obj, {
-      darken: 0.58,
-      allowTransparent: true,
-      forceFrontSide: true
-    });
-
-    scene.add(lamp.obj);
-
-    if (idx % LIGHT_EVERY === 0) {
-      const pl = new THREE.PointLight(0xff8800, 0.95, 8, 2);
-      pl.position.set(slot.x, getFloorHeight(slot.x, slot.z) + (size.y * lamp.scale) * 0.98, slot.z);
-      scene.add(pl);
     }
-
-    registerStaticBox(slot.x, getFloorHeight(slot.x, slot.z) + 1.5, slot.z, 0.18, 1.7, 0.18);
-    collisionBoxes.push(new THREE.Box3(
-      new THREE.Vector3(slot.x - 0.18, getFloorHeight(slot.x, slot.z), slot.z - 0.18),
-      new THREE.Vector3(slot.x + 0.18, getFloorHeight(slot.x, slot.z) + 3.5, slot.z + 0.18)
-    ));
-    obstacleMeshes.push(lamp.obj);
-    idx++;
   }
+
+  hachishaku.position.y = getSurfaceHeight(hachishaku.position.x, hachishaku.position.z) + Math.sin(performance.now() * 0.004) * 0.015;
 }
-function placeFallbackLanterns() {
-  let idx = 0;
-  const LIGHT_EVERY = 4;
-  for (const slot of LANTERN_SLOTS) {
-    const y = getFloorHeight(slot.x, slot.z);
-    const g = new THREE.Group();
+function loadEnemyTemplate() {
+  const loader = new THREE.FBXLoader();
+  loader.load('./popopo.fbx', fbx => {
+    optimizeImportedRoot(fbx, { darken:0.28, allowTransparent:true, forceFrontSide:true });
+    enemyTemplate = fbx;
+  }, null, () => {
+    enemyTemplate = null;
+  });
+}
+loadEnemyTemplate();
 
-    const pole = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.06, 0.08, 3.2, 6),
-      new THREE.MeshLambertMaterial({ color:0x1a0e00 })
-    );
-    pole.position.y = 1.6;
-    g.add(pole);
-
-    const head = new THREE.Mesh(
-      new THREE.BoxGeometry(0.52, 0.42, 0.52),
-      new THREE.MeshBasicMaterial({ color:0xffcc66 })
-    );
-    head.position.y = 3.35;
-    g.add(head);
-
-    if (idx % LIGHT_EVERY === 0) {
-      const pl = new THREE.PointLight(0xff8800, 1.3, 9, 2);
-      pl.position.y = 3.35;
-      g.add(pl);
+/* ===================================================================
+   House / lantern / stair placement
+=================================================================== */
+function loadHouseTemplateThenPlace() {
+  const gltfLoader = new THREE.GLTFLoader();
+  gltfLoader.load('./ie.glb', gltf => {
+    houseTemplate = gltf.scene;
+    optimizeImportedRoot(houseTemplate, { darken:0.55, allowTransparent:true, forceFrontSide:true });
+    const count = Math.min(houseSlots.length, 10);
+    for (let i = 0; i < count; i++) {
+      const info = placeHouseOnSlot(houseTemplate, houseSlots[i], i);
+      if (i === specialHouseIndex) {
+        placeNoteHouseDecoration(info);
+      }
     }
+    ui.status.textContent = '✅ ie.glb 読み込み完了 / 家を配置しました';
+    setTimeout(() => { if (game.state === 'playing') ui.status.textContent = ''; }, 2500);
+    loadLanternTemplateThenPlace();
+  }, null, () => {
+    houseTemplate = buildFallbackHouse();
+    const count = Math.min(houseSlots.length, 10);
+    for (let i = 0; i < count; i++) {
+      const info = placeHouseOnSlot(houseTemplate, houseSlots[i], i);
+      if (i === specialHouseIndex) placeNoteHouseDecoration(info);
+    }
+    ui.error.style.display = 'block';
+    ui.error.textContent = 'ie.glb失敗→フォールバック家を使用';
+    loadLanternTemplateThenPlace();
+  });
+}
+function loadLanternTemplateThenPlace() {
+  const gltfLoader = new THREE.GLTFLoader();
+  gltfLoader.load('./gaitou.glb', gltf => {
+    gaitouTemplate = gltf.scene;
+    for (const slot of lanternSlots) placeLantern(gaitouTemplate, slot);
+    ui.status.textContent += '\n✅ gaitou.glb 読み込み完了';
+    setTimeout(() => { if (game.state === 'playing') ui.status.textContent = ''; }, 2500);
+    loadKaidanTemplateThenOverlay();
+  }, null, () => {
+    gaitouTemplate = buildFallbackLantern();
+    for (const slot of lanternSlots) placeLantern(gaitouTemplate, slot);
+    ui.error.style.display = 'block';
+    ui.error.textContent += '\ngaitou.glb失敗→フォールバック灯籠を使用';
+    loadKaidanTemplateThenOverlay();
+  });
+}
+function loadKaidanTemplateThenOverlay() {
+  const gltfLoader = new THREE.GLTFLoader();
+  gltfLoader.load('./kaidan.glb', gltf => {
+    const template = gltf.scene;
+    optimizeImportedRoot(template, { darken:0.68, allowTransparent:true, forceFrontSide:true });
 
-    g.position.set(slot.x, y, slot.z);
-    g.rotation.y = slot.ry;
-    scene.add(g);
+    // staircase visual overlay, aligned to the exact stair corridor
+    centerScaleToHeight(template, 4.0);
+    template.rotation.y = 0;
+    template.updateMatrixWorld(true);
 
-    registerStaticBox(slot.x, y + 1.6, slot.z, 0.15, 1.7, 0.15);
-    obstacleMeshes.push(g);
-    idx++;
-  }
+    const box = new THREE.Box3().setFromObject(template);
+    const size = new THREE.Vector3(); box.getSize(size);
+
+    // Fit to 4m rise and ~10m run visually
+    const sx = MAP.stair.w / Math.max(size.x, 0.01);
+    const sy = MAP.platformY / Math.max(size.y, 0.01);
+    const sz = (MAP.stair.zStart - MAP.stair.zEnd) / Math.max(size.z, 0.01);
+    const s = Math.min(sx, sy, sz);
+    template.scale.setScalar(s);
+    template.updateMatrixWorld(true);
+
+    const b2 = new THREE.Box3().setFromObject(template);
+    template.position.set(
+      MAP.stair.x - (b2.min.x + b2.max.x) * 0.5,
+      0 - b2.min.y,
+      MAP.stair.zStart - 0.2
+    );
+    template.updateMatrixWorld(true);
+    scene.add(template);
+    ui.status.textContent += '\n✅ kaidan.glb 読み込み完了';
+    setTimeout(() => { if (game.state === 'playing') ui.status.textContent = ''; }, 2500);
+    finishBoot();
+  }, null, () => {
+    const fallback = buildFallbackStair();
+    fallback.position.set(0,0,0);
+    scene.add(fallback);
+    ui.error.style.display = 'block';
+    ui.error.textContent += '\nkaidan.glb失敗→フォールバック階段を使用';
+    finishBoot();
+  });
 }
 
-/* =========================================================
-   柵
-========================================================= */
-function buildFences() {
-  const mat = new THREE.MeshLambertMaterial({ color:0x3a2010 });
-
-  for (const slot of FENCE_SLOTS) {
-    const y = getFloorHeight(slot.x, slot.z);
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(slot.w, 0.8, slot.d), mat);
-    mesh.position.set(slot.x, y + 0.4, slot.z);
-    scene.add(mesh);
-    registerStaticBox(slot.x, y + 0.4, slot.z, slot.w * 0.5, 0.45, slot.d * 0.5);
-    obstacleMeshes.push(mesh);
-  }
+function finishBoot() {
+  ui.status.textContent = '第1章：静寂の廃村';
+  setTimeout(() => { if (game.state === 'playing') ui.status.textContent = ''; }, 1800);
 }
-buildFences();
 
-/* =========================================================
-   地蔵とプレイヤー
-========================================================= */
-const PLAYER_EYE_H = 1.65;
-const TERRAIN_LERP_K = 0.22;
+loadHouseTemplateThenPlace();
+
+/* ===================================================================
+   Prompts / interactions
+=================================================================== */
+const playerPos = new THREE.Vector3(0, 1.65, 0);
 let targetPlayerY = playerPos.y;
-let gameStarted = true;
+const playerEyeH = 1.65;
+const terrainLerpK = 0.22;
 
-function updateCandleUI() {
-  const v = Math.max(0, Math.ceil(candlePercent));
-  candlePercentEl.textContent = v;
-  candleBarFill.style.width = v + '%';
-  const r = Math.floor(180 + 75 * (1 - v / 100));
-  const g = Math.floor(190 * (v / 100));
-  candleBarFill.style.background = `linear-gradient(90deg,rgb(${r},40,0),rgb(${r},${g},30))`;
+function getNearestNoteInRange() {
+  let best = null, bestDist = Infinity;
+  for (const info of houseInfos) {
+    if (info.noteUsed || !info.notePos) continue;
+    const d = dist2D(playerPos.x, playerPos.z, info.notePos.x, info.notePos.z);
+    if (d <= 2.2 && d < bestDist) { best = info; bestDist = d; }
+  }
+  return best;
 }
+function openNoteStory(info) {
+  if (!info || info.noteUsed || chapterState.storyOpen || chapterState.chapter1Cleared) return;
+  info.noteUsed = true;
+  chapterState.noteRead = true;
+  updateNoteVisibilityAfterRead();
+  lockPlayerInput(true);
+  ui.prompt.style.display = 'none';
+  ui.smallHint.style.display = 'none';
+  openStory();
+}
+function updatePrompts() {
+  if (game.state !== 'playing' || chapterState.storyOpen || gameOverActive) {
+    ui.prompt.style.display = 'none';
+    ui.smallHint.style.display = 'none';
+    return;
+  }
 
-let stamina = 100;
-let isDashing = false;
-let dashExhausted = false;
-const STAMINA_DRAIN = 0.55;
-const STAMINA_RECOVER = 0.22;
-const SPEED_WALK = 0.058;
-const SPEED_DASH = 0.115;
+  const note = getNearestNoteInRange();
+  const jizo = getNearestJizoInPromptRange();
+  const stairNear = dist2D(playerPos.x, playerPos.z, MAP.stair.x, MAP.stair.zStart + 0.5) < 5.5;
 
-function updateStaminaUI() {
-  const v = Math.max(0, Math.round(stamina));
-  staminaPctEl.textContent = v;
-  staminaBarFill.style.width = v + '%';
-  const g1 = Math.floor(160 * (v / 100));
-  staminaBarFill.style.background = `linear-gradient(90deg,rgb(0,${g1},200),rgb(0,220,255))`;
+  if (note) {
+    ui.prompt.textContent = '【古いノート】を調べる';
+    ui.prompt.style.display = 'block';
+    ui.smallHint.style.display = 'none';
+    return;
+  }
 
-  if (dashExhausted) {
-    dashBtnEl.classList.add('exhausted');
-    dashBtnEl.classList.remove('pressing');
-  } else if (isDashing) {
-    dashBtnEl.classList.add('pressing');
-    dashBtnEl.classList.remove('exhausted');
+  if (jizo) {
+    ui.prompt.textContent = '【地蔵】を灯す';
+    ui.prompt.style.display = 'block';
+    ui.smallHint.style.display = 'none';
+    return;
+  }
+
+  ui.prompt.style.display = 'none';
+  if (!chapterState.chapter1Cleared && stairNear) {
+    ui.smallHint.textContent = 'まだ上に行くべきではない…';
+    ui.smallHint.style.display = 'block';
   } else {
-    dashBtnEl.classList.remove('pressing', 'exhausted');
+    ui.smallHint.style.display = 'none';
   }
 }
 
-const game = {
-  state: 'playing',
-  running: true,
-  scareStart: 0
-};
+/* ===================================================================
+   Touch controls
+=================================================================== */
+let joyId = null, joyActive = false, joyDx = 0, joyDy = 0, joyStartX = 0, joyStartY = 0;
+let lookId = null, lookPrevX = 0, lookPrevY = 0;
+let yaw = 0, pitch = 0;
+const touchStartMeta = new Map();
+const JOY_R = 60;
 
-let audioCtx = null;
 function ensureAudioContext() {
   try {
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (!window.audioCtx) window.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
   } catch (_) {}
 }
-document.addEventListener('touchstart', ensureAudioContext, { passive:true });
-document.addEventListener('pointerdown', ensureAudioContext, { passive:true });
+const audioCtx = (() => {
+  try { return new (window.AudioContext || window.webkitAudioContext)(); } catch (_) { return null; }
+})();
 
 function playJumpNoise() {
   try {
@@ -1253,179 +1525,46 @@ function playJumpNoise() {
 }
 
 function hideControls() {
-  joystickBase.style.display = 'none';
-  joystickStick.style.display = 'none';
-  dashBtnEl.style.display = 'none';
+  ui.joyBase.style.display = 'none';
+  ui.joyStick.style.display = 'none';
+  ui.dashBtn.style.display = 'none';
 }
-function setTouchUIVisible(v) {
-  const op = v ? '1' : '0';
-  joystickBase.style.opacity = op;
-  joystickStick.style.opacity = op;
-  dashBtnEl.style.opacity = op;
+function showControls() {
+  ui.joyBase.style.display = 'block';
+  ui.joyStick.style.display = 'block';
+  ui.dashBtn.style.display = 'flex';
 }
-setTouchUIVisible(true);
-
-function triggerGameOver() {
-  if (game.state === 'gameover') return;
-  game.state = 'gameover';
-  game.running = false;
-
-  jumpscareOverlay.classList.add('fadeOut');
-  setTimeout(() => {
-    jumpscareOverlay.style.display = 'none';
-  }, 220);
-
-  hideControls();
-  alertIndicator.style.display = 'none';
-  promptMsg.style.display = 'none';
-  statusMsg.textContent = '';
-  errorMsg.textContent = '';
-  dangerVeil.style.background = 'rgba(0,0,0,0)';
-  gameOverScreen.classList.add('active');
+function resetTouchState() {
+  joyId = null; joyActive = false; joyDx = 0; joyDy = 0;
+  lookId = null;
+  ui.joyStick.style.transform = 'translate(0,0)';
+  isDashing = false;
 }
 
-function triggerJumpScare() {
-  if (game.state !== 'playing') return;
-  game.state = 'jumpscare';
-  game.scareStart = performance.now();
+let isDashing = false;
+let dashExhausted = false;
+const STAMINA_DRAIN = 0.55;
+const STAMINA_RECOVER = 0.22;
+const SPEED_WALK = 0.058;
+const SPEED_DASH = 0.115;
+let stamina = 100;
+let candlePercent = 100;
+let lastTick = Date.now();
+const TICK_MS = 4000;
 
-  jumpscareOverlay.style.display = 'block';
-  jumpscareOverlay.classList.remove('fadeOut');
-  alertIndicator.style.display = 'none';
-  promptMsg.style.display = 'none';
-  statusMsg.textContent = '';
-  errorMsg.textContent = '';
-  dangerVeil.style.background = 'rgba(255,0,0,0.33)';
-  playJumpNoise();
+let game = { state:'playing', inputLocked:false, running:true };
 
-  setTimeout(() => {
-    if (game.state === 'jumpscare') triggerGameOver();
-  }, 1200);
-}
-
-function getNearestJizoInPromptRange() {
-  let best = null, bestDist = Infinity;
-  for (const j of jizoList) {
-    if (j.lit) continue;
-    const d = dist2D(playerPos.x, playerPos.z, j.x, j.z);
-    if (d <= JIZO_PROMPT_RADIUS && d < bestDist) { best = j; bestDist = d; }
-  }
-  return best;
-}
-function igniteJizo(jizo) {
-  if (!jizo || jizo.lit) return;
-  jizo.lit = true;
-  jizo.light.intensity = 1.8;
-  jizo.light.color.setHex(0xffa040);
-  const hm = jizo.group.children.find(c => c.isMesh && c.geometry && c.geometry.type === 'SphereGeometry');
-  if (hm && hm.material) hm.material.opacity = 0.26;
-}
-function updateJizoPrompt() {
-  const n = getNearestJizoInPromptRange();
-  if (n && game.state === 'playing') promptMsg.style.display = 'block';
-  else promptMsg.style.display = 'none';
-}
-function getLitJizoRepulsion(pos) {
-  let px = 0, pz = 0;
-  for (const j of jizoList) {
-    if (!j.lit) continue;
-    const dx = pos.x - j.x, dz = pos.z - j.z;
-    const d = Math.sqrt(dx*dx + dz*dz);
-    if (d < JIZO_SAFE_RADIUS) {
-      const sd = Math.max(d, 0.0001), ov = JIZO_SAFE_RADIUS - sd + 0.15;
-      px += (dx / sd) * ov;
-      pz += (dz / sd) * ov;
-    }
-  }
-  return { x:px, z:pz };
-}
-function isPointInsideAnySafeZone(x, z) {
-  for (const j of jizoList) {
-    if (!j.lit) continue;
-    if (dist2D(x, z, j.x, j.z) <= JIZO_SAFE_RADIUS) return true;
-  }
-  return false;
-}
-
-function updateMove() {
-  if (game.state !== 'playing') return;
-
-  if (isDashing && !dashExhausted) {
-    stamina = Math.max(0, stamina - STAMINA_DRAIN);
-    if (stamina <= 0) {
-      stamina = 0;
-      dashExhausted = true;
-      isDashing = false;
-    }
-  } else {
-    if (dashExhausted) {
-      stamina = Math.min(100, stamina + STAMINA_RECOVER * 0.6);
-      if (stamina >= 30) dashExhausted = false;
-    } else {
-      stamina = Math.min(100, stamina + STAMINA_RECOVER);
-    }
-  }
-  updateStaminaUI();
-
-  if (!joyActive) return;
-
-  const spd = (isDashing && !dashExhausted) ? SPEED_DASH : SPEED_WALK;
-  const fwd = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw));
-  const rgt = new THREE.Vector3( Math.cos(yaw), 0, -Math.sin(yaw));
-
-  let nx = playerPos.x - joyDy * spd * fwd.x + joyDx * spd * rgt.x;
-  let nz = playerPos.z - joyDy * spd * fwd.z + joyDx * spd * rgt.z;
-
-  nx = clamp(nx, -81, 81);
-  nz = clamp(nz, -81, 81);
-
-  const th = getFloorHeight(nx, nz);
-  const ny = th + PLAYER_EYE_H;
-
-  if (!checkBoxCollisionAt(nx, nz, ny)) {
-    playerPos.x = nx;
-    playerPos.z = nz;
-  } else {
-    const onlyNx = playerPos.x - joyDy * spd * fwd.x + joyDx * spd * rgt.x;
-    const onlyNz = playerPos.z;
-    const th2 = getFloorHeight(onlyNx, onlyNz);
-    if (!checkBoxCollisionAt(onlyNx, onlyNz, th2 + PLAYER_EYE_H)) {
-      playerPos.x = onlyNx;
-    } else {
-      const onlyNx2 = playerPos.x;
-      const onlyNz2 = playerPos.z - joyDy * spd * fwd.z + joyDx * spd * rgt.z;
-      const th3 = getFloorHeight(onlyNx2, onlyNz2);
-      if (!checkBoxCollisionAt(onlyNx2, onlyNz2, th3 + PLAYER_EYE_H)) {
-        playerPos.z = onlyNz2;
-      }
-    }
-  }
-
-  const newTerrainY = getFloorHeight(playerPos.x, playerPos.z) + PLAYER_EYE_H;
-  targetPlayerY = newTerrainY;
-  playerPos.y += (targetPlayerY - playerPos.y) * TERRAIN_LERP_K;
-}
-
-/* =========================================================
-   touch controls
-========================================================= */
-let joyId = null, joyActive = false, joyDx = 0, joyDy = 0, joyStartX = 0, joyStartY = 0;
-let lookId = null, lookPrevX = 0, lookPrevY = 0;
-let yaw = 0, pitch = 0;
-const touchStartMeta = new Map();
-const JOY_R = 60;
-
-dashBtnEl.addEventListener('touchstart', e => {
+ui.dashBtn.addEventListener('touchstart', e => {
   e.stopPropagation();
   ensureAudioContext();
-  if (game.state !== 'playing' || dashExhausted) return;
+  if (game.inputLocked || game.state !== 'playing' || dashExhausted) return;
   isDashing = true;
 }, { passive:true });
-dashBtnEl.addEventListener('touchend', e => {
+ui.dashBtn.addEventListener('touchend', e => {
   e.stopPropagation();
   isDashing = false;
 }, { passive:true });
-dashBtnEl.addEventListener('touchcancel', e => {
+ui.dashBtn.addEventListener('touchcancel', e => {
   e.stopPropagation();
   isDashing = false;
 }, { passive:true });
@@ -1438,28 +1577,21 @@ canvas.addEventListener('touchcancel', onTE, { passive:false });
 function onTS(e) {
   e.preventDefault();
   ensureAudioContext();
-  if (game.state !== 'playing') return;
+  if (game.inputLocked || game.state !== 'playing') return;
 
   for (const t of e.changedTouches) {
     touchStartMeta.set(t.identifier, { x:t.clientX, y:t.clientY, time:Date.now() });
     const isLeft = t.clientX < window.innerWidth / 2;
     if (isLeft && joyId === null) {
-      joyId = t.identifier;
-      joyActive = true;
-      joyStartX = t.clientX;
-      joyStartY = t.clientY;
-      joyDx = 0; joyDy = 0;
+      joyId = t.identifier; joyActive = true; joyStartX = t.clientX; joyStartY = t.clientY; joyDx = 0; joyDy = 0;
     } else if (!isLeft && lookId === null) {
-      lookId = t.identifier;
-      lookPrevX = t.clientX;
-      lookPrevY = t.clientY;
+      lookId = t.identifier; lookPrevX = t.clientX; lookPrevY = t.clientY;
     }
   }
 }
-
 function onTM(e) {
   e.preventDefault();
-  if (game.state !== 'playing') return;
+  if (game.inputLocked || game.state !== 'playing') return;
 
   for (const t of e.changedTouches) {
     if (t.identifier === joyId) {
@@ -1470,7 +1602,7 @@ function onTM(e) {
       const a = Math.atan2(dy, dx);
       joyDx = Math.cos(a) * cl / JOY_R;
       joyDy = Math.sin(a) * cl / JOY_R;
-      joystickStick.style.transform = `translate(${Math.cos(a)*cl}px,${Math.sin(a)*cl}px)`;
+      ui.joyStick.style.transform = `translate(${Math.cos(a)*cl}px,${Math.sin(a)*cl}px)`;
     }
     if (t.identifier === lookId) {
       const dx = t.clientX - lookPrevX;
@@ -1485,23 +1617,30 @@ function onTM(e) {
 }
 
 function tryIgniteJizoByTap(t) {
-  if (game.state !== 'playing') return;
+  if (game.inputLocked || game.state !== 'playing') return;
   const meta = touchStartMeta.get(t.identifier);
   if (!meta) return;
   if (Date.now() - meta.time > 350 || Math.hypot(t.clientX - meta.x, t.clientY - meta.y) > 24) return;
   const n = getNearestJizoInPromptRange();
   if (n) {
     igniteJizo(n);
-    promptMsg.style.display = 'none';
+    ui.prompt.style.display = 'none';
+    touchStartMeta.delete(t.identifier);
+    return;
   }
+  const note = getNearestNoteInRange();
+  if (note) {
+    openNoteStory(note);
+  }
+  touchStartMeta.delete(t.identifier);
 }
-
 function onTE(e) {
   e.preventDefault();
+  if (chapterState.storyOpen) return;
   for (const t of e.changedTouches) {
     if (t.identifier === joyId) {
       joyId = null; joyActive = false; joyDx = 0; joyDy = 0;
-      joystickStick.style.transform = 'translate(0,0)';
+      ui.joyStick.style.transform = 'translate(0,0)';
     }
     if (t.identifier === lookId) lookId = null;
     tryIgniteJizoByTap(t);
@@ -1509,266 +1648,238 @@ function onTE(e) {
   }
 }
 
-/* =========================================================
-   GLB / FBX placement
-========================================================= */
-function placeFallbackEnemy() {
-  if (hachishaku) return;
-  hachishaku = new THREE.Group();
-  const visualRoot = new THREE.Group();
-  visualRoot.rotation.y = ENEMY_VISUAL_YAW_OFFSET;
-  visualRoot.add(buildFallbackEnemy());
-  hachishaku.add(visualRoot);
-  hachishaku.position.set(18, getFloorHeight(18,18), 18);
-  scene.add(hachishaku);
-  setEnemyTargetAvoidingSafeZone();
-}
+/* ===================================================================
+   Movement
+=================================================================== */
+const playerPos = new THREE.Vector3(0, 1.65, 0);
+let targetPlayerY = playerPos.y;
+const stairTrigger = { x: MAP.stair.x, z: MAP.stair.zStart + 0.3 };
 
-function placeHousesAlongRoads(template) {
-  let placed = 0;
-  for (const slot of HOUSE_SLOTS) {
-    const x = slot.x, z = slot.z, ry = slot.ry;
-    if (isPointReserved(x, z)) continue;
+function updateMove() {
+  if (game.state !== 'playing' || game.inputLocked) return;
 
-    const house = placeModelOnFloor(template, x, z, ry, slot.area === 'platform' ? 4.2 : 4.6, {
-      darken: 0.55,
-      maxWidth: slot.area === 'platform' ? 7.5 : 6.6,
-      maxDepth: slot.area === 'platform' ? 7.5 : 6.6
-    });
-
-    scene.add(house.obj);
-    const box = new THREE.Box3().setFromObject(house.obj);
-    box.expandByScalar(-0.12);
-    collisionBoxes.push(box);
-    obstacleMeshes.push(house.obj);
-    placed++;
-  }
-  return placed;
-}
-
-function placeFallbackHouseLayout() {
-  let placed = 0;
-  for (const slot of HOUSE_SLOTS) {
-    if (isPointReserved(slot.x, slot.z)) continue;
-    placeFallbackHouse(slot.x, slot.z, slot.ry, slot.area);
-    placed++;
-  }
-  return placed;
-}
-
-function placeGaitouLightsIfTemplate(template) {
-  placeGaitouLights(template);
-}
-
-function buildPlatformAndRoadCollisionAndVisuals() {
-  // platform is already added as visual and collider above
-  // stairs are visuals only; floor detection drives ascent
-}
-
-function addDebugStatus(msg) { statusMsg.textContent = msg; }
-function appendStatus(msg) { statusMsg.textContent = (statusMsg.textContent || '') + msg; }
-function setStatus(msg) { statusMsg.textContent = msg; }
-function clearStatus() { statusMsg.textContent = ''; }
-function appendError(msg) {
-  errorMsg.textContent = (errorMsg.textContent ? errorMsg.textContent + '\n' : '') + msg;
-  errorMsg.style.display = 'block';
-}
-function clearError() {
-  errorMsg.style.display = 'none';
-  errorMsg.textContent = '';
-}
-
-const gltfLoader = new THREE.GLTFLoader();
-const fbxLoader = new THREE.FBXLoader();
-
-setStatus('モデル読み込み中...');
-
-gltfLoader.load('./ie.glb', gltf => {
-  const template = gltf.scene;
-  optimizeImportedRoot(template, {
-    darken: 0.55,
-    allowTransparent: true,
-    forceFrontSide: true
-  });
-
-  let meshCount = 0;
-  template.traverse(c => { if (c.isMesh) meshCount++; });
-
-  if (meshCount === 0) {
-    appendError('ie.glb: メッシュ0個');
-    placeFallbackHouseLayout();
+  if (isDashing && !dashExhausted) {
+    stamina = Math.max(0, stamina - STAMINA_DRAIN);
+    if (stamina <= 0) { stamina = 0; dashExhausted = true; isDashing = false; }
   } else {
-    const placed = placeHousesAlongRoads(template);
-    appendStatus(`✅ ie.glb 成功 / 家:${placed}棟`);
-    setTimeout(() => { if (game.state === 'playing') clearStatus(); }, 6000);
+    if (dashExhausted) {
+      stamina = Math.min(100, stamina + STAMINA_RECOVER * 0.6);
+      if (stamina >= 30) dashExhausted = false;
+    } else {
+      stamina = Math.min(100, stamina + STAMINA_RECOVER);
+    }
   }
 
-  loadGaitou();
-}, prog => {
-  if (prog.total > 0) setStatus(`ie.glb ${Math.round(prog.loaded / prog.total * 100)}%`);
-}, e => {
-  appendError('ie.glb失敗: ' + (e && e.message ? e.message : String(e)));
-  placeFallbackHouseLayout();
-  loadGaitou();
-});
+  if (ui.staminaPct) {
+    const v = Math.max(0, Math.round(stamina));
+    ui.staminaPct.textContent = v;
+    ui.staminaBar.style.width = v + '%';
+    const g1 = Math.floor(160 * (v / 100));
+    ui.staminaBar.style.background = `linear-gradient(90deg,rgb(0,${g1},200),rgb(0,220,255))`;
+    if (dashExhausted) {
+      ui.dashBtn.classList.add('exhausted');
+      ui.dashBtn.classList.remove('pressing');
+    } else if (isDashing) {
+      ui.dashBtn.classList.add('pressing');
+      ui.dashBtn.classList.remove('exhausted');
+    } else {
+      ui.dashBtn.classList.remove('pressing', 'exhausted');
+    }
+  }
 
-let gaitouTemplate = null;
-function loadGaitou() {
-  gltfLoader.load('./gaitou.glb', gltf => {
-    gaitouTemplate = gltf.scene;
-    placeGaitouLightsIfTemplate(gaitouTemplate);
-    appendStatus('\n✅ gaitou.glb 成功');
-    setTimeout(() => { if (game.state === 'playing') clearStatus(); }, 5000);
-    loadKaidan();
-  }, null, () => {
-    appendError('gaitou.glb失敗→基本形状使用');
-    placeFallbackLanterns();
-    loadKaidan();
-  });
+  if (!joyActive) return;
+
+  const spd = (isDashing && !dashExhausted) ? SPEED_DASH : SPEED_WALK;
+  const fwd = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw));
+  const rgt = new THREE.Vector3( Math.cos(yaw), 0, -Math.sin(yaw));
+
+  let nx = playerPos.x - joyDy * spd * fwd.x + joyDx * spd * rgt.x;
+  let nz = playerPos.z - joyDy * spd * fwd.z + joyDx * spd * rgt.z;
+
+  nx = clamp(nx, -81, 81);
+  nz = clamp(nz, -81, 81);
+
+  const th = getSurfaceHeight(nx, nz);
+  const ny = th + playerEyeH;
+
+  if (!checkPlayerCollision(nx, nz, ny)) {
+    playerPos.x = nx;
+    playerPos.z = nz;
+  } else {
+    // slide X
+    const xOnly = playerPos.x - joyDy * spd * fwd.x + joyDx * spd * rgt.x;
+    const zOnly = playerPos.z;
+    if (!checkPlayerCollision(xOnly, zOnly, getSurfaceHeight(xOnly, zOnly) + playerEyeH)) {
+      playerPos.x = xOnly;
+    } else {
+      const xOnly2 = playerPos.x;
+      const zOnly2 = playerPos.z - joyDy * spd * fwd.z + joyDx * spd * rgt.z;
+      if (!checkPlayerCollision(xOnly2, zOnly2, getSurfaceHeight(xOnly2, zOnly2) + playerEyeH)) {
+        playerPos.z = zOnly2;
+      }
+    }
+  }
+
+  const newTerrainY = getSurfaceHeight(playerPos.x, playerPos.z) + playerEyeH;
+  targetPlayerY = newTerrainY;
+  playerPos.y += (targetPlayerY - playerPos.y) * 0.22;
 }
 
-let kaidanTemplate = null;
-function placeKaidanVisual(template) {
-  const model = template.clone(true);
-  cloneUniqueMaterials(model);
-
-  model.scale.setScalar(1);
-  model.rotation.y = 0;
-  model.updateMatrixWorld(true);
-
-  const box0 = new THREE.Box3().setFromObject(model);
-  const size0 = new THREE.Vector3();
-  box0.getSize(size0);
-
-  const targetHeight = 4.0;
-  const scale = Math.min(
-    size0.y > 0.01 ? targetHeight / size0.y : 1,
-    size0.x > 0.01 ? (STAIRS.width * 0.92) / size0.x : 1,
-    size0.z > 0.01 ? ((STAIRS.startZ - STAIRS.endZ) * 0.95) / size0.z : 1
-  );
-
-  model.scale.setScalar(scale);
-  model.rotation.y = Math.PI;
-  model.updateMatrixWorld(true);
-
-  const box1 = new THREE.Box3().setFromObject(model);
-  model.position.set(
-    STAIRS.x,
-    -box1.min.y,
-    (STAIRS.startZ + STAIRS.endZ) * 0.5
-  );
-  model.updateMatrixWorld(true);
-
-  optimizeImportedRoot(model, {
-    darken: 0.68,
-    allowTransparent: true,
-    forceFrontSide: true
-  });
-
-  scene.add(model);
-  obstacleMeshes.push(model);
-}
-function loadKaidan() {
-  gltfLoader.load('./kaidan.glb', gltf => {
-    kaidanTemplate = gltf.scene;
-    placeStairVisuals();
-    placeKaidanVisual(kaidanTemplate);
-    appendStatus('\n✅ kaidan.glb 成功');
-    setTimeout(() => { if (game.state === 'playing') clearStatus(); }, 5000);
-    tryLoadFBX();
-  }, null, () => {
-    appendError('kaidan.glb失敗→基本階段使用');
-    placeFallbackStairVisuals();
-    tryLoadFBX();
-  });
-}
-function placeStairVisuals() {
-  // staircase is already visible through boxes built above
-}
-function placeFallbackStairVisuals() {
-  placeFallbackStairVisuals();
-}
-function tryLoadFBX() {
-  if (typeof THREE.FBXLoader === 'undefined') {
-    ensureHachishaku();
-    appendError('FBXLoader未定義→フォールバック使用');
-    setTimeout(() => { clearError(); }, 5000);
+/* ===================================================================
+   Prompts
+=================================================================== */
+function updatePrompts() {
+  if (game.state !== 'playing' || game.inputLocked || chapterState.storyOpen) {
+    ui.prompt.style.display = 'none';
+    ui.smallHint.style.display = 'none';
     return;
   }
 
-  fbxLoader.load('./popopo.fbx', fbx => {
-    const box = new THREE.Box3().setFromObject(fbx);
-    const size = new THREE.Vector3();
-    box.getSize(size);
+  const note = getNearestNoteInRange();
+  if (note) {
+    ui.prompt.textContent = '【古いノート】を調べる';
+    ui.prompt.style.display = 'block';
+    ui.smallHint.style.display = 'none';
+    return;
+  }
 
-    const TARGET_HEIGHT = 4.5;
-    let finalScale = 1;
-    if (size.y > 0.01) finalScale = TARGET_HEIGHT / size.y;
-    fbx.scale.setScalar(finalScale);
-    fbx.updateMatrixWorld(true);
+  const jizo = getNearestJizoInPromptRange();
+  if (jizo) {
+    ui.prompt.textContent = '【地蔵】を灯す';
+    ui.prompt.style.display = 'block';
+    ui.smallHint.style.display = 'none';
+    return;
+  }
 
-    const box2 = new THREE.Box3().setFromObject(fbx);
-    fbx.position.y = -box2.min.y;
-    fbx.rotation.set(0, 0, 0);
-
-    fbx.traverse(child => {
-      if (child.isMesh) {
-        child.castShadow = false;
-        child.receiveShadow = false;
-        child.frustumCulled = true;
-        if (child.material) {
-          const mats = Array.isArray(child.material) ? child.material : [child.material];
-          mats.forEach(m => {
-            if (m.color) m.color.multiplyScalar(0.28);
-            if ('emissive' in m && m.emissive) m.emissive.multiplyScalar(0.12);
-            m.fog = true;
-            m.depthTest = true;
-            m.depthWrite = true;
-            m.side = THREE.FrontSide;
-            m.needsUpdate = true;
-          });
-        }
-      }
-    });
-
-    hachishaku = new THREE.Group();
-    const visualRoot = new THREE.Group();
-    visualRoot.rotation.y = ENEMY_VISUAL_YAW_OFFSET;
-    visualRoot.add(fbx);
-    hachishaku.add(visualRoot);
-    hachishaku.position.set(18, getFloorHeight(18,18), 18);
-    scene.add(hachishaku);
-    setEnemyTargetAvoidingSafeZone();
-
-    if (fbx.animations && fbx.animations.length > 0) {
-      enemyMixer = new THREE.AnimationMixer(fbx);
-      const action = enemyMixer.clipAction(fbx.animations[0]);
-      action.reset();
-      action.enabled = true;
-      action.setLoop(THREE.LoopRepeat, Infinity);
-      action.clampWhenFinished = false;
-      action.play();
-      appendStatus(`\n✅ popopo.fbx / アニメ:${fbx.animations.length}クリップ`);
-    } else {
-      appendStatus('\n✅ popopo.fbx / アニメなし');
-    }
-
-    setTimeout(() => { if (game.state === 'playing') clearStatus(); }, 5000);
-  }, prog => {
-    if (prog.total > 0) {
-      const pct = Math.round(prog.loaded / prog.total * 100);
-      appendStatus(`\npopopo.fbx ${pct}%`);
-    }
-  }, e => {
-    ensureHachishaku();
-    appendError('popopo.fbx失敗→フォールバック\n' + (e && e.message ? e.message : String(e)));
-    setTimeout(() => { clearError(); }, 7000);
-  });
+  ui.prompt.style.display = 'none';
+  if (!chapterState.chapter1Cleared && dist2D(playerPos.x, playerPos.z, stairTrigger.x, stairTrigger.z) < 5.5) {
+    ui.smallHint.textContent = 'まだ上に行くべきではない…';
+    ui.smallHint.style.display = 'block';
+  } else {
+    ui.smallHint.style.display = 'none';
+  }
 }
 
-/* =========================================================
-   main loop
-========================================================= */
+/* ===================================================================
+   Story overlay interactions
+=================================================================== */
+function closeStoryIfAny() {
+  if (!chapterState.storyOpen) return;
+  chapterState.storyOpen = false;
+  ui.story.classList.remove('active');
+  playChapterBoom();
+  chapterState.chapter1Cleared = true;
+  removeBarrier();
+  showToast('第1章クリア：階段が開放された');
+  lockPlayerInput(false);
+  ui.smallHint.style.display = 'none';
+  setTimeout(() => { if (!chapterState.enemySpawned) spawnEnemy(); }, 1400);
+}
+ui.story.addEventListener('touchstart', e => { e.preventDefault(); ensureAudioContext(); }, { passive:false });
+ui.story.addEventListener('touchend', e => {
+  e.preventDefault();
+  if (!chapterState.storyOpen) return;
+  storyIndex++;
+  if (storyIndex < chapterPages.length) {
+    ui.storyText.textContent = chapterPages[storyIndex];
+  } else {
+    closeStoryIfAny();
+  }
+}, { passive:false });
+ui.story.addEventListener('click', () => {
+  if (!chapterState.storyOpen) return;
+  storyIndex++;
+  if (storyIndex < chapterPages.length) ui.storyText.textContent = chapterPages[storyIndex];
+  else closeStoryIfAny();
+});
+
+/* ===================================================================
+   Note opening
+=================================================================== */
+function openNoteStory(info) {
+  if (!info || info.noteUsed || chapterState.storyOpen || chapterState.chapter1Cleared) return;
+  info.noteUsed = true;
+  chapterState.noteRead = true;
+  if (info.noteGroup) info.noteGroup.visible = false;
+  lockPlayerInput(true);
+  ui.prompt.style.display = 'none';
+  ui.smallHint.style.display = 'none';
+  chapterState.storyOpen = true;
+  ui.storyText.textContent = chapterPages[0];
+  ui.story.classList.add('active');
+}
+
+/* ===================================================================
+   Chapter boom / shake
+=================================================================== */
+function playChapterBoom() {
+  ensureAudioContext();
+  if (!audioCtx) return;
+
+  const now = audioCtx.currentTime;
+  const noiseDur = 0.65;
+  const len = Math.floor(audioCtx.sampleRate * noiseDur);
+  const buffer = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < len; i++) {
+    const fade = 1 - (i / len);
+    data[i] = (Math.random() * 2 - 1) * fade * 0.75;
+  }
+
+  const noise = audioCtx.createBufferSource();
+  noise.buffer = buffer;
+  const bp = audioCtx.createBiquadFilter();
+  bp.type = 'bandpass';
+  bp.frequency.value = 180;
+  bp.Q.value = 0.8;
+  const gain = audioCtx.createGain();
+  gain.gain.setValueAtTime(0.001, now);
+  gain.gain.exponentialRampToValueAtTime(1.0, now + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + noiseDur);
+  noise.connect(bp);
+  bp.connect(gain);
+  gain.connect(audioCtx.destination);
+  noise.start();
+
+  const osc = audioCtx.createOscillator();
+  const og = audioCtx.createGain();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(62, now);
+  osc.frequency.exponentialRampToValueAtTime(30, now + 0.35);
+  og.gain.setValueAtTime(0.001, now);
+  og.gain.exponentialRampToValueAtTime(0.55, now + 0.02);
+  og.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+  osc.connect(og);
+  og.connect(audioCtx.destination);
+  osc.start();
+  osc.stop(now + 0.6);
+
+  chapterState.boomUntil = performance.now() + 800;
+  if (navigator.vibrate) navigator.vibrate([120, 60, 180]);
+}
+function playToast(text) {
+  ui.toast.textContent = text;
+  ui.toast.style.display = 'block';
+  setTimeout(() => { ui.toast.style.display = 'none'; }, 2200);
+}
+
+/* ===================================================================
+   Load enemy (kept hidden until Chapter 1 cleared)
+=================================================================== */
+function loadEnemyTemplate() {
+  const loader = new THREE.FBXLoader();
+  loader.load('./popopo.fbx', fbx => {
+    optimizeImportedRoot(fbx, { darken:0.28, allowTransparent:true, forceFrontSide:true });
+    enemyTemplate = fbx;
+  }, null, () => {
+    enemyTemplate = null;
+  });
+}
+loadEnemyTemplate();
+
+/* ===================================================================
+   Game loop
+=================================================================== */
 let frame = 0;
 function animate() {
   if (!game.running) return;
@@ -1781,24 +1892,30 @@ function animate() {
   if (game.state === 'playing') {
     updateMove();
     updateEnemyAI(delta * 1000);
-    updateJizoPrompt();
+    updatePrompts();
   }
 
   camera.position.copy(playerPos);
 
-  if (game.state === 'jumpscare') {
-    const t = performance.now() - game.scareStart;
-    const life = Math.max(0, 1 - t / 1200);
-    const amp = 0.18 * life;
-    const sx = (Math.sin(performance.now() * 0.08) + (Math.random() - 0.5) * 1.4) * amp;
-    const sy = (Math.cos(performance.now() * 0.09) + (Math.random() - 0.5) * 1.2) * amp;
-    const sz = (Math.sin(performance.now() * 0.11) + (Math.random() - 0.5) * 1.2) * amp * 0.35;
-    camera.position.x += sx;
-    camera.position.y += sy;
-    camera.position.z += sz;
-    camera.rotation.z = Math.sin(performance.now() * 0.06) * amp * 0.45;
-  } else {
+  // Chapter boom shake
+  if (performance.now() < chapterState.boomUntil) {
+    const life = (chapterState.boomUntil - performance.now()) / 800;
+    const amp = 0.10 * life;
+    camera.position.x += (Math.random() - 0.5) * amp;
+    camera.position.y += (Math.random() - 0.5) * amp;
+    camera.position.z += (Math.random() - 0.5) * amp;
+    camera.rotation.z = (Math.random() - 0.5) * amp * 0.5;
+  } else if (game.state !== 'jumpscare') {
     camera.rotation.z = 0;
+  }
+
+  if (game.state === 'jumpscare') {
+    const t = performance.now();
+    const amp = 0.18;
+    camera.position.x += (Math.sin(t * 0.08) + (Math.random() - 0.5) * 1.4) * amp;
+    camera.position.y += (Math.cos(t * 0.09) + (Math.random() - 0.5) * 1.2) * amp;
+    camera.position.z += (Math.sin(t * 0.11) + (Math.random() - 0.5) * 1.2) * amp * 0.35;
+    camera.rotation.z = Math.sin(t * 0.06) * amp * 0.45;
   }
 
   camera.rotation.y = yaw;
@@ -1821,35 +1938,86 @@ function animate() {
   }
 
   const now = Date.now();
-  if (game.state === 'playing' && now - lastTick > 4000 && candlePercent > 0) {
+  if (game.state === 'playing' && now - lastTick > TICK_MS && candlePercent > 0) {
     candlePercent--;
     lastTick = now;
-    updateCandleUI();
+    ui.candlePct.textContent = Math.max(0, Math.ceil(candlePercent));
+    ui.candleBar.style.width = Math.max(0, Math.ceil(candlePercent)) + '%';
+    const v = Math.max(0, Math.ceil(candlePercent));
+    const r = Math.floor(180 + 75 * (1 - v / 100));
+    const g = Math.floor(190 * (v / 100));
+    ui.candleBar.style.background = `linear-gradient(90deg,rgb(${r},40,0),rgb(${r},${g},30))`;
     if (candlePercent <= 0) {
       candlePercent = 0;
-      darkOverlay.style.background = 'rgba(0,0,0,0.95)';
+      ui.darkOverlay.style.background = 'rgba(0,0,0,0.95)';
     } else if (candlePercent <= 20) {
-      darkOverlay.style.background = `rgba(0,0,0,${0.35 * (1 - candlePercent / 20)})`;
+      ui.darkOverlay.style.background = `rgba(0,0,0,${0.35 * (1 - candlePercent / 20)})`;
     }
   }
 
   renderer.render(scene, camera);
 }
 
-/* =========================================================
-   enemy init
-========================================================= */
-function ensureEnemyAndStart() {
-  if (!hachishaku) ensureHachishaku();
+function updateHudFromState() {
+  const v = Math.max(0, Math.round(stamina));
+  ui.staminaPct.textContent = v;
+  ui.staminaBar.style.width = v + '%';
+  const g1 = Math.floor(160 * (v / 100));
+  ui.staminaBar.style.background = `linear-gradient(90deg,rgb(0,${g1},200),rgb(0,220,255))`;
 }
 
-/* =========================================================
-   start
-========================================================= */
-updateCandleUI();
-updateStaminaUI();
-ensureEnemyAndStart();
-animate();
+function init() {
+  ui.candlePct.textContent = '100';
+  ui.candleBar.style.width = '100%';
+  ui.staminaPct.textContent = '100';
+  ui.staminaBar.style.width = '100%';
+  showControls();
+  lockPlayerInput(false);
+  ui.storyText.textContent = chapterPages[0];
+  animate();
+  updateHudFromState();
+}
+init();
+
+/* ===================================================================
+   Jumpscare / note / story click handling
+=================================================================== */
+function showChapterReadyToast() {
+  ui.chapterToast.textContent = '第1章：静寂の廃村';
+  ui.chapterToast.style.display = 'block';
+  setTimeout(() => { ui.chapterToast.style.display = 'none'; }, 1500);
+}
+showChapterReadyToast();
+
+/* keep note visibility coherent */
+setInterval(() => {
+  if (chapterState.noteRead) updateNoteVisibilityAfterRead();
+}, 1000);
+
+function updateNoteVisibilityAfterRead() {
+  for (const info of houseInfos) {
+    if (info.noteGroup && info.noteUsed) info.noteGroup.visible = false;
+  }
+}
+
+/* global touch end route for note interactions */
+document.addEventListener('touchend', e => {
+  if (chapterState.storyOpen || game.inputLocked || game.state !== 'playing') return;
+  for (const t of e.changedTouches) {
+    if (touchStartMeta.has(t.identifier)) {
+      tryIgniteJizoByTap(t);
+      const note = getNearestNoteInRange();
+      if (note) openNoteStory(note);
+    }
+  }
+}, { passive:true });
+
+/* safety: keep texts correct after resize / moves */
+setInterval(() => {
+  if (game.state !== 'playing') return;
+  updatePrompts();
+  updateHudFromState();
+}, 250);
 
 })();
 </script>
