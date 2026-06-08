@@ -66,6 +66,8 @@
     #stamina-bar { height:5px; background:#ff4444; border-radius:3px; width:100%; transition:width 0.15s; }
 
     #interact-prompt { position:fixed; bottom:50%; left:50%; transform:translate(-50%,50%); z-index:200; pointer-events:none; display:none; background:rgba(0,0,0,0.75); border:1px solid rgba(255,80,80,0.5); padding:8px 16px; border-radius:4px; font-size:13px; color:#ffaaaa; letter-spacing:1px; text-align:center; }
+    #enter-btn { position:fixed; bottom:50%; left:50%; transform:translate(-50%,50%); z-index:210; pointer-events:auto; display:none; background:rgba(255,215,0,0.18); border:1px solid rgba(255,225,120,0.78); padding:10px 18px; border-radius:999px; font-size:14px; color:#ffe97a; letter-spacing:1px; text-align:center; box-shadow:0 0 20px rgba(255,220,80,0.18); user-select:none; -webkit-user-select:none; }
+    #enter-btn.visible { display:block; }
 
     #chapter-flash { position:fixed; inset:0; z-index:600; background:#ff0000; display:none; opacity:0; pointer-events:none; }
     #loading { position:fixed; inset:0; z-index:900; display:flex; align-items:center; justify-content:center; background:#000; color:#bbb; letter-spacing:3px; font-size:12px; pointer-events:none; opacity:0; transition:opacity .25s ease; }
@@ -93,7 +95,7 @@
 
   <div id="objective">
     <div id="objective-label">▶ 目的</div>
-    <div id="objective-text">再生数のために、黄色いピンが立っている不気味な一軒家を探せ</div>
+    <div id="objective-text">再生数のために、赤いスマホが落ちている不気味な一軒家を探せ</div>
   </div>
 
   <div id="live-badge">
@@ -122,6 +124,7 @@
   <div id="stamina-bar-bg"><div id="stamina-bar"></div></div>
 </div>
 <div id="interact-prompt">📱 タップして調べる</div>
+<div id="enter-btn">中に入る</div>
 <div id="chapter-flash"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -407,22 +410,14 @@ function normalizeModel(root, targetHeight = 5) {
   const scale = targetHeight / Math.max(size.y, 0.0001);
   root.scale.setScalar(scale);
   root.updateMatrixWorld(true);
-
-  // 横幅だけ中央寄せにして、Yは接地処理に任せる
   const box2 = new THREE.Box3().setFromObject(root);
   const center = box2.getCenter(new THREE.Vector3());
+  const min = box2.min.clone();
   root.position.x -= center.x;
   root.position.z -= center.z;
+  root.position.y -= min.y;
   root.updateMatrixWorld(true);
   return root;
-}
-function groundToSurface(obj) {
-  obj.updateMatrixWorld(true);
-  const box = new THREE.Box3().setFromObject(obj);
-  // 底面がY=0になるよう、今のワールド境界ボックスの最下点をそのまま地面へ合わせる
-  obj.position.y -= box.min.y;
-  obj.updateMatrixWorld(true);
-  return obj;
 }
 function clonePreparedModel(template) {
   const cloned = template.clone(true);
@@ -462,19 +457,19 @@ async function initThree() {
 
   const scene = new THREE.Scene();
   scene.fog = new THREE.Fog(0x000000, 5, 50);
-  scene.background = new THREE.Color(0x000204);
+  scene.background = new THREE.Color(0x050505);
 
   const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1200);
   camera.position.set(0, 1.65, 0);
   scene.add(camera);
 
   const ambLight = new THREE.AmbientLight(0x111827, 0.2); scene.add(ambLight);
-  const ptLight = new THREE.PointLight(0x223344, 3.6, 45, 1); ptLight.position.set(0, 6, 0); scene.add(ptLight);
-  const ptLight2 = new THREE.PointLight(0x112233, 2.4, 40, 1); ptLight2.position.set(12, 5, -30); scene.add(ptLight2);
+  const ptLight = new THREE.PointLight(0x223344, 1.2, 28); ptLight.position.set(0, 6, 0); scene.add(ptLight);
+  const ptLight2 = new THREE.PointLight(0x112233, 0.7, 22); ptLight2.position.set(12, 5, -30); scene.add(ptLight2);
 
-  const flashlight = new THREE.SpotLight(0xfff6dd, 10.8, 70, Math.PI / 6.5, 0.45, 1);
-  flashlight.position.set(0, 0.8, 0);
-  flashlight.target.position.set(0, 0.45, -18);
+  const flashlight = new THREE.SpotLight(0xfff6dd, 8.4, 40, Math.PI / 7, 0.45, 1);
+  flashlight.position.set(0, 0, 0);
+  flashlight.target.position.set(0, 0, -10);
   camera.add(flashlight);
   camera.add(flashlight.target);
 
@@ -637,92 +632,174 @@ async function initThree() {
   document.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
 
   const interactPrompt = document.getElementById('interact-prompt');
+  const enterBtn = document.getElementById('enter-btn');
   const collisionBoxes = [];
   let phoneMesh = null;
   let phoneGlow = null;
-  let targetPin = null;
-  let targetPinGlow = null;
-  const phoneInteractDist = 4.2;
-  const phoneHouseIndex = 3;
+  const phoneInteractDist = 3.5;
   const houseSpacing = 9;
   const numHouses = 18;
-  const HOUSE_TARGET_HEIGHT = 5.0;
-  const LAMP_TARGET_HEIGHT = 5.5;
 
-  function buildPhone() {
+  let insideHouse = false;
+  let interiorLoaded = false;
+  let interiorLoading = false;
+  let interiorRoot = null;
+  let interiorSpawned = false;
+  let firstHouseTriggerPos = new THREE.Vector3(-6.5, 1.2, -80);
+  let firstHouseMarker = null;
+
+  function createYellowPin() {
+    const pin = new THREE.Group();
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.9, 10), new THREE.MeshBasicMaterial({ color:0xffd94a }));
+    stem.position.y = 0.45;
+    pin.add(stem);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.18, 12, 12), new THREE.MeshBasicMaterial({ color:0xfff0a0 }));
+    head.position.y = 0.98;
+    pin.add(head);
+    const glow = new THREE.PointLight(0xffdd66, 0.9, 7);
+    glow.position.y = 0.9;
+    pin.add(glow);
+    return pin;
+  }
+
+  function spawnInteriorPhone() {
+    if (!interiorRoot) return;
+    if (phoneMesh) scene.remove(phoneMesh);
+    if (phoneGlow) scene.remove(phoneGlow);
+
+    const box = new THREE.Box3().setFromObject(interiorRoot);
+    const size = box.getSize(new THREE.Vector3());
+    const safeX = Math.max(0.9, size.x * 0.18);
+    const safeZ = Math.max(0.9, size.z * 0.18);
+    const minX = box.min.x + safeX;
+    const maxX = box.max.x - safeX;
+    const minZ = box.min.z + safeZ;
+    const maxZ = box.max.z - safeZ;
+    const x = minX + Math.random() * Math.max(0.2, maxX - minX);
+    const z = minZ + Math.random() * Math.max(0.2, maxZ - minZ);
+    const y = box.min.y + 0.18;
+
     const phoneGeo = new THREE.BoxGeometry(0.12, 0.24, 0.015);
-    const phoneMat = new THREE.MeshLambertMaterial({ color:0xff1111, emissive:0x880000, emissiveIntensity:0.5 });
+    const phoneMat = new THREE.MeshLambertMaterial({ color:0xff1111, emissive:0x880000, emissiveIntensity:0.55 });
     phoneMesh = new THREE.Mesh(phoneGeo, phoneMat);
-    phoneMesh.position.set(-10.7, 1.05, -80 + phoneHouseIndex * houseSpacing + 0.4);
+    phoneMesh.position.set(x, y, z);
     phoneMesh.rotation.z = 0.15;
     scene.add(phoneMesh);
-    phoneGlow = new THREE.PointLight(0xff2222, 0.8, 3);
+
+    phoneGlow = new THREE.PointLight(0xff2222, 0.9, 3.5);
     phoneGlow.position.copy(phoneMesh.position);
     scene.add(phoneGlow);
   }
 
-  function buildTargetPin(x, z, y) {
-    if (targetPin) scene.remove(targetPin);
-    if (targetPinGlow) scene.remove(targetPinGlow);
-    targetPin = new THREE.Group();
-    const pinMat = new THREE.MeshBasicMaterial({ color:0xffdd33 });
-    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.15, 2.2, 10), pinMat);
-    shaft.position.y = 1.2;
-    targetPin.add(shaft);
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.5, 14, 14), pinMat);
-    head.position.y = 2.55;
-    targetPin.add(head);
-    const tip = new THREE.Mesh(new THREE.ConeGeometry(0.34, 0.95, 12), pinMat);
-    tip.position.y = 0.4;
-    tip.rotation.x = Math.PI;
-    targetPin.add(tip);
-    targetPin.position.set(x, y, z);
-    scene.add(targetPin);
-    targetPinGlow = new THREE.PointLight(0xffdd55, 4.0, 22, 1);
-    targetPinGlow.position.set(x, y + 1.4, z);
-    scene.add(targetPinGlow);
+  function showEnterButton(visible) {
+    if (visible) enterBtn.classList.add('visible');
+    else enterBtn.classList.remove('visible');
   }
 
   function placeHouse(modelTemplate, x, z, side) {
     const obj = clonePreparedModel(modelTemplate);
     obj.position.set(x, 0, z);
     obj.rotation.y = (side === 'left') ? Math.PI / 2 : -Math.PI / 2;
-    groundToSurface(obj);
     scene.add(obj);
     collisionBoxes.push(new THREE.Box3().setFromObject(obj));
+    return obj;
   }
   function placeLamp(modelTemplate, x, z) {
     const obj = clonePreparedModel(modelTemplate);
     obj.position.set(x, 0, z);
-    groundToSurface(obj);
     scene.add(obj);
+    return obj;
   }
   function placeFallbackHouseAt(x, z, side) {
     const obj = makeFallbackHouse();
     obj.position.set(x, 0, z);
     obj.rotation.y = (side === 'left') ? Math.PI / 2 : -Math.PI / 2;
-    groundToSurface(obj);
     scene.add(obj);
     collisionBoxes.push(new THREE.Box3().setFromObject(obj));
+    return obj;
   }
   function placeFallbackLampAt(x, z) {
     const obj = makeFallbackLamp();
     obj.position.set(x, 0, z);
-    groundToSurface(obj);
     scene.add(obj);
+    return obj;
+  }
+
+  async function loadInterior() {
+    if (interiorLoaded || interiorLoading) return;
+    interiorLoading = true;
+    loadingEl.classList.add('active');
+    try {
+      const gltf = await loadGLTF('./naisou.glb');
+      interiorRoot = normalizeModel(gltf.scene, 5.8);
+      interiorRoot.position.set(0, 0, 0);
+      interiorRoot.visible = false;
+      scene.add(interiorRoot);
+      interiorLoaded = true;
+    } catch (err) {
+      console.error('naisou.glb load failed', err);
+      const room = new THREE.Group();
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(18, 18), new THREE.MeshLambertMaterial({ color:0x111114 }));
+      floor.rotation.x = -Math.PI / 2;
+      room.add(floor);
+      const walls = [
+        { g: new THREE.BoxGeometry(18, 5, 0.35), p:[0,2.5,-9] },
+        { g: new THREE.BoxGeometry(18, 5, 0.35), p:[0,2.5,9] },
+        { g: new THREE.BoxGeometry(0.35, 5, 18), p:[-9,2.5,0] },
+        { g: new THREE.BoxGeometry(0.35, 5, 18), p:[9,2.5,0] }
+      ];
+      walls.forEach(w => {
+        const m = new THREE.Mesh(w.g, new THREE.MeshLambertMaterial({ color:0x1a1a1f }));
+        m.position.set(...w.p);
+        room.add(m);
+      });
+      interiorRoot = room;
+      scene.add(interiorRoot);
+      interiorLoaded = true;
+    } finally {
+      interiorLoading = false;
+      loadingEl.classList.remove('active');
+    }
+  }
+
+  function enterHouse() {
+    if (insideHouse || interiorLoading) return;
+    loadInterior().then(() => {
+      insideHouse = true;
+      showEnterButton(false);
+      document.getElementById('objective-text').textContent = '室内に落ちた赤いスマホを探せ';
+      camera.position.set(0, 1.65, 0);
+      yaw = Math.PI;
+      pitch = 0;
+      if (!interiorSpawned) {
+        spawnInteriorPhone();
+        interiorSpawned = true;
+      }
+      if (firstHouseMarker) firstHouseMarker.visible = false;
+      if (interiorRoot) interiorRoot.visible = true;
+    });
   }
 
   async function buildWorld() {
     loadingEl.classList.add('active');
-    const houseResult = await loadGLTF('./ie.glb').then(gltf => ({ ok:true, scene: normalizeModel(gltf.scene, HOUSE_TARGET_HEIGHT) }), err => ({ ok:false, err }));
-    const lampResult = await loadGLTF('./gaitou.glb').then(gltf => ({ ok:true, scene: normalizeModel(gltf.scene, LAMP_TARGET_HEIGHT) }), err => ({ ok:false, err }));
+    const houseResult = await loadGLTF('./ie.glb').then(gltf => ({ ok:true, scene: normalizeModel(gltf.scene, 5.0) }), err => ({ ok:false, err }));
+    const lampResult = await loadGLTF('./gaitou.glb').then(gltf => ({ ok:true, scene: normalizeModel(gltf.scene, 5.5) }), err => ({ ok:false, err }));
     const houseTemplate = houseResult.ok ? houseResult.scene : null;
     const lampTemplate = lampResult.ok ? lampResult.scene : null;
 
     for (let i = 0; i < numHouses; i++) {
       const z = -80 + i * houseSpacing;
-      if (houseTemplate) { placeHouse(houseTemplate, -10, z, 'left'); placeHouse(houseTemplate, 10, z, 'right'); }
-      else { placeFallbackHouseAt(-10, z, 'left'); placeFallbackHouseAt(10, z, 'right'); }
+      const leftHouse = houseTemplate ? placeHouse(houseTemplate, -10, z, 'left') : placeFallbackHouseAt(-10, z, 'left');
+      if (houseTemplate) placeHouse(houseTemplate, 10, z, 'right');
+      else placeFallbackHouseAt(10, z, 'right');
+
+      if (i === 0 && leftHouse) {
+        const bb = new THREE.Box3().setFromObject(leftHouse);
+        firstHouseTriggerPos = new THREE.Vector3(bb.max.x + 1.4, bb.min.y + 1.25, z);
+        firstHouseMarker = createYellowPin();
+        firstHouseMarker.position.copy(firstHouseTriggerPos);
+        scene.add(firstHouseMarker);
+      }
 
       if (i % 2 === 0) {
         if (lampTemplate) { placeLamp(lampTemplate, -5.5, z); placeLamp(lampTemplate, 5.5, z); }
@@ -730,9 +807,6 @@ async function initThree() {
       }
     }
 
-    const targetZ = -80 + phoneHouseIndex * houseSpacing;
-    buildTargetPin(-10, targetZ, HOUSE_TARGET_HEIGHT + 1.0);
-    buildPhone();
     loadingEl.classList.remove('active');
   }
   const buildPromise = buildWorld();
@@ -742,6 +816,9 @@ async function initThree() {
     const dist = camera.position.distanceTo(phoneMesh.position);
     if (dist <= phoneInteractDist + 1.0) openStory();
   }
+
+  enterBtn.addEventListener('click', (e) => { e.preventDefault(); enterHouse(); });
+  enterBtn.addEventListener('touchstart', (e) => { e.preventDefault(); enterHouse(); }, { passive:false });
 
   window.addEventListener('resize', () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -760,6 +837,13 @@ async function initThree() {
       flickerTimer = 0;
       if (Math.random() < 0.04) ptLight.intensity = 0.2 + Math.random() * 0.3;
       else ptLight.intensity = 1.4 + Math.sin(elapsed * 1.5) * 0.1;
+    }
+
+    if (firstHouseMarker) {
+      firstHouseMarker.visible = !insideHouse;
+      firstHouseMarker.position.copy(firstHouseTriggerPos);
+      firstHouseMarker.position.y += Math.sin(elapsed * 2.2) * 0.12 + 0.15;
+      firstHouseMarker.rotation.y = elapsed * 1.1;
     }
 
     if (phoneGlow && phoneMesh && !phonePickedUp) {
@@ -809,18 +893,20 @@ async function initThree() {
     camera.rotation.y = yaw;
     camera.rotation.x = pitch;
 
-    flashlight.target.position.set(0, 0.6, -12);
-    if (targetPin) {
-      targetPin.position.y = (HOUSE_TARGET_HEIGHT + 1.2) + Math.sin(elapsed * 2) * 0.12;
-      targetPin.rotation.y = elapsed * 0.6;
-      if (targetPinGlow) targetPinGlow.intensity = 2.0 + Math.sin(elapsed * 3.5) * 0.6;
-    }
+    flashlight.target.position.set(0, 0, -10);
 
     if (!phonePickedUp && !storyActive && phoneMesh) {
       const dist = camera.position.distanceTo(phoneMesh.position);
       interactPrompt.style.display = (dist <= phoneInteractDist) ? 'block' : 'none';
     } else {
       interactPrompt.style.display = 'none';
+    }
+
+    if (!insideHouse && firstHouseMarker && !storyActive) {
+      const dEnter = camera.position.distanceTo(firstHouseTriggerPos);
+      showEnterButton(dEnter <= 3.8);
+    } else {
+      showEnterButton(false);
     }
 
     renderer.render(scene, camera);
